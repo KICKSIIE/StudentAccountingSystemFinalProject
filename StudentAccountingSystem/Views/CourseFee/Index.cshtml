@@ -1,0 +1,87 @@
+﻿@model IEnumerable<StudentAccountingSystem.Models.CourseFeeViewModel>
+@{
+    ViewBag.Title = "Course Fee Schedules";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Course Fee Schedules</h2>
+    <a href="@Url.Action("Create")" class="btn btn-primary">+ Add Fee Schedule</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <input type="text" id="searchFee" class="form-control mb-3"
+               placeholder="Search by course, school year, semester..." />
+        <table class="table table-bordered table-hover table-sm" id="feeTable">
+            <thead class="thead-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Course</th>
+                    <th>School Year</th>
+                    <th>Sem</th>
+                    <th>Units</th>
+                    <th>Tuition/Unit</th>
+                    <th>Reg Fee</th>
+                    <th>Misc Fee</th>
+                    <th>Lab Fee</th>
+                    <th class="text-success">Total Fee</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int i = 1; }
+                @foreach (var f in Model)
+                {
+                    <tr>
+                        <td>@i++</td>
+                        <td>@f.CourseName</td>
+                        <td>@f.SchoolYear</td>
+                        <td>@f.Semester</td>
+                        <td>@f.Units</td>
+                        <td>&#8369; @String.Format("{0:N2}", f.TuitionPerUnit)</td>
+                        <td>&#8369; @String.Format("{0:N2}", f.RegistrationFee)</td>
+                        <td>&#8369; @String.Format("{0:N2}", f.MiscellaneousFee)</td>
+                        <td>&#8369; @String.Format("{0:N2}", f.LaboratoryFee)</td>
+                        <td class="font-weight-bold text-success">
+                            &#8369; @String.Format("{0:N2}", f.TotalFee)
+                        </td>
+                        <td>
+                            <a href="@Url.Action("Edit", new { id = f.CourseFeeID })"
+                               class="btn btn-sm btn-warning">Edit</a>
+                            @using (Html.BeginForm("Delete", "CourseFee",
+                                new { id = f.CourseFeeID }, FormMethod.Post,
+                                new { style = "display:inline" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-danger btn-delete">
+                                    Delete
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.GetEnumerator().MoveNext())
+                {
+                    <tr>
+                        <td colspan="11" class="text-center text-muted">
+                            No fee schedules yet. Click "+ Add Fee Schedule" to begin.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/myScripts/coursefee.js"></script>
+}

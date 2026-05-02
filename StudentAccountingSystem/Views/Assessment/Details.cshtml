@@ -1,0 +1,55 @@
+﻿@model StudentAccountingSystem.Models.AssessmentViewModel
+@{
+    ViewBag.Title = "Assessment Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header bg-info text-white d-flex justify-content-between">
+                <h5 class="mb-0">Assessment Details</h5>
+                <span class="badge badge-light badge-lg">@Model.Period</span>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Student No.</dt>
+                    <dd class="col-sm-8">@Model.StudentNumber</dd>
+
+                    <dt class="col-sm-4">Student Name</dt>
+                    <dd class="col-sm-8">@Model.StudentName</dd>
+
+                    <dt class="col-sm-4">Course</dt>
+                    <dd class="col-sm-8">@Model.CourseName</dd>
+
+                    <dt class="col-sm-4">School Year</dt>
+                    <dd class="col-sm-8">@Model.SchoolYear — @Model.Semester Semester</dd>
+
+                    <dt class="col-sm-4">Assessed On</dt>
+                    <dd class="col-sm-8">@Model.AssessedAt.ToString("MMMM dd, yyyy hh:mm tt")</dd>
+                </dl>
+
+                <hr />
+                <h6>Fee Breakdown</h6>
+                <table class="table table-sm table-bordered">
+                    <tr><td>Tuition Fee</td><td class="text-right">&#8369; @String.Format("{0:N2}", Model.TuitionFee)</td></tr>
+                    <tr><td>Registration Fee</td><td class="text-right">&#8369; @String.Format("{0:N2}", Model.RegistrationFee)</td></tr>
+                    <tr><td>Miscellaneous Fee</td><td class="text-right">&#8369; @String.Format("{0:N2}", Model.MiscFee)</td></tr>
+                    <tr><td>Laboratory Fee</td><td class="text-right">&#8369; @String.Format("{0:N2}", Model.LabFee)</td></tr>
+                    <tr class="font-weight-bold"><td>Total Fee</td><td class="text-right">&#8369; @String.Format("{0:N2}", Model.TotalFee)</td></tr>
+                    <tr class="text-danger"><td>Scholarship / Discount</td><td class="text-right">- &#8369; @String.Format("{0:N2}", Model.DiscountAmount)</td></tr>
+                    <tr class="font-weight-bold text-primary"><td>Net Assessment</td><td class="text-right">&#8369; @String.Format("{0:N2}", Model.NetAssessment)</td></tr>
+                    <tr class="font-weight-bold text-success">
+                        <td>Amount Due (@Model.PercentRequired%)</td>
+                        <td class="text-right">&#8369; @String.Format("{0:N2}", Model.AmountDue)</td>
+                    </tr>
+                </table>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span>Status: <span class="badge badge-@(Model.Status == "Paid" ? "success" : Model.Status == "Partial" ? "warning" : "danger") badge-lg">@Model.Status</span></span>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">&larr; Back to List</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

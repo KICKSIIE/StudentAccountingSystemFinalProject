@@ -1,0 +1,128 @@
+﻿@model StudentAccountingSystem.Models.Student
+@{
+    ViewBag.Title = "Edit Student";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">Edit Student — @Model.StudentNumber</h5>
+            </div>
+            <div class="card-body">
+                @using (Html.BeginForm("Edit", "Student", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.HiddenFor(m => m.StudentID)
+                    @Html.HiddenFor(m => m.StudentNumber)
+
+                    <h6 class="text-muted mb-3">Personal Information</h6>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            @Html.LabelFor(m => m.LastName)
+                            @Html.TextBoxFor(m => m.LastName, new { @class = "form-control" })
+                            @Html.ValidationMessageFor(m => m.LastName, "",
+                                new { @class = "text-danger small" })
+                        </div>
+                        <div class="form-group col-md-4">
+                            @Html.LabelFor(m => m.FirstName)
+                            @Html.TextBoxFor(m => m.FirstName, new { @class = "form-control" })
+                            @Html.ValidationMessageFor(m => m.FirstName, "",
+                                new { @class = "text-danger small" })
+                        </div>
+                        <div class="form-group col-md-4">
+                            @Html.LabelFor(m => m.MiddleName)
+                            @Html.TextBoxFor(m => m.MiddleName, new { @class = "form-control" })
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            @Html.LabelFor(m => m.Gender)
+                            @Html.DropDownListFor(m => m.Gender,
+                                new SelectList(new[] { "Male", "Female" }, Model.Gender),
+                                new { @class = "form-control" })
+                        </div>
+                        <div class="form-group col-md-4">
+                            @Html.LabelFor(m => m.BirthDate)
+                            @Html.TextBoxFor(m => m.BirthDate,
+                                "{0:yyyy-MM-dd}",
+                                new { @class = "form-control", type = "date" })
+                        </div>
+                        <div class="form-group col-md-4">
+                            @Html.LabelFor(m => m.ContactNumber)
+                            @Html.TextBoxFor(m => m.ContactNumber, new { @class = "form-control" })
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-8">
+                            @Html.LabelFor(m => m.Address)
+                            @Html.TextBoxFor(m => m.Address, new { @class = "form-control" })
+                        </div>
+                        <div class="form-group col-md-4">
+                            @Html.LabelFor(m => m.Email)
+                            @Html.TextBoxFor(m => m.Email, new { @class = "form-control" })
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h6 class="text-muted mb-3">Enrollment Information</h6>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            @Html.LabelFor(m => m.CourseID)
+                            @Html.DropDownListFor(m => m.CourseID,
+                                (List<SelectListItem>)ViewBag.Courses,
+                                new { @class = "form-control" })
+                        </div>
+                        <div class="form-group col-md-3">
+                            @Html.LabelFor(m => m.YearLevel)
+                            @Html.DropDownListFor(m => m.YearLevel,
+                                new SelectList(new[] {
+                                    new { Value = "1", Text = "1st Year" },
+                                    new { Value = "2", Text = "2nd Year" },
+                                    new { Value = "3", Text = "3rd Year" },
+                                    new { Value = "4", Text = "4th Year" }
+                                }, "Value", "Text", Model.YearLevel),
+                                new { @class = "form-control" })
+                        </div>
+                        <div class="form-group col-md-3">
+                            @Html.LabelFor(m => m.Semester)
+                            @Html.DropDownListFor(m => m.Semester,
+                                new SelectList(new[] { "1st", "2nd", "Summer" }, Model.Semester),
+                                new { @class = "form-control" })
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            @Html.LabelFor(m => m.SchoolYear)
+                            @Html.TextBoxFor(m => m.SchoolYear, new { @class = "form-control" })
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Status</label>
+                            @Html.DropDownListFor(m => m.Status,
+                                new SelectList(new[] { "Enrolled", "Dropped", "Graduated", "LOA" }, Model.Status),
+                                new { @class = "form-control" })
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">
+                            &larr; Back
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            Update Student
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/myScripts/student.js"></script>
+}

@@ -1,0 +1,241 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title — Student Accounting System</title>
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        body {
+            min-height: 100vh;
+            background-color: #f4f6f9;
+        }
+
+        .sidebar {
+            width: 240px;
+            min-height: 100vh;
+            background-color: #003087;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+
+        .sidebar-brand {
+            padding: 20px 16px;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            line-height: 1.4;
+        }
+
+            .sidebar-brand small {
+                display: block;
+                font-size: 11px;
+                font-weight: 400;
+                opacity: 0.7;
+                margin-top: 2px;
+            }
+
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.75);
+            padding: 10px 16px;
+            font-size: 14px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+            .sidebar .nav-link:hover,
+            .sidebar .nav-link.active {
+                color: white;
+                background-color: rgba(255,255,255,0.1);
+                border-left-color: #FFD700;
+                text-decoration: none;
+            }
+
+        .sidebar .nav-section {
+            padding: 12px 16px 4px;
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .main-content {
+            margin-left: 240px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            background: white;
+            padding: 12px 24px;
+            border-bottom: 1px solid #e3e6f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .topbar .user-info {
+                font-size: 14px;
+                color: #555;
+            }
+
+        .page-content {
+            padding: 24px;
+            flex: 1;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .border-left-primary {
+            border-left: 4px solid #003087 !important;
+        }
+
+        .border-left-success {
+            border-left: 4px solid #28a745 !important;
+        }
+
+        .border-left-warning {
+            border-left: 4px solid #ffc107 !important;
+        }
+
+        .border-left-info {
+            border-left: 4px solid #17a2b8 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            Student Accounting System
+            @if (Session["Role"]?.ToString() == "Student")
+            {
+                <small>Student Portal</small>
+            }
+            else
+            {
+                <small>Admin Portal</small>
+            }
+        </div>
+
+        <nav class="mt-2">
+
+            @if (Session["Role"]?.ToString() == "Student")
+            {
+                <!-- ── STUDENT MENU ── -->
+                <div class="nav-section">My Account</div>
+                <a href="@Url.Action("Index", "StudentPortal")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "StudentPortal" ? "active" : "")">
+                    My Assessments
+                </a>
+            }
+            else if (Session["Role"] != null)
+            {
+                <!-- ── ADMIN / CASHIER MENU ── -->
+                <div class="nav-section">Main</div>
+                <a href="@Url.Action("Index", "Dashboard")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Dashboard" ? "active" : "")">
+                    Dashboard
+                </a>
+
+                <div class="nav-section">Academics</div>
+                <a href="@Url.Action("Index", "Course")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Course" ? "active" : "")">
+                    Courses
+                </a>
+                <a href="@Url.Action("Index", "Student")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Student" ? "active" : "")">
+                    Students
+                </a>
+
+                <div class="nav-section">Finance</div>
+                <a href="@Url.Action("Index", "CourseFee")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "CourseFee" ? "active" : "")">
+                    Course Fees
+                </a>
+                <a href="@Url.Action("Index", "Assessment")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Assessment" ? "active" : "")">
+                    Fee Assessment
+                </a>
+                <a href="@Url.Action("Index", "Payment")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Payment" ? "active" : "")">
+                    Payments
+                </a>
+                <a href="@Url.Action("Index", "Scholarship")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Scholarship" ? "active" : "")">
+                    Scholarships
+                </a>
+                <a href="@Url.Action("Index", "Discount")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Discount" ? "active" : "")">
+                    Discounts
+                </a>
+
+                <div class="nav-section">Reports</div>
+                <a href="@Url.Action("StudentLedger", "Report")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Report" ? "active" : "")">
+                    Student Ledger
+                </a>
+                <a href="@Url.Action("AssessmentReport", "Report")"
+                   class="nav-link">
+                    Assessment Report
+                </a>
+
+                <div class="nav-section">System</div>
+                <a href="@Url.Action("Index", "User")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "User" ? "active" : "")">
+                    User Management
+                </a>
+            }
+
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+        <!-- Topbar -->
+        <div class="topbar">
+            <span style="font-size:15px; font-weight:500; color:#003087;">
+                @ViewBag.Title
+            </span>
+            <div class="user-info d-flex align-items-center">
+                <span class="mr-3">
+                    Logged in as <strong>@Session["Username"]</strong>
+                    @if (Session["Role"] != null)
+                    {
+                        <span class="badge badge-secondary ml-1">@Session["Role"]</span>
+                    }
+                </span>
+                @using (Html.BeginForm("Logout", "Account", FormMethod.Post,
+                    new { style = "display:inline" }))
+                {
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        Logout
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- Page Body -->
+        <div class="page-content">
+            @RenderBody()
+        </div>
+
+    </div>
+
+    <script src="~/Scripts/jquery-3.4.1.min.js"></script>
+    <script src="~/Scripts/bootstrap.min.js"></script>
+    @RenderSection("scripts", required: false)
+
+</body>
+</html>

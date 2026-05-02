@@ -1,0 +1,61 @@
+﻿@model StudentAccountingSystem.Models.Student
+@{
+    ViewBag.Title = "Student Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-info text-white d-flex justify-content-between">
+                <h5 class="mb-0">Student Profile</h5>
+                <span class="badge badge-light text-dark align-self-center">
+                    @Model.StudentNumber
+                </span>
+            </div>
+            <div class="card-body">
+
+                <h6 class="text-muted mb-3">Personal Information</h6>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Last Name</strong><br />@Model.LastName</div>
+                    <div class="col-md-4"><strong>First Name</strong><br />@Model.FirstName</div>
+                    <div class="col-md-4"><strong>Middle Name</strong><br />@(string.IsNullOrEmpty(Model.MiddleName) ? "—" : Model.MiddleName)</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Gender</strong><br />@Model.Gender</div>
+                    <div class="col-md-4"><strong>Birth Date</strong><br />@Model.BirthDate.ToString("MMMM dd, yyyy")</div>
+                    <div class="col-md-4"><strong>Contact No.</strong><br />@(string.IsNullOrEmpty(Model.ContactNumber) ? "—" : Model.ContactNumber)</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-8"><strong>Address</strong><br />@(string.IsNullOrEmpty(Model.Address) ? "—" : Model.Address)</div>
+                    <div class="col-md-4"><strong>Email</strong><br />@(string.IsNullOrEmpty(Model.Email) ? "—" : Model.Email)</div>
+                </div>
+
+                <hr />
+                <h6 class="text-muted mb-3">Enrollment Information</h6>
+                <div class="row mb-2">
+                    <div class="col-md-6"><strong>Course</strong><br />@Model.CourseCode — @Model.CourseName</div>
+                    <div class="col-md-3"><strong>Year Level</strong><br />Year @Model.YearLevel</div>
+                    <div class="col-md-3"><strong>Semester</strong><br />@Model.Semester Semester</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>School Year</strong><br />@Model.SchoolYear</div>
+                    <div class="col-md-4">
+                        <strong>Status</strong><br />
+                        <span class="badge badge-@(Model.Status == "Enrolled" ? "success" : "secondary")">
+                            @Model.Status
+                        </span>
+                    </div>
+                    <div class="col-md-4"><strong>Enrolled At</strong><br />@Model.EnrolledAt.ToString("MMM dd, yyyy")</div>
+                </div>
+
+                <hr />
+                <div class="d-flex justify-content-between">
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">&larr; Back</a>
+                    <a href="@Url.Action("Edit", new { id = Model.StudentID })"
+                       class="btn btn-warning">Edit Student</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,93 @@
+﻿@model StudentAccountingSystem.Models.AssessmentFormModel
+@{
+    ViewBag.Title = "New Assessment";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Create Fee Assessment</h5>
+            </div>
+            <div class="card-body">
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger">
+                        @foreach (var e in ViewData.ModelState.Values)
+                        {
+                            foreach (var err in e.Errors)
+                            {<div>@err.ErrorMessage</div>}
+                    }
+                    </div>
+                }
+
+                @using (Html.BeginForm("Create", "Assessment", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+
+                    <div class="form-group">
+                        <label>Student</label>
+                        @Html.DropDownList("StudentID",
+                            (IEnumerable<SelectListItem>)ViewBag.Students,
+                            "-- Select Student --",
+                            new { @class = "form-control" })
+                    </div>
+
+                    <div class="form-group">
+                        <label>School Year</label>
+                        @Html.TextBoxFor(m => m.SchoolYear,
+                            new { @class = "form-control", placeholder = "e.g. 2024-2025" })
+                    </div>
+
+                    <div class="form-group">
+                        <label>Semester</label>
+                        @Html.DropDownList("Semester",
+                            (IEnumerable<SelectListItem>)ViewBag.Semesters,
+                            "-- Select Semester --",
+                            new { @class = "form-control" })
+                    </div>
+
+                    <div class="form-group">
+                        <label>Assessment Period</label>
+                        @Html.DropDownList("Period",
+                            (IEnumerable<SelectListItem>)ViewBag.Periods,
+                            "-- Select Period --",
+                            new { @class = "form-control" })
+                    </div>
+
+                    <div id="noFeeAlert" class="alert alert-warning mt-3" style="display:none">
+                        ⚠️ No course fee found for this student, school year, and semester.
+                        Please set up <a href="/CourseFee/Create">Course Fees</a> first.
+                    </div>
+
+                    <!-- Fee preview panel -->
+                    <div id="feePreview" class="card bg-light mt-3" style="display:none">
+                        <div class="card-body p-2">
+                            <h6 class="mb-2">Fee Breakdown Preview</h6>
+                            <table class="table table-sm mb-0">
+                                <tr><td>Tuition Fee</td><td class="text-right" id="prevTuition">—</td></tr>
+                                <tr><td>Registration Fee</td><td class="text-right" id="prevReg">—</td></tr>
+                                <tr><td>Miscellaneous Fee</td><td class="text-right" id="prevMisc">—</td></tr>
+                                <tr><td>Laboratory Fee</td><td class="text-right" id="prevLab">—</td></tr>
+                                <tr class="font-weight-bold"><td>Total Fee</td><td class="text-right" id="prevTotal">—</td></tr>
+                                <tr class="text-danger"><td>Discount</td><td class="text-right" id="prevDiscount">—</td></tr>
+                                <tr class="font-weight-bold text-primary"><td>Net Assessment</td><td class="text-right" id="prevNet">—</td></tr>
+                                <tr class="font-weight-bold text-success"><td>Amount Due (<span id="prevPercent">—</span>%)</td><td class="text-right" id="prevDue">—</td></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">&larr; Back</a>
+                        <button type="submit" class="btn btn-primary">Generate Assessment</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/myScripts/assessment.js"></script>
+}

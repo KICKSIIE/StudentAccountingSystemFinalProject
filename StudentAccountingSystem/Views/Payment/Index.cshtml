@@ -1,0 +1,76 @@
+﻿@model IEnumerable<StudentAccountingSystem.Models.PaymentViewModel>
+@{
+    ViewBag.Title = "Payment Records";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Payment Records</h2>
+    <a href="@Url.Action("Create")" class="btn btn-primary">+ Record Payment</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <input type="text" id="searchPayment" class="form-control mb-3"
+               placeholder="Search by student, period, method..." />
+        <table class="table table-bordered table-hover table-sm" id="paymentTable">
+            <thead class="thead-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Student No.</th>
+                    <th>Student Name</th>
+                    <th>Period</th>
+                    <th>School Year</th>
+                    <th>Amount Due</th>
+                    <th>Amount Paid</th>
+                    <th>Method</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int i = 1; }
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td>@i++</td>
+                        <td>@p.StudentNumber</td>
+                        <td>@p.StudentName</td>
+                        <td><span class="badge badge-info">@p.Period</span></td>
+                        <td>@p.SchoolYear — @p.Semester</td>
+                        <td>&#8369; @String.Format("{0:N2}", p.AmountDue)</td>
+                        <td><strong>&#8369; @String.Format("{0:N2}", p.AmountPaid)</strong></td>
+                        <td>@p.PaymentMethod</td>
+                        <td>@p.PaymentDate.ToString("MMM dd, yyyy")</td>
+                        <td>
+                            <span class="badge badge-@(p.Status == "Paid" ? "success" : "warning")">
+                                @p.Status
+                            </span>
+                        </td>
+                        <td>
+                            <a href="@Url.Action("Details", new { id = p.PaymentID })"
+                               class="btn btn-sm btn-info">View</a>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.GetEnumerator().MoveNext())
+                {
+                    <tr><td colspan="11" class="text-center text-muted">No payments recorded yet.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/myScripts/payment.js"></script>
+}
