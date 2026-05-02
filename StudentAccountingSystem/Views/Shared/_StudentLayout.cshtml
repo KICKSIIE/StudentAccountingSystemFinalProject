@@ -1,0 +1,374 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title — Student Portal</title>
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        body {
+            min-height: 100vh;
+            background-color: #f4f6f9;
+        }
+
+        .student-sidebar {
+            width: 260px;
+            min-height: 100vh;
+            background-color: #1a3a5c;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-profile {
+            padding: 24px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .sidebar-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #FFD700;
+            color: #1a3a5c;
+            font-size: 26px;
+            font-weight: 700;
+            line-height: 64px;
+            text-align: center;
+            margin: 0 auto 10px;
+        }
+
+        .sidebar-profile h6 {
+            color: white;
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .sidebar-profile small {
+            color: rgba(255,255,255,0.6);
+            font-size: 11px;
+        }
+
+        .sidebar-profile .badge-status {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 8px 0;
+        }
+
+            .sidebar-nav .nav-section {
+                padding: 12px 16px 4px;
+                font-size: 10px;
+                font-weight: 600;
+                color: rgba(255,255,255,0.35);
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+            }
+
+            .sidebar-nav .nav-link {
+                color: rgba(255,255,255,0.7);
+                padding: 9px 16px;
+                font-size: 13px;
+                border-left: 3px solid transparent;
+                display: block;
+                transition: all 0.2s;
+            }
+
+                .sidebar-nav .nav-link:hover,
+                .sidebar-nav .nav-link.active {
+                    color: white;
+                    background: rgba(255,255,255,0.08);
+                    border-left-color: #FFD700;
+                    text-decoration: none;
+                }
+
+                .sidebar-nav .nav-link .nav-icon {
+                    width: 18px;
+                    display: inline-block;
+                    text-align: center;
+                    margin-right: 8px;
+                }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .main-content {
+            margin-left: 260px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            background: white;
+            padding: 12px 24px;
+            border-bottom: 1px solid #e3e6f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-content {
+            padding: 24px;
+            flex: 1;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Student Sidebar -->
+    <div class="student-sidebar">
+
+        <div class="sidebar-profile">
+            <div class="sidebar-avatar">
+                @(string.IsNullOrEmpty(Session["FullName"]?.ToString())
+                ? "?"
+                : Session["FullName"].ToString().Substring(0,1).ToUpper())
+            </div>
+            <h6>@(Session["FullName"] ?? Session["Username"])</h6>
+            <small>@Session["StudentNumber"]</small><br />
+            <small>@Session["CourseName"]</small>
+            <br />
+            @{
+                string st = Session["StudentStatus"]?.ToString() ?? "";
+                string stColor = st == "Enrolled" ? "#28a745"
+                               : st == "Withdrawn" ? "#dc3545"
+                               : st == "Graduated" ? "#17a2b8"
+                               : "#6c757d";
+            }
+            <span class="badge-status" style="background:@stColor; color:white;">
+                @st
+            </span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">Account</div>
+            <a href="@Url.Action("Index", "StudentPortal")"
+               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Index" ? "active" : "")">
+                <span class="nav-icon">&#9632;</span> My Dashboard
+            </a>
+
+            <div class="nav-section">Assessments</div>
+            <a href="@Url.Action("Assessments", "StudentPortal")"
+               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Assessments" ? "active" : "")">
+                <span class="nav-icon">&#9632;</span> Fee Assessments
+            </a>
+            <a href="@Url.Action("PaymentHistory", "StudentPortal")"
+               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "PaymentHistory" ? "active" : "")">
+                <span class="nav-icon">&#9632;</span> Payment History
+            </a>
+
+            <div class="nav-section">Reports</div>
+            <a href="@Url.Action("Ledger", "StudentPortal")"
+               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Ledger" ? "active" : "")">
+                <span class="nav-icon">&#9632;</span> My Ledger
+            </a>
+            <a href="@Url.Action("CourseFees", "StudentPortal")"
+               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "CourseFees" ? "active" : "")">
+                <span class="nav-icon">&#9632;</span> Course Fees
+            </a>
+
+            <div class="nav-section">Benefits</div>
+            <a href="@Url.Action("Discounts", "StudentPortal")"
+               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Discounts" ? "active" : "")">
+                <span class="nav-icon">&#9632;</span> Scholarships & Discounts
+            </a>
+
+            <div class="nav-section">Account Actions</div>
+
+            @{
+                string portalStatus = Session["StudentStatus"]?.ToString() ?? "";
+            }
+
+            @if (portalStatus == "Enrolled" || portalStatus == "")
+            {
+                <button type="button"
+                        class="btn btn-link nav-link text-warning p-0 pl-3"
+                        style="border:none;background:none;cursor:pointer;
+                   width:100%;text-align:left;"
+                        onclick="showWithdrawalModal();">
+                    <span class="nav-icon">⚠</span> Request Withdrawal
+                </button>
+            }
+
+            @if (portalStatus == "Withdrawn")
+            {
+                <button type="button"
+                        class="btn btn-link nav-link text-info p-0 pl-3"
+                        style="border:none;background:none;cursor:pointer;
+                   width:100%;text-align:left;"
+                        onclick="showReactivationModal();">
+                    <span class="nav-icon">↩</span> Request Reactivation
+                </button>
+            }
+        </nav>
+
+        <div class="sidebar-footer">
+            @using (Html.BeginForm("Logout", "Account", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit"
+                        class="btn btn-outline-light btn-sm btn-block">
+                    Logout
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="topbar">
+            <span style="font-size:15px;font-weight:500;color:#1a3a5c;">
+                @ViewBag.Title
+            </span>
+            <small class="text-muted">
+                @Session["CourseName"] &nbsp;|&nbsp;
+                Year @Session["YearLevel"] &nbsp;|&nbsp;
+                @Session["Semester"] Sem, @Session["SchoolYear"]
+            </small>
+        </div>
+
+        <div class="page-content">
+            @RenderBody()
+        </div>
+    </div>
+
+    <!-- Withdrawal Modal -->
+    <!-- Withdrawal Modal -->
+    <div id="withdrawalModal"
+         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,0.5); z-index:9999;
+            align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:8px; width:480px; max-width:90%;">
+            <div style="background:#dc3545; color:white; padding:16px 20px;
+                    border-radius:8px 8px 0 0;
+                    display:flex; justify-content:space-between; align-items:center;">
+                <h5 style="margin:0;">Request Withdrawal</h5>
+                <button onclick="document.getElementById('withdrawalModal').style.display='none';"
+                        style="background:none;border:none;color:white;font-size:20px;
+                           cursor:pointer;">
+                    &times;
+                </button>
+            </div>
+            <div style="padding:20px;">
+                <p>Are you sure you want to request withdrawal?</p>
+                <ul class="text-muted" style="font-size:13px;">
+                    <li>Before Prelim paid — No penalty, full refund</li>
+                    <li>After Prelim paid — 25% penalty on total paid</li>
+                    <li>After Midterm paid — 50% penalty on total paid</li>
+                    <li>After Semi-Final/Final — Withdrawal not allowed</li>
+                </ul>
+                <p class="text-danger font-weight-bold mb-0">
+                    This request will be reviewed by the admin.
+                </p>
+            </div>
+            <div style="padding:12px 20px; border-top:1px solid #dee2e6;
+            display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button"
+                        class="btn btn-secondary"
+                        onclick="document.getElementById('withdrawalModal').style.display='none';">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-danger"
+                        onclick="document.getElementById('withdrawalForm').submit();">
+                    Confirm Request
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reactivation Modal -->
+    <!-- Reactivation Modal -->
+    <div id="reactivationModal"
+         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,0.5); z-index:9999;
+            align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:8px; width:480px; max-width:90%;">
+            <div style="background:#17a2b8; color:white; padding:16px 20px;
+                    border-radius:8px 8px 0 0;
+                    display:flex; justify-content:space-between; align-items:center;">
+                <h5 style="margin:0;">Request Reactivation</h5>
+                <button onclick="document.getElementById('reactivationModal').style.display='none';"
+                        style="background:none;border:none;color:white;
+                           font-size:20px;cursor:pointer;">
+                    &times;
+                </button>
+            </div>
+            <div style="padding:20px;">
+                <p>You will be re-enrolled at:</p>
+                <table class="table table-sm table-bordered">
+                    <tr>
+                        <td class="text-muted">Year Level</td>
+                        <td class="font-weight-bold" id="reactYearLevel">—</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Semester</td>
+                        <td class="font-weight-bold" id="reactSemester">—</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">School Year</td>
+                        <td class="font-weight-bold" id="reactSchoolYear">—</td>
+                    </tr>
+                </table>
+                <p class="text-muted small mb-0">
+                    This will be reviewed by the admin before taking effect.
+                </p>
+            </div>
+            <div style="padding:12px 20px; border-top:1px solid #dee2e6;
+                    display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" class="btn btn-secondary"
+                        onclick="document.getElementById('reactivationModal').style.display='none';">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-info"
+                        onclick="submitReactivation();">
+                    Submit Request
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-section">Account Actions</div>
+    @if (Session["StudentStatus"]?.ToString() == "Enrolled")
+    {
+        <button type="button"
+                class="btn btn-link nav-link text-warning p-0 pl-3"
+                style="border:none;background:none;cursor:pointer;width:100%;text-align:left;"
+                onclick="showWithdrawalModal();">
+            <span class="nav-icon">&#9650;</span> Request Withdrawal
+        </button>
+    }
+    @if (Session["StudentStatus"]?.ToString() == "Withdrawn")
+    {
+        <button type="button"
+                class="btn btn-link nav-link text-info p-0 pl-3"
+                style="border:none;background:none;cursor:pointer;width:100%;text-align:left;"
+                onclick="showReactivationModal();">
+            <span class="nav-icon">&#9650;</span> Request Reactivation
+        </button>
+    }
+
+    <script src="~/Scripts/jquery-3.7.0.min.js"></script>
+    <script src="~/Scripts/bootstrap.min.js"></script>
+    @RenderSection("scripts", required: false)
+</body>
+</html>

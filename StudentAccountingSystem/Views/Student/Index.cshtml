@@ -1,0 +1,96 @@
+﻿@model IEnumerable<StudentAccountingSystem.Models.Student>
+@{
+    ViewBag.Title = "Students";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Student Accounts</h2>
+    <a href="@Url.Action("Create")" class="btn btn-primary">+ Register Student</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <input type="text" id="searchStudent" class="form-control mb-3"
+               placeholder="Search by name, student no, or course..." />
+        <table class="table table-bordered table-hover table-sm" id="studentTable">
+            <thead class="thead-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Student No.</th>
+                    <th>Last Name</th>
+                    <th>First Name</th>
+                    <th>Course</th>
+                    <th>Year</th>
+                    <th>Semester</th>
+                    <th>School Year</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int i = 1; }
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td>@i++</td>
+                        <td>@s.StudentNumber</td>
+                        <td>@s.LastName</td>
+                        <td>@s.FirstName</td>
+                        <td>@s.CourseCode</td>
+                        <td>@s.YearLevel</td>
+                        <td>@s.Semester</td>
+                        <td>@s.SchoolYear</td>
+                        <td>
+                            <span class="badge badge-@(s.Status == "Enrolled" ? "success" : "secondary")">
+                                @s.Status
+                            </span>
+                        </td>
+                        <td>
+                            <a href="@Url.Action("Details", new { id = s.StudentID })"
+                               class="btn btn-sm btn-info">View</a>
+                            <a href="@Url.Action("Edit", new { id = s.StudentID })"
+                               class="btn btn-sm btn-warning">Edit</a>
+                            @using (Html.BeginForm("Delete", "Student",
+                                new { id = s.StudentID }, FormMethod.Post,
+                                new { style = "display:inline" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-danger btn-delete">
+                                    Delete
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.GetEnumerator().MoveNext())
+                {
+                    <tr>
+                        <td colspan="10" class="text-center text-muted">
+                            No students registered yet.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/myScripts/student.js"></script>
+}

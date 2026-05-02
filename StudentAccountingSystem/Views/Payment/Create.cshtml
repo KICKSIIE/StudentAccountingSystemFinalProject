@@ -1,0 +1,107 @@
+﻿@model StudentAccountingSystem.Models.PaymentFormModel
+@{
+    ViewBag.Title = "Record Payment";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Record Payment</h5>
+            </div>
+            <div class="card-body">
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger">
+                        @foreach (var e in ViewData.ModelState.Values)
+                        {
+                            foreach (var err in e.Errors)
+                            {<div>@err.ErrorMessage</div>}
+                        }
+                    </div>
+                }
+
+                @using (Html.BeginForm("Create", "Payment", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+
+                    <div class="form-group">
+                        <label>Assessment (Unpaid / Partial only)</label>
+                        @Html.DropDownList("AssessmentID",
+                            (IEnumerable<SelectListItem>)ViewBag.Assessments,
+                            "-- Select Assessment --",
+                            new { @class = "form-control", id = "AssessmentID" })
+                    </div>
+
+                    <!-- Balance Info Panel -->
+                    <div id="balancePanel" class="card bg-light mb-3" style="display:none">
+                        <div class="card-body p-2">
+                            <table class="table table-sm mb-0">
+                                <tr><td>Student</td><td class="font-weight-bold" id="balStudent">—</td></tr>
+                                <tr><td>Course</td><td id="balCourse">—</td></tr>
+                                <tr><td>Period</td><td id="balPeriod">—</td></tr>
+                                <tr><td>Amount Due</td><td id="balDue">—</td></tr>
+                                <tr><td>Already Paid</td><td id="balPaid">—</td></tr>
+                                <tr class="text-danger font-weight-bold">
+                                    <td>Remaining Balance</td>
+                                    <td id="balRemaining">—</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Amount Paid (₱)</label>
+                        @Html.TextBoxFor(m => m.AmountPaid,
+                            new
+                                 {
+                                     @class = "form-control",
+                                     type = "number",
+                                  step = "0.01",
+                                     min = "0.01",
+                                     placeholder = "0.00"
+                                 })
+                        @Html.ValidationMessageFor(m => m.AmountPaid, "",
+                            new { @class = "text-danger small" })
+                    </div>
+
+                    <div class="form-group">
+                        <label>Payment Date</label>
+                        @Html.TextBoxFor(m => m.PaymentDate,
+                            new { @class = "form-control", type = "date" })
+                    </div>
+
+                    <div class="form-group">
+                        <label>Payment Method</label>
+                        @Html.DropDownList("PaymentMethod",
+                            (IEnumerable<SelectListItem>)ViewBag.PaymentMethods,
+                            "-- Select Method --",
+                            new { @class = "form-control" })
+                    </div>
+
+                    <div class="form-group">
+                        <label>Reference Number <small class="text-muted">(optional)</small></label>
+                        @Html.TextBoxFor(m => m.ReferenceNumber,
+                            new { @class = "form-control", placeholder = "e.g. GCash ref no." })
+                    </div>
+
+                    <div class="form-group">
+                        <label>Remarks <small class="text-muted">(optional)</small></label>
+                        @Html.TextAreaFor(m => m.Remarks,
+                            new { @class = "form-control", rows = "2" })
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">&larr; Back</a>
+                        <button type="submit" class="btn btn-success">Save Payment</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/myScripts/payment.js"></script>
+}

@@ -1,0 +1,93 @@
+﻿@model IEnumerable<StudentAccountingSystem.Models.Discount>
+@{
+    ViewBag.Title = "Discount Management";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Discount Management</h2>
+    <a href="@Url.Action("Create")" class="btn btn-primary">+ Add Discount</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <input type="text" id="searchDiscount" class="form-control mb-3"
+               placeholder="Search discounts..." />
+        <table class="table table-bordered table-hover table-sm" id="discountTable">
+            <thead class="thead-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Discount Name</th>
+                    <th>Type</th>
+                    <th>Discount Value</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int i = 1; }
+                @foreach (var d in Model)
+                {
+                    <tr>
+                        <td>@i++</td>
+                        <td>@d.DiscountName</td>
+                        <td>@d.Type</td>
+                        <td>
+                            @if (d.Type == "Percent")
+                            {
+                                <span>@d.DiscountPercent %</span>
+                            }
+                            else
+                            {
+                                <span>&#8369; @String.Format("{0:N2}", d.DiscountAmount)</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge badge-@(d.IsActive ? "success" : "secondary")">
+                                @(d.IsActive ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td>
+                            <a href="@Url.Action("Edit", new { id = d.DiscountID })"
+                               class="btn btn-sm btn-warning">Edit</a>
+                            @using (Html.BeginForm("Delete", "Discount",
+                                new { id = d.DiscountID }, FormMethod.Post,
+                                new { style = "display:inline" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-danger btn-delete">
+                                    Delete
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.GetEnumerator().MoveNext())
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">No discounts found.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/myScripts/discount.js"></script>
+}

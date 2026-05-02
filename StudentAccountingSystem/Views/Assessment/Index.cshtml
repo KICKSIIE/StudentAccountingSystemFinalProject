@@ -1,0 +1,142 @@
+﻿@model IEnumerable<StudentAccountingSystem.Models.AssessmentViewModel>
+@{
+    ViewBag.Title = "Assessments";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Fee Assessments</h2>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <div class="form-row mb-3">
+            <div class="col-md-6">
+                <input type="text" id="searchAssessment"
+                       class="form-control"
+                       placeholder="Search by student, course, period..." />
+            </div>
+            <div class="col-md-3">
+                <select id="filterStatus" class="form-control">
+                    <option value="">All Statuses</option>
+                    <option value="Unpaid">Unpaid</option>
+                    <option value="Partial">Partial</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Locked">Locked</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="filterPeriod" class="form-control">
+                    <option value="">All Periods</option>
+                    <option value="Prelim">Prelim</option>
+                    <option value="Midterm">Midterm</option>
+                    <option value="Semi-Final">Semi-Final</option>
+                    <option value="Final">Final</option>
+                </select>
+            </div>
+        </div>
+
+        <table class="table table-bordered table-hover table-sm"
+               id="assessmentTable">
+            <thead class="thead-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Student No.</th>
+                    <th>Student Name</th>
+                    <th>Course</th>
+                    <th>School Year</th>
+                    <th>Sem</th>
+                    <th>Period</th>
+                    <th>Net Assessment</th>
+                    <th>Amount Due</th>
+                    <th>Total Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int i = 1; }
+                @foreach (var a in Model)
+                {
+                    <tr data-status="@a.Status" data-period="@a.Period">
+                        <td>@i++</td>
+                        <td>@a.StudentNumber</td>
+                        <td>@a.StudentName</td>
+                        <td>@a.CourseName</td>
+                        <td>@a.SchoolYear</td>
+                        <td>@a.Semester</td>
+                        <td>
+                            <span class="badge badge-info">@a.Period</span>
+                        </td>
+                        <td>&#8369; @String.Format("{0:N2}", a.NetAssessment)</td>
+                        <td>&#8369; @String.Format("{0:N2}", a.AmountDue)</td>
+                        <td class="text-success">
+                            &#8369; @String.Format("{0:N2}", a.TotalPaid)
+                        </td>
+                        <td class="@(a.Balance > 0 ? "text-danger" : "text-success")
+                               font-weight-bold">
+                            &#8369; @String.Format("{0:N2}", a.Balance)
+                        </td>
+                        <td>
+                            @{
+                                string badgeColor = a.Status == "Paid" ? "success"
+                                                  : a.Status == "Partial" ? "warning"
+                                                  : a.Status == "Unpaid" ? "danger"
+                                                  : a.Status == "Locked" ? "secondary"
+                                                  : a.Status == "Cancelled" ? "dark"
+                                                  : "light";
+                            }
+                            <span class="badge badge-@badgeColor">@a.Status</span>
+                            @if (a.OverpaidAmount > 0)
+                            {
+                                <br />
+                                <small class="text-info">
+                                    Overpaid: &#8369; @String.Format("{0:N2}", a.OverpaidAmount)
+                                </small>
+                            }
+                        </td>
+                        <td>
+                            <a href="@Url.Action("Details", new { id = a.AssessmentID })"
+                               class="btn btn-sm btn-info">View</a>
+                            @if (a.Status == "Locked")
+                            {
+                                using (Html.BeginForm("Unlock", "Assessment",
+                                    new { id = a.AssessmentID }, FormMethod.Post,
+                                    new { style = "display:inline" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="btn btn-sm btn-warning btn-unlock">
+                                        Unlock
+                                    </button>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.GetEnumerator().MoveNext())
+                {
+                    <tr>
+                        <td colspan="13" class="text-center text-muted">
+                            No assessments found.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/myScripts/assessment.js"></script>
+}

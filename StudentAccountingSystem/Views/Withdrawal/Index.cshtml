@@ -1,0 +1,121 @@
+﻿@model IEnumerable<StudentAccountingSystem.Models.WithdrawalRequest>
+@{
+    ViewBag.Title = "Withdrawal Requests";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Withdrawal Requests</h2>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-bordered table-hover table-sm" id="withdrawalTable">
+            <thead class="thead-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Student No.</th>
+                    <th>Student Name</th>
+                    <th>Course</th>
+                    <th>Request Date</th>
+                    <th>Total Paid</th>
+                    <th>Penalty %</th>
+                    <th>Penalty Amt</th>
+                    <th>Refundable</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int i = 1; }
+                @foreach (var w in Model)
+                {
+                    <tr>
+                        <td>@i++</td>
+                        <td>@w.StudentNumber</td>
+                        <td>@w.StudentName</td>
+                        <td>@w.CourseName</td>
+                        <td>@w.RequestDate.ToString("MMM dd, yyyy")</td>
+                        <td>&#8369; @String.Format("{0:N2}", w.TotalPaid)</td>
+                        <td>@w.PenaltyPercent%</td>
+                        <td class="text-danger">
+                            &#8369; @String.Format("{0:N2}", w.PenaltyAmount)
+                        </td>
+                        <td class="text-success font-weight-bold">
+                            &#8369; @String.Format("{0:N2}", w.RefundableAmount)
+                        </td>
+                        <td>
+                            @{
+                                string bc = w.Status == "Approved" ? "success"
+                                          : w.Status == "Rejected" ? "danger"
+                                          : "warning";
+                            }
+                            <span class="badge badge-@bc">@w.Status</span>
+                        </td>
+                        <td>
+                            @if (w.Status == "Pending")
+                            {
+                                using (Html.BeginForm("Approve", "Withdrawal",
+                                    new { id = w.RequestID }, FormMethod.Post,
+                                    new { style = "display:inline" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="btn btn-sm btn-success btn-approve">
+                                        Approve
+                                    </button>
+                                }
+                                using (Html.BeginForm("Reject", "Withdrawal",
+                                    new { id = w.RequestID }, FormMethod.Post,
+                                    new { style = "display:inline" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="btn btn-sm btn-danger btn-reject">
+                                        Reject
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                <small class="text-muted">
+                                    @w.Status on
+                                    @(w.ProcessedDate.HasValue
+                                    ? w.ProcessedDate.Value.ToString("MMM dd, yyyy")
+                                    : "—")
+                                </small>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.GetEnumerator().MoveNext())
+                {
+                    <tr>
+                        <td colspan="11" class="text-center text-muted">
+                            No withdrawal requests yet.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/myScripts/withdrawal.js"></script>
+}

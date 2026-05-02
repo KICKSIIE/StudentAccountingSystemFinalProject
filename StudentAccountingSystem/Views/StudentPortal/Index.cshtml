@@ -1,0 +1,471 @@
+﻿@model StudentAccountingSystem.Models.StudentPortalDashboard
+@{
+    ViewBag.Title = "My Dashboard";
+    Layout = "~/Views/Shared/_StudentLayout.cshtml";
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+}
+
+@if (Model.HasPendingWithdrawal)
+{
+    <div class="alert alert-warning">
+        <strong>Withdrawal request pending.</strong>
+        Waiting for admin approval.
+    </div>
+}
+
+<!-- Hidden student info for JS calculations -->
+<input type="hidden" id="currentSemester" value="@Model.Semester" />
+<input type="hidden" id="currentSchoolYear" value="@Model.SchoolYear" />
+<input type="hidden" id="currentYearLevel" value="@Model.YearLevel" />
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-left-primary">
+            <div class="card-body py-3">
+                <div class="text-xs text-primary text-uppercase mb-1"
+                     style="font-size:11px;font-weight:600;">Total Assessed</div>
+                <div class="h5 mb-0 font-weight-bold">
+                    &#8369; @String.Format("{0:N2}", Model.Assessments.Sum(a => a.AmountDue))
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-left-success">
+            <div class="card-body py-3">
+                <div class="text-xs text-success text-uppercase mb-1"
+                     style="font-size:11px;font-weight:600;">Total Paid</div>
+                <div class="h5 mb-0 font-weight-bold text-success">
+                    &#8369; @String.Format("{0:N2}", Model.Assessments.Sum(a => a.TotalPaid))
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-left-danger">
+            <div class="card-body py-3">
+                <div class="text-xs text-danger text-uppercase mb-1"
+                     style="font-size:11px;font-weight:600;">Remaining Balance</div>
+                <div class="h5 mb-0 font-weight-bold text-danger">
+                    &#8369; @String.Format("{0:N2}",
+Model.Assessments.Where(a => !a.IsLocked).Sum(a => a.Balance))
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-left-info">
+            <div class="card-body py-3">
+                <div class="text-xs text-info text-uppercase mb-1"
+                     style="font-size:11px;font-weight:600;">Discounts Applied</div>
+                <div class="h5 mb-0 font-weight-bold text-info">
+                    @Model.Deductions.Count item(s)
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current Payable Assessment -->
+<h5 class="mb-3">Current Assessment Due</h5>
+@{
+    var current = Model.Assessments.FirstOrDefault(
+    a => a.Status == "Unpaid" || a.Status == "Partial");
+
+    // If all assessments are 0 due to 100% scholarship,
+    // auto-mark them all as Paid
+    bool fullScholarship = Model.Assessments.Any() &&
+                           Model.Assessments.All(a => a.AmountDue == 0);
+}
+
+@if (current != null)
+{
+    <div class="card mb-4">
+        <<div class="card-header bg-@(current.AmountDue == 0 ? "success" : "danger")
+            text-white d-flex justify-content-between align-items-center">
+            <strong>@current.Period Assessment</strong>
+            <span class="badge badge-light text-dark">
+                @current.PercentRequired% of total fee
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+
+                <!-- LEFT: Fee Breakdown -->
+                <div class="col-md-6">
+                    <table class="table table-sm mb-0" style="font-size:13px;">
+                        <thead>
+                            <tr class="bg-light">
+                                <th colspan="3" style="font-size:11px;">
+                                    Fee Breakdown
+                                </th>
+                            </tr>
+                            <tr class="text-muted" style="font-size:11px;">
+                                <th>Fee</th>
+                                <th class="text-right">Full Semester</th>
+                                <th class="text-right">
+                                    @current.Period (@current.PercentRequired%)
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                decimal pct = current.PercentRequired / 100m;
+                            }
+                            <tr>
+                                <td class="text-muted">Tuition Fee</td>
+                                <td class="text-right">
+                                    &#8369; @String.Format("{0:N2}", current.TuitionFee)
+                                </td>
+                                <td class="text-right">
+                                    &#8369; @String.Format("{0:N2}", current.TuitionFee * pct)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Registration Fee</td>
+                                <td class="text-right">
+                                    &#8369; @String.Format("{0:N2}", current.RegistrationFee)
+                                </td>
+                                <td class="text-right">
+                                    &#8369; @String.Format("{0:N2}", current.RegistrationFee * pct)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Miscellaneous Fee</td>
+                                <td class="text-right">
+                                    &#8369; @String.Format("{0:N2}", current.MiscFee)
+                                </td>
+                                <td class="text-right">
+                                    &#8369; @String.Format("{0:N2}", current.MiscFee * pct)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Laboratory Fee</td>
+                                <td class="text-right">
+                                    &#8369; @String.Format("{0:N2}", current.LabFee)
+                                </td>
+                                <td class="text-right">
+                                    &#8369; @String.Format("{0:N2}", current.LabFee * pct)
+                                </td>
+                            </tr>
+                            @if (current.DiscountAmount > 0)
+                            {
+                                <tr class="text-success">
+                                    <td>Discount / Scholarship</td>
+                                    <td class="text-right">
+                                        − &#8369; @String.Format("{0:N2}", current.DiscountAmount)
+                                    </td>
+                                    <td class="text-right">
+                                        − &#8369; @String.Format("{0:N2}", current.DiscountAmount * pct)
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="font-weight-bold bg-light">
+                                <td>Total</td>
+                                <td class="text-right">
+                                    &#8369; @String.Format("{0:N2}", current.TotalFee)
+                                </td>
+                                <td class="text-right text-primary">
+                                    &#8369; @String.Format("{0:N2}", current.AmountDue)
+                                </td>
+                            </tr>
+                            <tr style="font-size:11px;" class="text-muted">
+                                <td colspan="3">
+                                    Net: &#8369; @String.Format("{0:N2}", current.NetAssessment)
+                                    &times; @current.PercentRequired%
+                                    = <strong>&#8369; @String.Format("{0:N2}", current.AmountDue)</strong>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- RIGHT: Payment Panel -->
+                <!-- RIGHT: Payment Panel -->
+                <div class="col-md-6">
+                    <div class="alert @(current.Balance <= 0 ? "alert-success" : "alert-danger") py-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Amount Due (@current.PercentRequired%)</span>
+                            <strong>&#8369; @String.Format("{0:N2}", current.AmountDue)</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Total Paid</span>
+                            <span class="font-weight-bold">
+                                &#8369; @String.Format("{0:N2}", current.TotalPaid)
+                            </span>
+                        </div>
+                        <hr class="my-2" />
+                        <div class="d-flex justify-content-between">
+                            <strong>Balance</strong>
+                            <strong>&#8369; @String.Format("{0:N2}", current.Balance)</strong>
+                        </div>
+                    </div>
+
+                    @* Payment breakdown — show where each payment came from *@
+                    @if (current.Payments.Any())
+                    {
+                        <div class="card mb-3">
+                            <div class="card-header py-1" style="font-size:11px;font-weight:600;
+                        text-transform:uppercase;letter-spacing:0.05em;">
+                                Payment Records
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm mb-0" style="font-size:12px;">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Source</th>
+                                            <th>OR No.</th>
+                                            <th class="text-right">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var p in current.Payments)
+                                        {
+                                            <tr class="@(p.IsCarryover ? "table-info" : "")">
+                                                <td>
+                                                    @if (p.IsCarryover)
+                                                    {
+                                                        <span class="text-info">&#8617;</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        @p.PaymentDate.ToString("MMM dd, yyyy")
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (p.IsCarryover)
+                                                    {
+                                                        <span class="text-info font-weight-bold">
+                                                            Carryover from prev. period
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>@p.PaymentMethod</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (p.IsCarryover)
+                                                    {
+                                                        <span class="text-muted">—</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        @(string.IsNullOrEmpty(p.ReferenceNumber)
+                                        ? "—" : p.ReferenceNumber)
+                                                    }
+                                                </td>
+                                                <td class="text-right font-weight-bold
+                                       @(p.IsCarryover ? "text-info" : "text-success")">
+                                                    &#8369; @String.Format("{0:N2}", p.AmountPaid)
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot class="font-weight-bold bg-light">
+                                        <tr>
+                                            <td colspan="3" class="text-right">Total Paid</td>
+                                            <td class="text-right text-success">
+                                                &#8369; @String.Format("{0:N2}", current.TotalPaid)
+                                            </td>
+                                        </tr>
+                                        @if (current.Balance > 0)
+                                        {
+                                            <tr>
+                                                <td colspan="3" class="text-right text-danger">
+                                                    Remaining Balance
+                                                </td>
+                                                <td class="text-right text-danger">
+                                                    &#8369; @String.Format("{0:N2}", current.Balance)
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    }
+
+                    @if (current.Balance <= 0)
+                    {
+                        <div class="alert alert-success">
+                            <strong>&#10003; This period is fully covered.</strong>
+                        </div>
+                    }
+                    else
+                    {
+                        using (Html.BeginForm("Pay", "StudentPortal", FormMethod.Post))
+                        {
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="assessmentID"
+                                   value="@current.AssessmentID" />
+                            <div class="input-group mb-1">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">&#8369;</span>
+                                </div>
+                                <input type="number" name="amountPaid"
+                                       class="form-control"
+                                       step="0.01" min="0.01"
+                                       value="@current.Balance.ToString("F2")" />
+                                <div class="input-group-append">
+                                    <button type="submit" class="btn btn-success">
+                                        Pay Now
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                You can pay partial or full amount.
+                            </small>
+                        }
+                    }
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+else if (!Model.Assessments.Any(a => a.Status == "Unpaid" || a.Status == "Partial"))
+{
+    <div class="alert alert-success">
+        <strong>All current assessments are paid.</strong> Great work!
+    </div>
+}
+
+@if (fullScholarship)
+{
+    <div class="alert alert-success">
+        <strong>🎓 Full Scholarship Applied!</strong><br />
+        Your scholarship covers 100% of your fees.
+        No payment required this semester.
+    </div>
+}
+
+<!-- All Assessments This Semester -->
+<h5 class="mb-3">All Assessments This Semester</h5>
+<div class="card mb-4">
+    <div class="card-body p-0">
+        <table class="table table-sm table-bordered mb-0">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Period</th>
+                    <th>Amount Due</th>
+                    <th>Total Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model.Assessments)
+                {
+                    <tr class="@(a.IsLocked ? "text-muted" : "")">
+                        <td>
+                            @if (a.IsLocked)
+                            {
+                                <span>&#128274; @a.Period</span>
+                            }
+                            else
+                            {
+                                <strong>@a.Period</strong>
+                            }
+                        </td>
+                        <td>&#8369; @String.Format("{0:N2}", a.AmountDue)</td>
+                        <td>
+                            <span class="text-success font-weight-bold">
+                                &#8369; @String.Format("{0:N2}", a.TotalPaid)
+                            </span>
+                            @if (a.Payments.Any())
+                            {
+                                <div class="mt-1" style="font-size:11px;">
+                                    @foreach (var p in a.Payments)
+                                    {
+                                        <div class="d-flex justify-content-between
+                                            text-@(p.IsCarryover ? "info" : "secondary")">
+                                            <span>
+                                                @if (p.IsCarryover)
+                                                {
+                                                    <span>&#8617; Carryover</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>
+                                                        @p.PaymentDate.ToString("MMM dd")
+                                                        @if (!string.IsNullOrEmpty(p.ReferenceNumber))
+                                                        {
+                                                            <span class="text-muted">
+                                                                (@p.ReferenceNumber)
+                                                            </span>
+                                                        }
+                                                    </span>
+                                                }
+                                            </span>
+                                            <span class="ml-2">
+                                                &#8369; @String.Format("{0:N2}", p.AmountPaid)
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </td>
+                        <td class="@(a.Balance > 0 && !a.IsLocked
+                                  ? "text-danger font-weight-bold"
+                                  : "text-muted")">
+                            &#8369; @String.Format("{0:N2}", a.Balance)
+                        </td>
+                        <td>
+                            @{
+                                string bc = a.Status == "Paid" ? "success"
+                                          : a.Status == "Partial" ? "warning"
+                                          : a.IsLocked ? "secondary"
+                                          : "danger";
+                            }
+                            <span class="badge badge-@bc">
+                                @(a.IsLocked ? "🔒 Locked" : a.Status)
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Hidden withdrawal form -->
+@using (Html.BeginForm("RequestWithdrawal", "StudentPortal",
+    FormMethod.Post, new { id = "withdrawalForm" }))
+{
+    @Html.AntiForgeryToken()
+    <span></span>
+}
+
+<!-- Hidden reactivation form -->
+@using (Html.BeginForm("RequestReactivation", "StudentPortal",
+    FormMethod.Post, new { id = "reactivationForm" }))
+{
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="targetSchoolYear" id="hiddenTargetSY" value="" />
+    <input type="hidden" name="targetSemester" id="hiddenTargetSem" value="" />
+    <input type="hidden" name="targetYearLevel" id="hiddenTargetYearLevel" value="" />
+    <span></span>
+}
+
+@section scripts {
+    <script src="~/Scripts/myScripts/studentPortal.js"></script>
+}

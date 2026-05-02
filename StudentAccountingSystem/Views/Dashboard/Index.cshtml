@@ -1,0 +1,98 @@
+﻿@{
+    ViewBag.Title = "Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Dashboard</h2>
+    <span class="text-muted">Welcome, <strong>@Session["Username"]</strong></span>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <div class="card border-left-primary shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                    Enrolled Students
+                </div>
+                <div class="h3 mb-0 font-weight-bold">@ViewBag.TotalStudents</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-left-success shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                    Active Courses
+                </div>
+                <div class="h3 mb-0 font-weight-bold">@ViewBag.TotalCourses</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-left-warning shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                    Unpaid Assessments
+                </div>
+                <div class="h3 mb-0 font-weight-bold">@ViewBag.UnpaidCount</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-left-info shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                    Total Collections
+                </div>
+                <div class="h3 mb-0 font-weight-bold">
+                    &#8369; @String.Format("{0:N2}", ViewBag.TotalPaid)
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                Quick Links
+            </div>
+            <div class="card-body">
+                <a href="@Url.Action("Index", "Student")"
+                   class="btn btn-outline-primary mr-2">Students</a>
+                <a href="@Url.Action("Index", "Course")"
+                   class="btn btn-outline-success mr-2">Courses</a>
+                <a href="@Url.Action("Index", "Scholarship")"
+                   class="btn btn-outline-info mr-2">Scholarships</a>
+                <a href="@Url.Action("Index", "Discount")"
+                   class="btn btn-outline-warning mr-2">Discounts</a>
+                <a href="@Url.Action("Index", "Assessment")"
+                   class="btn btn-outline-warning mr-2">Assesssments</a>
+                <a href="@Url.Action("Index", "Payment")"
+                   class="btn btn-outline-warning mr-2">Payment</a>
+                <a href="@Url.Action("Index", "User")"
+                   class="btn btn-outline-secondary mr-2">Users</a>
+                <a class="nav-link" href="@Url.Action("Index", "CourseFee")">
+                    Course Fees
+                </a>
+                <a href="@Url.Action("Index", "Withdrawal")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Withdrawal" ? "active" : "")">
+                    Withdrawals
+                </a>
+                <a href="@Url.Action("Index", "Reactivation")"
+                   class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Reactivation" ? "active" : "")">
+                    Reactivation Requests
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/myScripts/dashboard.js"></script>
+}
