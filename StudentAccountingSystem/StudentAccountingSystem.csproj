@@ -121,6 +121,7 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AccountController.cs" />
+    <Compile Include="Controllers\backup.cs" />
     <Compile Include="Controllers\CourseController.cs" />
     <Compile Include="Controllers\DashboardController.cs" />
     <Compile Include="Controllers\DiscountController.cs" />
@@ -131,6 +132,7 @@
     <Compile Include="Controllers\ScholarshipController.cs" />
     <Compile Include="Controllers\StudentController.cs" />
     <Compile Include="Controllers\StudentPortalController.cs" />
+    <Compile Include="Controllers\test.cs" />
     <Compile Include="Controllers\UserController.cs" />
     <Compile Include="Controllers\WithdrawalController.cs" />
     <Compile Include="CustomRoleProvider.cs" />
@@ -191,17 +193,18 @@
     <Content Include="Scripts\jquery.validate.min.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
+    <Content Include="Scripts\jQuery\jquery-4.0.0.js" />
     <Content Include="Scripts\modernizr-2.8.3.js" />
     <Content Include="Scripts\myScripts\account.js" />
     <Content Include="Scripts\myScripts\assessment.js" />
-    <Content Include="Scripts\myScripts\course.js" />
-    <Content Include="Scripts\myScripts\coursefee.js" />
     <Content Include="Scripts\myScripts\dashboard.js" />
     <Content Include="Scripts\myScripts\discount.js" />
+    <Content Include="Scripts\myScripts\discountList.js" />
     <Content Include="Scripts\myScripts\payment.js" />
-    <Content Include="Scripts\myScripts\scholarship.js" />
-    <Content Include="Scripts\myScripts\student.js" />
+    <Content Include="Scripts\myScripts\scholarshipList.js" />
     <Content Include="Scripts\myScripts\studentPortal.js" />
+    <Content Include="Scripts\myScripts\studentList.js" />
+    <Content Include="Scripts\myScripts\courseList.js" />
     <Content Include="Scripts\myScripts\withdrawal.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
@@ -218,7 +221,6 @@
     <Content Include="Views\Course\Edit.cshtml" />
     <Content Include="Views\Account\Login.cshtml" />
     <Content Include="Views\Dashboard\Index.cshtml" />
-    <Content Include="Views\_Layout.cshtml" />
     <Content Include="Views\Student\Index.cshtml" />
     <Content Include="Views\Student\Create.cshtml" />
     <Content Include="Views\Student\Edit.cshtml" />
@@ -230,16 +232,13 @@
     <Content Include="Views\Discount\Create.cshtml" />
     <Content Include="Views\Discount\Edit.cshtml" />
     <Content Include="Views\Assessment\Index.cshtml" />
-    <Content Include="Views\Assessment\Create.cshtml" />
     <Content Include="Views\Assessment\Details.cshtml" />
     <Content Include="Views\Payment\Index.cshtml" />
     <Content Include="Views\Payment\Create.cshtml" />
     <Content Include="Views\Payment\Details.cshtml" />
-    <Content Include="Views\CourseFee\Index.cshtml" />
-    <Content Include="Views\CourseFee\Create.cshtml" />
-    <Content Include="Views\CourseFee\Edit.cshtml" />
     <Content Include="Views\Shared\_StudentLayout.cshtml" />
     <Content Include="Views\Reactivation\Index.cshtml" />
+    <Content Include="Views\Assessment\Refunds.cshtml" />
     <None Include="Views\StudentPortal\Index.cshtml" />
     <Content Include="Views\Withdrawal\Index.cshtml" />
   </ItemGroup>

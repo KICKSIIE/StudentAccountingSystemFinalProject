@@ -1,9 +1,15 @@
-﻿using StudentAccountingSystem.Models;
+﻿using StudentAccountingSystem.Controllers;
+using StudentAccountingSystem.Models;
+using StudentAccountingSystem.Models.StudentAccountingSystem.Models;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
+using System.Drawing;
+using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Web.Mvc;
 
 namespace StudentAccountingSystem.Controllers
@@ -67,22 +73,24 @@ namespace StudentAccountingSystem.Controllers
 
                 // Assessment summary per period
                 using (var cmd = new SqlCommand(@"
-                    SELECT a.AssessmentID, a.Period, 
-                           a.TuitionFee, a.RegistrationFee, a.MiscFee, a.LabFee,
-                           a.TotalFee, a.DiscountAmount, a.NetAssessment,
-                           a.PercentRequired, a.AmountDue, a.Status, a.AssessedAt,
-                           ISNULL(SUM(CASE WHEN p.TransactionType = 'Payment' 
-                                      THEN p.AmountPaid ELSE 0 END), 0) AS TotalPaid
-                    FROM Assessments a
-                    LEFT JOIN Payments p ON p.AssessmentID = a.AssessmentID
-                    WHERE a.StudentID  = @sid
-                      AND a.SchoolYear = @sy
-                      AND a.Semester   = @sem
-                    GROUP BY a.AssessmentID, a.Period,
-                             a.TuitionFee, a.RegistrationFee, a.MiscFee, a.LabFee,
-                             a.TotalFee, a.DiscountAmount, a.NetAssessment,
-                             a.PercentRequired, a.AmountDue, a.Status, a.AssessedAt
-                    ORDER BY a.AssessedAt", con))
+    SELECT a.AssessmentID, a.Period, 
+           a.TuitionFee, a.RegistrationFee, a.MiscFee, a.LabFee,
+           a.TotalFee, a.DiscountAmount, a.NetAssessment,
+           a.PercentRequired, a.AmountDue, a.Status, a.AssessedAt,
+           a.OverpaidAmount, -- <--- ADD THIS
+           ISNULL(SUM(CASE WHEN p.TransactionType = 'Payment' 
+                      THEN p.AmountPaid ELSE 0 END), 0) AS TotalPaid
+    FROM Assessments a
+    LEFT JOIN Payments p ON p.AssessmentID = a.AssessmentID
+    WHERE a.StudentID  = @sid
+      AND a.SchoolYear = @sy
+      AND a.Semester   = @sem
+    GROUP BY a.AssessmentID, a.Period,
+             a.TuitionFee, a.RegistrationFee, a.MiscFee, a.LabFee,
+             a.TotalFee, a.DiscountAmount, a.NetAssessment,
+             a.PercentRequired, a.AmountDue, a.Status, a.AssessedAt,
+             a.OverpaidAmount -- <--- ADD THIS TO GROUP BY TOO
+    ORDER BY a.AssessedAt", con))
                 {
                     cmd.Parameters.AddWithValue("@sid", sid);
                     cmd.Parameters.AddWithValue("@sy", model.SchoolYear);
@@ -99,6 +107,7 @@ namespace StudentAccountingSystem.Controllers
                                 LabFee = (decimal)r["LabFee"],
                                 TotalFee = (decimal)r["TotalFee"],
                                 DiscountAmount = (decimal)r["DiscountAmount"],
+                                OverpaidAmount = (decimal)r["OverpaidAmount"],
                                 NetAssessment = (decimal)r["NetAssessment"],
                                 PercentRequired = (decimal)r["PercentRequired"],
                                 AmountDue = (decimal)r["AmountDue"],
@@ -109,6 +118,73 @@ namespace StudentAccountingSystem.Controllers
                                 AssessedAt = (DateTime)r["AssessedAt"]
                             });
                 }
+
+                // Check withdrawal/reactivation status
+                using (var cmd = new SqlCommand(
+                    @"SELECT COUNT(*) FROM WithdrawalRequests 
+      WHERE StudentID = @sid AND Status = 'Pending'", con))
+                {
+                    cmd.Parameters.AddWithValue("@sid", sid);
+                    model.HasPendingWithdrawal = (int)cmd.ExecuteScalar() > 0;
+                }
+
+                using (var cmd = new SqlCommand(
+                    @"SELECT COUNT(*) FROM ReactivationRequests 
+      WHERE StudentID = @sid AND Status = 'Pending'", con))
+                {
+                    cmd.Parameters.AddWithValue("@sid", sid);
+                    model.HasPendingReactivation = (int)cmd.ExecuteScalar() > 0;
+                }
+
+                model.IsWithdrawn = model.Status == "Withdrawn";
+
+                // Check overpaid balance — sum of all payments minus sum of all AmountDue
+                // for fully paid semesters
+                decimal prevTotalPaid = 0, prevTotalDue = 0;
+                string prevSY = "", prevSem = "";
+
+                using (var cmd = new SqlCommand(
+                    @"SELECT TOP 1 SchoolYear, Semester FROM Assessments
+      WHERE StudentID = @sid AND Period = 'Final' AND Status = 'Paid'
+      ORDER BY AssessmentID DESC", con))
+                {
+                    cmd.Parameters.AddWithValue("@sid", sid);
+                    using (var r = cmd.ExecuteReader())
+                        if (r.Read())
+                        {
+                            prevSY = r["SchoolYear"].ToString();
+                            prevSem = r["Semester"].ToString();
+                        }
+                }
+
+                if (!string.IsNullOrEmpty(prevSY))
+                {
+                    using (var cmd = new SqlCommand(
+                        @"SELECT ISNULL(SUM(p.AmountPaid), 0)
+          FROM Payments p
+          JOIN Assessments a ON a.AssessmentID = p.AssessmentID
+          WHERE a.StudentID=@sid AND a.SchoolYear=@sy
+            AND a.Semester=@sem AND p.TransactionType='Payment'", con))
+                    {
+                        cmd.Parameters.AddWithValue("@sid", sid);
+                        cmd.Parameters.AddWithValue("@sy", prevSY);
+                        cmd.Parameters.AddWithValue("@sem", prevSem);
+                        prevTotalPaid = (decimal)cmd.ExecuteScalar();
+                    }
+
+                    using (var cmd = new SqlCommand(
+                        @"SELECT ISNULL(SUM(AmountDue), 0) FROM Assessments
+          WHERE StudentID=@sid AND SchoolYear=@sy AND Semester=@sem", con))
+                    {
+                        cmd.Parameters.AddWithValue("@sid", sid);
+                        cmd.Parameters.AddWithValue("@sy", prevSY);
+                        cmd.Parameters.AddWithValue("@sem", prevSem);
+                        prevTotalDue = (decimal)cmd.ExecuteScalar();
+                    }
+                }
+
+                model.OverpaidBalance = Math.Max(0, prevTotalPaid - prevTotalDue);
+                model.CanRequestRefund = model.OverpaidBalance > 0;
 
                 // Scholarship and Discount applied
                 // Load payments per assessment (with carryover label)
@@ -169,6 +245,9 @@ namespace StudentAccountingSystem.Controllers
                             });
                 }
             }
+
+
+
             // ADD IT RIGHT HERE — after the using block, before return
             Session["FullName"] = model.FullName;
             Session["StudentNumber"] = model.StudentNumber;
@@ -191,277 +270,272 @@ namespace StudentAccountingSystem.Controllers
             int? sid = GetStudentID();
             if (sid == null) return RedirectToAction("Login", "Account");
 
-            if (amountPaid <= 0)
-            {
-                TempData["Error"] = "Amount must be greater than zero.";
-                return RedirectToAction("Index");
-            }
-
             using (var con = new SqlConnection(_conn))
             {
                 con.Open();
+                SqlTransaction trans = con.BeginTransaction();
 
-                // Get assessment details
-                decimal amountDue = 0;
-                decimal totalPaid = 0;
-                string period = "";
-                string schoolYear = "";
-                string semester = "";
-                string status = "";
-
-                using (var cmd = new SqlCommand(
-                    @"SELECT AmountDue, Period, SchoolYear, Semester, Status
-              FROM   Assessments
-              WHERE  AssessmentID = @aid AND StudentID = @sid", con))
+                try
                 {
-                    cmd.Parameters.AddWithValue("@aid", assessmentID);
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    using (var r = cmd.ExecuteReader())
+                    // 1. Get Current Assessment Info - UPDATED TO INCLUDE YearLevel
+                    decimal amountDue = 0, currentAlreadyPaid = 0;
+                    string period = "", schoolYear = "", semester = "", status = "";
+                    int yearLevel = 1; // Default variable
+
+                    // Added YearLevel to this SELECT
+                    string getAssessmentSql = @"SELECT AmountDue, Period, SchoolYear, Semester, Status, YearLevel 
+                                        FROM Assessments WHERE AssessmentID = @aid";
+
+                    using (var cmd = new SqlCommand(getAssessmentSql, con, trans))
                     {
-                        if (!r.Read())
+                        cmd.Parameters.AddWithValue("@aid", assessmentID);
+                        using (var r = cmd.ExecuteReader())
                         {
-                            TempData["Error"] = "Assessment not found.";
-                            return RedirectToAction("Index");
+                            if (!r.Read()) throw new Exception("Assessment not found.");
+                            amountDue = (decimal)r["AmountDue"];
+                            period = r["Period"].ToString();
+                            schoolYear = r["SchoolYear"].ToString();
+                            semester = r["Semester"].ToString();
+                            status = r["Status"].ToString();
+                            yearLevel = (int)r["YearLevel"]; // <--- CATCH THE YEAR LEVEL HERE
                         }
-                        amountDue = (decimal)r["AmountDue"];
-                        period = r["Period"].ToString();
-                        schoolYear = r["SchoolYear"].ToString();
-                        semester = r["Semester"].ToString();
-                        status = r["Status"].ToString();
                     }
-                }
 
-                // Block payment if Locked
-                if (status == "Locked")
-                {
-                    TempData["Error"] = "This assessment is locked. " +
-                        "Pay the previous period first.";
-                    return RedirectToAction("Index");
-                }
+                    if (status == "Locked") throw new Exception("This period is locked.");
 
-                // Get total already paid
-                using (var cmd = new SqlCommand(
-                    "SELECT ISNULL(SUM(AmountPaid),0) FROM Payments WHERE AssessmentID=@aid", con))
-                {
-                    cmd.Parameters.AddWithValue("@aid", assessmentID);
-                    totalPaid = (decimal)cmd.ExecuteScalar();
-                }
-
-                decimal balance = amountDue - totalPaid;
-                // Cap payment at AmountDue — excess goes to next period
-                decimal actualPayment = Math.Min(amountPaid, amountDue);
-                decimal excess = amountPaid - actualPayment;
-                // Auto-generate OR Number
-                string today = DateTime.Now.ToString("yyyyMMdd");
-                string orPrefix = "OR-" + today + "-";
-                int sequence = 1;
-
-                using (var cmd = new SqlCommand(
-                    "SELECT COUNT(*) FROM Payments WHERE ORNumber LIKE @prefix + '%'", con))
-                {
-                    cmd.Parameters.AddWithValue("@prefix", orPrefix);
-                    sequence = (int)cmd.ExecuteScalar() + 1;
-                }
-
-                string orNumber = orPrefix + sequence.ToString("D4");
-
-                // Insert payment
-                using (var cmd = new SqlCommand(
-                    @"INSERT INTO Payments
-                (StudentID, AssessmentID, ORNumber, AmountPaid, PaymentMode,
-                 Period, SchoolYear, Semester, Remarks, PaymentDate, ReceivedBy)
-              VALUES
-                (@sid, @aid, @or, @paid, 'Student Portal',
-                 @period, @sy, @sem, 'Self-paid via portal', GETDATE(), @uid)", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    cmd.Parameters.AddWithValue("@aid", assessmentID);
-                    cmd.Parameters.AddWithValue("@or", orNumber);
-                    cmd.Parameters.AddWithValue("@paid", actualPayment); // ← was amountPaid
-                    cmd.Parameters.AddWithValue("@period", period);
-                    cmd.Parameters.AddWithValue("@sy", schoolYear);
-                    cmd.Parameters.AddWithValue("@sem", semester);
-                    cmd.Parameters.AddWithValue("@uid", Session["UserID"]);
-                    cmd.ExecuteNonQuery();
-                }
-
-                // Update assessment status
-                decimal newTotal = totalPaid + actualPayment;
-                string newStatus = newTotal >= amountDue ? "Paid" : "Partial";
-
-                using (var cmd = new SqlCommand(
-                    "UPDATE Assessments SET Status=@status WHERE AssessmentID=@aid", con))
-                {
-                    cmd.Parameters.AddWithValue("@status", newStatus);
-                    cmd.Parameters.AddWithValue("@aid", assessmentID);
-                    cmd.ExecuteNonQuery();
-                }
-
-                // If there's excess — apply it to the next period as a pre-payment
-                if (excess > 0 && newStatus == "Paid")
-                {
-                    var periodOrder = new[] { "Prelim", "Midterm", "Semi-Final", "Final" };
-                    int currentIndex = Array.IndexOf(periodOrder, period);
-
-                    if (currentIndex >= 0 && currentIndex < periodOrder.Length - 1)
+                    // 2. Calculate Wallet (remains same)
+                    decimal totalWallet = 0;
+                    using (var cmd = new SqlCommand("SELECT ISNULL(SUM(OverpaidAmount), 0) FROM Assessments WHERE StudentID = @sid", con, trans))
                     {
-                        string nextPeriod = periodOrder[currentIndex + 1];
+                        cmd.Parameters.AddWithValue("@sid", sid);
+                        totalWallet = (decimal)cmd.ExecuteScalar();
+                    }
 
-                        // Get next assessment ID
-                        int nextAssessmentID = 0;
-                        using (var cmd = new SqlCommand(
-                            @"SELECT AssessmentID FROM Assessments
-              WHERE StudentID=@sid AND SchoolYear=@sy
-              AND Semester=@sem AND Period=@next", con))
+                    // 3. Already Paid (remains same)
+                    using (var cmd = new SqlCommand("SELECT ISNULL(SUM(AmountPaid),0) FROM Payments WHERE AssessmentID=@aid AND TransactionType='Payment'", con, trans))
+                    {
+                        cmd.Parameters.AddWithValue("@aid", assessmentID);
+                        currentAlreadyPaid = (decimal)cmd.ExecuteScalar();
+                    }
+
+                    decimal remainingToPayForThisPeriod = amountDue - currentAlreadyPaid;
+                    decimal totalAvailableFunds = totalWallet + amountPaid;
+
+                    // 4. Step 1: Use Wallet Credit - UPDATED INSERT
+                    if (totalWallet > 0)
+                    {
+                        decimal walletUsage = Math.Min(totalWallet, remainingToPayForThisPeriod);
+                        if (walletUsage > 0)
                         {
-                            cmd.Parameters.AddWithValue("@sid", sid);
-                            cmd.Parameters.AddWithValue("@sy", schoolYear);
-                            cmd.Parameters.AddWithValue("@sem", semester);
-                            cmd.Parameters.AddWithValue("@next", nextPeriod);
-                            var result = cmd.ExecuteScalar();
-                            if (result != null) nextAssessmentID = (int)result;
-                        }
+                            string walletOR = "WLT-" + assessmentID + "-" + DateTime.Now.ToString("yyyyMMddHHmmssfff");
 
-                        if (nextAssessmentID > 0)
-                        {
-                            // Get next period's amount due
-                            decimal nextAmountDue = 0;
-                            using (var cmd = new SqlCommand(
-                                "SELECT AmountDue FROM Assessments WHERE AssessmentID=@aid", con))
-                            {
-                                cmd.Parameters.AddWithValue("@aid", nextAssessmentID);
-                                nextAmountDue = (decimal)cmd.ExecuteScalar();
-                            }
+                            // Added YearLevel to this INSERT
+                            string walletSql = @"INSERT INTO Payments (StudentID, AssessmentID, ORNumber, AmountPaid, PaymentMode, Period, SchoolYear, Semester, YearLevel, Remarks, PaymentDate, TransactionType)
+                                         VALUES (@sid, @aid, @or, @paid, 'Credit Balance', @period, @sy, @sem, @yl, 'Applied from wallet', GETDATE(), 'Payment')";
 
-                            // Cap excess at next period's amount due
-                            decimal nextAlreadyPaid = 0;
-                            using (var cmd = new SqlCommand(
-                                "SELECT ISNULL(SUM(AmountPaid),0) FROM Payments WHERE AssessmentID=@aid", con))
-                            {
-                                cmd.Parameters.AddWithValue("@aid", nextAssessmentID);
-                                nextAlreadyPaid = (decimal)cmd.ExecuteScalar();
-                            }
-
-                            decimal nextRemainingBalance = Math.Max(0, nextAmountDue - nextAlreadyPaid);
-                            decimal appliedExcess = Math.Min(excess, nextRemainingBalance);
-
-                            // Only insert if there's actually something to apply
-                            if (appliedExcess <= 0)
-                            {
-                                TempData["Success"] = $"Payment of ₱{actualPayment:N2} recorded successfully.";
-                                return RedirectToAction("Index");
-                            }
-
-                            // Generate OR number for excess payment
-                            string excessOR = "OR-" + DateTime.Now.ToString("yyyyMMdd") +
-                                              "-EX-" + nextAssessmentID.ToString("D4");
-
-                            // Insert excess as payment to next period
-                            using (var cmd = new SqlCommand(
-                                @"INSERT INTO Payments
-                    (StudentID, AssessmentID, ORNumber, AmountPaid, PaymentMode,
-                     Period, SchoolYear, Semester, Remarks, PaymentDate, ReceivedBy)
-                  VALUES
-                    (@sid, @aid, @or, @paid, 'Carryover',
-                     @period, @sy, @sem, 'Excess from previous period', GETDATE(), @uid)", con))
+                            using (var cmd = new SqlCommand(walletSql, con, trans))
                             {
                                 cmd.Parameters.AddWithValue("@sid", sid);
-                                cmd.Parameters.AddWithValue("@aid", nextAssessmentID);
-                                cmd.Parameters.AddWithValue("@or", excessOR);
-                                cmd.Parameters.AddWithValue("@paid", appliedExcess);
-                                cmd.Parameters.AddWithValue("@period", nextPeriod);
+                                cmd.Parameters.AddWithValue("@aid", assessmentID);
+                                cmd.Parameters.AddWithValue("@or", walletOR);
+                                cmd.Parameters.AddWithValue("@paid", walletUsage);
+                                cmd.Parameters.AddWithValue("@period", period);
                                 cmd.Parameters.AddWithValue("@sy", schoolYear);
                                 cmd.Parameters.AddWithValue("@sem", semester);
-                                cmd.Parameters.AddWithValue("@uid", Session["UserID"]);
+                                cmd.Parameters.AddWithValue("@yl", yearLevel); // <--- SAVE YEAR LEVEL
                                 cmd.ExecuteNonQuery();
                             }
-
-                            // Update next assessment status if fully covered
-                            string nextStatus = appliedExcess >= nextAmountDue ? "Paid" : "Partial";
-                            using (var cmd = new SqlCommand(
-                                "UPDATE Assessments SET Status=@status WHERE AssessmentID=@aid", con))
-                            {
-                                cmd.Parameters.AddWithValue("@status", nextStatus);
-                                cmd.Parameters.AddWithValue("@aid", nextAssessmentID);
-                                cmd.ExecuteNonQuery();
-                            }
-
-                            // Also cascade — if next period is fully paid by excess,
-                            // unlock the one after that too
-                            if (nextStatus == "Paid")
-                            {
-                                var periodOrder2 = new[] { "Prelim", "Midterm", "Semi-Final", "Final" };
-                                int nextIndex = Array.IndexOf(periodOrder2, nextPeriod);
-                                if (nextIndex >= 0 && nextIndex < periodOrder2.Length - 1)
-                                {
-                                    string afterNext = periodOrder2[nextIndex + 1];
-                                    using (var cmd2 = new SqlCommand(
-                                        @"UPDATE Assessments SET Status='Unpaid'
-              WHERE StudentID=@sid AND SchoolYear=@sy
-              AND Semester=@sem AND Period=@p AND Status='Locked'", con))
-                                    {
-                                        cmd2.Parameters.AddWithValue("@sid", sid);
-                                        cmd2.Parameters.AddWithValue("@sy", schoolYear);
-                                        cmd2.Parameters.AddWithValue("@sem", semester);
-                                        cmd2.Parameters.AddWithValue("@p", afterNext);
-                                        cmd2.ExecuteNonQuery();
-                                    }
-                                }
-                                else if (nextPeriod == "Final")
-                                {
-                                    StudentController.AdvanceSemester(con, sid.Value);
-                                }
-                            }
-
-                            TempData["Success"] = $"Payment recorded. " +
-                                $"Excess of ₱{appliedExcess:N2} applied to {nextPeriod}.";
                         }
-                    }
-                    else
-                    {
-                        // Excess after Final — true overpayment, store for refund
-                        TempData["Success"] = $"Payment recorded. " +
-                            $"Excess of ₱{excess:N2} is available for refund. Contact admin.";
-                    }
-                }
-                else
-                {
-                    TempData["Success"] = $"Payment of ₱{actualPayment:N2} recorded successfully.";
-                }
 
-                // If fully paid — check what to unlock next
-                // Unlock next period only if no excess was already applied to it
-                if (newStatus == "Paid" && excess <= 0)
-                {
-                    var periodOrder = new[] { "Prelim", "Midterm", "Semi-Final", "Final" };
-                    int currentIndex = Array.IndexOf(periodOrder, period);
-
-                    if (currentIndex >= 0 && currentIndex < periodOrder.Length - 1)
-                    {
-                        string nextPeriod = periodOrder[currentIndex + 1];
-                        using (var cmd = new SqlCommand(
-                            @"UPDATE Assessments SET Status = 'Unpaid'
-              WHERE  StudentID  = @sid
-                AND  SchoolYear = @sy
-                AND  Semester   = @sem
-                AND  Period     = @next
-                AND  Status     = 'Locked'", con))
+                        // Reset wallet rows (remains same)
+                        using (var cmd = new SqlCommand("UPDATE Assessments SET OverpaidAmount = 0 WHERE StudentID = @sid", con, trans))
                         {
                             cmd.Parameters.AddWithValue("@sid", sid);
-                            cmd.Parameters.AddWithValue("@sy", schoolYear);
-                            cmd.Parameters.AddWithValue("@sem", semester);
-                            cmd.Parameters.AddWithValue("@next", nextPeriod);
                             cmd.ExecuteNonQuery();
                         }
+                        remainingToPayForThisPeriod -= walletUsage;
                     }
-                    else if (period == "Final")
+
+                    // 5. Step 2: Process Cash Payment - UPDATED INSERT
+                    if (amountPaid > 0)
                     {
-                        StudentController.AdvanceSemester(con, sid.Value);
+                        decimal cashToApply = Math.Min(amountPaid, remainingToPayForThisPeriod);
+                        string orNumber = "OR-" + DateTime.Now.ToString("yyyyMMddHHmmssfff");
+
+                        // Added YearLevel to this INSERT
+                        string cashSql = @"INSERT INTO Payments (StudentID, AssessmentID, ORNumber, AmountPaid, PaymentMode, Period, SchoolYear, Semester, YearLevel, Remarks, PaymentDate, TransactionType)
+                                   VALUES (@sid, @aid, @or, @paid, 'Student Portal', @period, @sy, @sem, @yl, 'Online Payment', GETDATE(), 'Payment')";
+
+                        using (var cmd = new SqlCommand(cashSql, con, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@sid", sid);
+                            cmd.Parameters.AddWithValue("@aid", assessmentID);
+                            cmd.Parameters.AddWithValue("@or", orNumber);
+                            cmd.Parameters.AddWithValue("@paid", cashToApply);
+                            cmd.Parameters.AddWithValue("@period", period);
+                            cmd.Parameters.AddWithValue("@sy", schoolYear);
+                            cmd.Parameters.AddWithValue("@sem", semester);
+                            cmd.Parameters.AddWithValue("@yl", yearLevel); // <--- SAVE YEAR LEVEL
+                            cmd.ExecuteNonQuery();
+                        }
+                        remainingToPayForThisPeriod -= cashToApply;
+                    }
+
+                    // 6. Calculate New Excess for the Wallet
+                    // 6. Calculate New Excess for the Wallet
+                    // Logic: Total funds minus what was actually owed for this specific row
+                    decimal amountOwedBeforeThisClick = amountDue - currentAlreadyPaid;
+                    decimal newExcess = Math.Max(0, totalAvailableFunds - amountOwedBeforeThisClick);
+                    string newStatus = remainingToPayForThisPeriod <= 0 ? "Paid" : "Partial";
+
+                    // 7. Update Current Assessment & Period Completion
+                    using (var cmd = new SqlCommand("UPDATE Assessments SET Status=@status, OverpaidAmount=@excess WHERE AssessmentID=@aid", con, trans))
+                    {
+                        cmd.Parameters.AddWithValue("@status", newStatus);
+                        // If the student is advancing (Final), we save 0 here and "Push" the money forward in Step 7.
+                        // Otherwise, save the excess here.
+                        cmd.Parameters.AddWithValue("@excess", (newStatus == "Paid" && period == "Final") ? 0 : newExcess);
+                        cmd.Parameters.AddWithValue("@aid", assessmentID);
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    if (newStatus == "Paid")
+                    {
+                        if (period == "Final")
+                        {
+                            // Pass the 'newExcess' to ProcessAdvancement so it can "Push" it to the new semester
+                            ProcessAdvancement(con, trans, sid.Value, newExcess, assessmentID);
+                        }
+                        else
+                        {
+                            UnlockNextPeriod(con, trans, sid.Value, period, schoolYear, semester);
+                        }
+                    }
+                    trans.Commit();
+
+                    TempData["Success"] = "Payment processed successfully!";
+                }
+                catch (Exception ex)
+                {
+                    if (trans != null) trans.Rollback();
+                    TempData["Error"] = "SQL Error: " + ex.Message;
+                }
+            }
+            return RedirectToAction("Index");
+        }
+
+
+        private void UnlockNextPeriod(SqlConnection con, SqlTransaction trans, int sid, string currentPeriod, string sy, string sem)
+        {
+            string nextPeriod = "";
+            switch (currentPeriod)
+            {
+                case "Prelim": nextPeriod = "Midterm"; break;
+                case "Midterm": nextPeriod = "Semi-Final"; break;
+                case "Semi-Final": nextPeriod = "Final"; break;
+                default: return; // Final is handled by ProcessAdvancement
+            }
+
+            // UPDATE the next period to 'Unpaid' so the student can see the "Pay" button
+            string sql = @"UPDATE Assessments 
+                   SET Status = 'Unpaid' 
+                   WHERE StudentID = @sid 
+                   AND SchoolYear = @sy 
+                   AND Semester = @sem 
+                   AND Period = @next 
+                   AND Status = 'Locked'";
+
+            using (var cmd = new SqlCommand(sql, con, trans))
+            {
+                cmd.Parameters.AddWithValue("@sid", sid);
+                cmd.Parameters.AddWithValue("@sy", sy);
+                cmd.Parameters.AddWithValue("@sem", sem);
+                cmd.Parameters.AddWithValue("@next", nextPeriod);
+
+                int rowsAffected = cmd.ExecuteNonQuery();
+
+                // Debugging: If rowsAffected is 0, the next period row is missing from the DB
+                System.Diagnostics.Debug.WriteLine("Unlocked " + rowsAffected + " rows for " + nextPeriod);
+            }
+        }
+
+        // Added 'int assessmentID' to the parameters here
+        private void ProcessAdvancement(SqlConnection con, SqlTransaction trans, int sid, decimal excess, int assessmentID)
+        {
+            int courseID = 0, yearLevel = 0;
+            string sem = "", sy = "";
+
+            using (var cmd = new SqlCommand("SELECT CourseID, YearLevel, Semester, SchoolYear FROM Students WHERE StudentID=@sid", con, trans))
+            {
+                cmd.Parameters.AddWithValue("@sid", sid);
+                using (var r = cmd.ExecuteReader())
+                {
+                    if (r.Read())
+                    {
+                        courseID = (int)r["CourseID"];
+                        yearLevel = (int)r["YearLevel"];
+                        sem = r["Semester"].ToString();
+                        sy = r["SchoolYear"].ToString();
                     }
                 }
             }
 
-            return RedirectToAction("Index");
+            // --- GRADUATION CHECK ---
+            if (yearLevel == 4 && sem == "2nd")
+            {
+                // 1. Update Student Status to Graduated
+                using (var cmd = new SqlCommand("UPDATE Students SET Status='Graduated' WHERE StudentID=@sid", con, trans))
+                {
+                    cmd.Parameters.AddWithValue("@sid", sid);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // 2. Save the remaining 14k/excess back to the Final row so it stays refundable
+                using (var cmd = new SqlCommand("UPDATE Assessments SET OverpaidAmount=@excess WHERE AssessmentID=@aid", con, trans))
+                {
+                    cmd.Parameters.AddWithValue("@excess", excess);
+                    cmd.Parameters.AddWithValue("@aid", assessmentID); // Now it knows what this is!
+                    cmd.ExecuteNonQuery();
+                }
+                return;
+            }
+
+            // --- NORMAL ADVANCEMENT LOGIC ---
+            int nextYear = yearLevel;
+            string nextSem = (sem == "1st") ? "2nd" : "1st";
+            string nextSY = sy;
+            if (sem == "2nd")
+            {
+                nextYear++;
+                var pts = sy.Split('-');
+                if (pts.Length == 2) nextSY = (int.Parse(pts[0]) + 1) + "-" + (int.Parse(pts[1]) + 1);
+            }
+
+            using (var cmd = new SqlCommand("UPDATE Students SET YearLevel=@y, Semester=@s, SchoolYear=@sy WHERE StudentID=@sid", con, trans))
+            {
+                cmd.Parameters.AddWithValue("@y", nextYear);
+                cmd.Parameters.AddWithValue("@s", nextSem);
+                cmd.Parameters.AddWithValue("@sy", nextSY);
+                cmd.Parameters.AddWithValue("@sid", sid);
+                cmd.ExecuteNonQuery();
+            }
+
+            StudentController.GenerateAssessments(con, sid, courseID, nextYear, nextSem, nextSY, trans);
+
+            // Push excess to the new Prelim
+            string pushExcessSql = @"UPDATE Assessments SET OverpaidAmount = @excess 
+                             WHERE StudentID = @sid AND SchoolYear = @sy 
+                             AND Semester = @sem AND Period = @period";
+
+            using (var cmd = new SqlCommand(pushExcessSql, con, trans))
+            {
+                cmd.Parameters.AddWithValue("@excess", excess);
+                cmd.Parameters.AddWithValue("@sid", sid);
+                cmd.Parameters.AddWithValue("@sy", nextSY);
+                cmd.Parameters.AddWithValue("@sem", nextSem);
+                cmd.Parameters.AddWithValue("@period", "Prelim");
+                cmd.ExecuteNonQuery();
+            }
         }
 
         // POST: /StudentPortal/RequestWithdrawal
@@ -479,52 +553,49 @@ namespace StudentAccountingSystem.Controllers
             {
                 con.Open();
 
-                // Check student status
-                string status = "", schoolYear = "", semester = "";
+                // Check if already has pending request
                 using (var cmd = new SqlCommand(
-                    "SELECT Status, SchoolYear, Semester FROM Students WHERE StudentID = @sid", con))
+                    @"SELECT COUNT(*) FROM WithdrawalRequests 
+              WHERE StudentID = @sid AND Status = 'Pending'", con))
+                {
+                    cmd.Parameters.AddWithValue("@sid", sid);
+                    if ((int)cmd.ExecuteScalar() > 0)
+                    {
+                        TempData["Error"] = "You already have a pending withdrawal request.";
+                        return RedirectToAction("Index");
+                    }
+                }
+
+                // Get student's current semester info
+                string schoolYear = "", semester = "", status = "";
+                using (var cmd = new SqlCommand(
+                    "SELECT SchoolYear, Semester, Status FROM Students WHERE StudentID = @sid", con))
                 {
                     cmd.Parameters.AddWithValue("@sid", sid);
                     using (var r = cmd.ExecuteReader())
                     {
-                        if (!r.Read()) return RedirectToAction("Index");
-                        status = r["Status"].ToString();
+                        if (!r.Read())
+                            return RedirectToAction("Index");
                         schoolYear = r["SchoolYear"].ToString();
                         semester = r["Semester"].ToString();
+                        status = r["Status"].ToString();
                     }
                 }
 
-                if (status != "Enrolled")
+                if (status == "Withdrawn")
                 {
-                    TempData["Error"] = "Only enrolled students can request withdrawal.";
+                    TempData["Error"] = "Your account is already withdrawn.";
                     return RedirectToAction("Index");
                 }
 
-                // Check for existing pending request
-                int existing = 0;
+                // Determine highest paid period this semester
+                string highestPaidPeriod = "";
                 using (var cmd = new SqlCommand(
-                    "SELECT COUNT(*) FROM WithdrawalRequests WHERE StudentID=@sid AND Status='Pending'", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    existing = (int)cmd.ExecuteScalar();
-                }
-                if (existing > 0)
-                {
-                    TempData["Error"] = "You already have a pending withdrawal request.";
-                    return RedirectToAction("Index");
-                }
-
-                // Determine penalty based on highest period paid
-                decimal totalPaid = 0;
-                decimal penaltyPercent = 0;
-                string highestPaid = "";
-
-                using (var cmd = new SqlCommand(
-                    @"SELECT Period FROM Assessments
-              WHERE  StudentID  = @sid
-                AND  SchoolYear = @sy
-                AND  Semester   = @sem
-                AND  Status     = 'Paid'
+                    @"SELECT TOP 1 Period FROM Assessments
+              WHERE StudentID = @sid 
+                AND SchoolYear = @sy 
+                AND Semester = @sem
+                AND Status IN ('Paid','Partial')
               ORDER BY CASE Period
                 WHEN 'Final'      THEN 4
                 WHEN 'Semi-Final' THEN 3
@@ -536,36 +607,38 @@ namespace StudentAccountingSystem.Controllers
                     cmd.Parameters.AddWithValue("@sy", schoolYear);
                     cmd.Parameters.AddWithValue("@sem", semester);
                     using (var r = cmd.ExecuteReader())
-                        if (r.Read()) highestPaid = r["Period"].ToString();
+                        if (r.Read())
+                            highestPaidPeriod = r["Period"].ToString();
                 }
 
-                // Block withdrawal if Semi-Final or Final is paid
-                if (highestPaid == "Semi-Final" || highestPaid == "Final")
+                // Block if Semi-Final or Final is paid
+                if (highestPaidPeriod == "Semi-Final" || highestPaidPeriod == "Final")
                 {
                     TempData["Error"] = "Withdrawal is not allowed after Semi-Final or Final has been paid.";
                     return RedirectToAction("Index");
                 }
 
-                // Set penalty percent
-                if (highestPaid == "Prelim") penaltyPercent = 25;
-                else if (highestPaid == "Midterm") penaltyPercent = 50;
-                else penaltyPercent = 0;
-
-                // Total paid this semester
+                // Calculate total paid this semester
+                decimal totalPaid = 0;
                 using (var cmd = new SqlCommand(
                     @"SELECT ISNULL(SUM(p.AmountPaid), 0)
               FROM   Payments p
               JOIN   Assessments a ON a.AssessmentID = p.AssessmentID
-              WHERE  p.StudentID    = @sid
-                AND  a.SchoolYear   = @sy
-                AND  a.Semester     = @sem
-                ", con))
+              WHERE  a.StudentID  = @sid
+                AND  a.SchoolYear = @sy
+                AND  a.Semester   = @sem
+                AND  p.TransactionType = 'Payment'", con))
                 {
                     cmd.Parameters.AddWithValue("@sid", sid);
                     cmd.Parameters.AddWithValue("@sy", schoolYear);
                     cmd.Parameters.AddWithValue("@sem", semester);
                     totalPaid = (decimal)cmd.ExecuteScalar();
                 }
+
+                // Determine penalty
+                decimal penaltyPercent = 0;
+                if (highestPaidPeriod == "Prelim") penaltyPercent = 25;
+                else if (highestPaidPeriod == "Midterm") penaltyPercent = 50;
 
                 decimal penaltyAmount = Math.Round(totalPaid * penaltyPercent / 100, 2);
                 decimal refundableAmount = Math.Max(0, totalPaid - penaltyAmount);
@@ -574,30 +647,32 @@ namespace StudentAccountingSystem.Controllers
                 using (var cmd = new SqlCommand(
                     @"INSERT INTO WithdrawalRequests
                 (StudentID, RequestDate, Status, PenaltyPercent,
-                 TotalPaid, PenaltyAmount, RefundableAmount)
+                 TotalPaid, PenaltyAmount, RefundableAmount, Remarks)
               VALUES
                 (@sid, GETDATE(), 'Pending', @pct,
-                 @paid, @penalty, @refund)", con))
+                 @total, @penalty, @refund, @remarks)", con))
                 {
                     cmd.Parameters.AddWithValue("@sid", sid);
                     cmd.Parameters.AddWithValue("@pct", penaltyPercent);
-                    cmd.Parameters.AddWithValue("@paid", totalPaid);
+                    cmd.Parameters.AddWithValue("@total", totalPaid);
                     cmd.Parameters.AddWithValue("@penalty", penaltyAmount);
                     cmd.Parameters.AddWithValue("@refund", refundableAmount);
+                    cmd.Parameters.AddWithValue("@remarks",
+                        string.IsNullOrEmpty(highestPaidPeriod)
+                        ? "No payment made — full refund"
+                        : "Withdrew after " + highestPaidPeriod);
                     cmd.ExecuteNonQuery();
                 }
             }
 
-            TempData["Success"] = "Withdrawal request submitted. Please wait for admin approval.";
+            TempData["Success"] = "Withdrawal request submitted. Waiting for admin approval.";
             return RedirectToAction("Index");
         }
 
-
+        // POST: Request Reactivation
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult RequestReactivation(string targetSchoolYear,
-                                         string targetSemester,
-                                         int targetYearLevel)
+        public ActionResult RequestReactivation()
         {
             if (Session["Role"]?.ToString() != "Student")
                 return RedirectToAction("Login", "Account");
@@ -609,12 +684,37 @@ namespace StudentAccountingSystem.Controllers
             {
                 con.Open();
 
-                string status = "";
+                // Check already has pending request
+                int existing = 0;
                 using (var cmd = new SqlCommand(
-                    "SELECT Status FROM Students WHERE StudentID = @sid", con))
+                    @"SELECT COUNT(*) FROM ReactivationRequests
+              WHERE StudentID = @sid AND Status = 'Pending'", con))
                 {
                     cmd.Parameters.AddWithValue("@sid", sid);
-                    status = cmd.ExecuteScalar()?.ToString() ?? "";
+                    existing = (int)cmd.ExecuteScalar();
+                }
+                if (existing > 0)
+                {
+                    TempData["Error"] = "You already have a pending reactivation request.";
+                    return RedirectToAction("Index");
+                }
+
+                // Must be Withdrawn
+                string status = "", schoolYear = "", semester = "";
+                int yearLevel = 0;
+                using (var cmd = new SqlCommand(
+                    @"SELECT Status, SchoolYear, Semester, YearLevel
+              FROM   Students WHERE StudentID = @sid", con))
+                {
+                    cmd.Parameters.AddWithValue("@sid", sid);
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        if (!r.Read()) return RedirectToAction("Index");
+                        status = r["Status"].ToString();
+                        schoolYear = r["SchoolYear"].ToString();
+                        semester = r["Semester"].ToString();
+                        yearLevel = (int)r["YearLevel"];
+                    }
                 }
 
                 if (status != "Withdrawn")
@@ -623,36 +723,74 @@ namespace StudentAccountingSystem.Controllers
                     return RedirectToAction("Index");
                 }
 
-                int existing = 0;
-                using (var cmd = new SqlCommand(
-                    "SELECT COUNT(*) FROM ReactivationRequests WHERE StudentID=@sid AND Status='Pending'", con))
+                // Auto-calculate next school year — same format YYYY-YYYY
+                string nextSchoolYear = schoolYear;
+                var parts = schoolYear.Split('-');
+                if (parts.Length == 2 &&
+                    int.TryParse(parts[0], out int syStart) &&
+                    int.TryParse(parts[1], out int syEnd))
                 {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    existing = (int)cmd.ExecuteScalar();
+                    nextSchoolYear = (syStart + 1) + "-" + (syEnd + 1);
                 }
 
-                if (existing > 0)
-                {
-                    TempData["Error"] = "You already have a pending reactivation request.";
-                    return RedirectToAction("Index");
-                }
-
+                // Same semester, same year level — student repeats
+                // the semester they withdrew from in the next school year
                 using (var cmd = new SqlCommand(
                     @"INSERT INTO ReactivationRequests
                 (StudentID, RequestDate, Status,
-                 TargetSchoolYear, TargetSemester, TargetYearLevel)
+                 TargetSchoolYear, TargetSemester, TargetYearLevel,
+                 Remarks)
               VALUES
-                (@sid, GETDATE(), 'Pending', @sy, @sem, @year)", con))
+                (@sid, GETDATE(), 'Pending',
+                 @sy, @sem, @year,
+                 'Auto-calculated reactivation request')", con))
                 {
                     cmd.Parameters.AddWithValue("@sid", sid);
-                    cmd.Parameters.AddWithValue("@sy", targetSchoolYear);
-                    cmd.Parameters.AddWithValue("@sem", targetSemester);
-                    cmd.Parameters.AddWithValue("@year", targetYearLevel);
+                    cmd.Parameters.AddWithValue("@sy", nextSchoolYear);
+                    cmd.Parameters.AddWithValue("@sem", semester);
+                    cmd.Parameters.AddWithValue("@year", yearLevel);
                     cmd.ExecuteNonQuery();
                 }
             }
 
-            TempData["Success"] = "Reactivation request submitted. Please wait for admin approval.";
+            TempData["Success"] = "Reactivation request submitted. Waiting for admin approval.";
+            return RedirectToAction("Index");
+        }
+
+        // POST: Request Overpayment Refund
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult RequestRefund(decimal amount)
+        {
+            int? sid = GetStudentID();
+            if (sid == null) return RedirectToAction("Login", "Account");
+
+            using (var con = new SqlConnection(_conn))
+            {
+                con.Open();
+                // Check if there's already a pending request to prevent double-submitting
+                string checkSql = "SELECT COUNT(*) FROM RefundRequests WHERE StudentID=@sid AND Status='Pending'";
+                using (var cmd = new SqlCommand(checkSql, con))
+                {
+                    cmd.Parameters.AddWithValue("@sid", sid);
+                    if ((int)cmd.ExecuteScalar() > 0)
+                    {
+                        TempData["Error"] = "You already have a pending refund request.";
+                        return RedirectToAction("Index");
+                    }
+                }
+
+                // Insert the request
+                string sql = "INSERT INTO RefundRequests (StudentID, Amount, Status) VALUES (@sid, @amt, 'Pending')";
+                using (var cmd = new SqlCommand(sql, con))
+                {
+                    cmd.Parameters.AddWithValue("@sid", sid);
+                    cmd.Parameters.AddWithValue("@amt", amount);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            TempData["Success"] = "Refund request submitted successfully. Please wait for Admin approval.";
             return RedirectToAction("Index");
         }
 

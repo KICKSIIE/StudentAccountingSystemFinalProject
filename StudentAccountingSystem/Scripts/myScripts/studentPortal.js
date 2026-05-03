@@ -94,3 +94,23 @@ function submitReactivation() {
 
     form.submit();
 }
+
+function submitReactivationDirect() {
+    // Create a temporary form and submit it directly
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/StudentPortal/RequestReactivation';
+
+    // Get the antiforgery token from any existing form on the page
+    var token = document.querySelector('input[name="__RequestVerificationToken"]');
+    if (token) {
+        var tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden';
+        tokenInput.name = '__RequestVerificationToken';
+        tokenInput.value = token.value;
+        form.appendChild(tokenInput);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}

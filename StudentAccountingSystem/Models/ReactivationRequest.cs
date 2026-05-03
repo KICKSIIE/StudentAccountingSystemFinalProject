@@ -18,5 +18,6 @@ namespace StudentAccountingSystem.Models
         public string TargetSemester { get; set; }
         public DateTime? ProcessedDate { get; set; }
         public string Remarks { get; set; }
+
     }
 }

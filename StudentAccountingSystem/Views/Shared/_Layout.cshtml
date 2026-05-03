@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewBag.Title — Student Portal</title>
+    <title>@ViewBag.Title — Admin Portal</title>
     <link href="~/Content/bootstrap.min.css" rel="stylesheet" />
     <style>
         body {
@@ -11,10 +11,10 @@
             background-color: #f4f6f9;
         }
 
-        .student-sidebar {
+        .admin-sidebar {
             width: 260px;
             min-height: 100vh;
-            background-color: #1a3a5c;
+            background-color: #0d1b2a; /* Darker navy for Admin */
             position: fixed;
             top: 0;
             left: 0;
@@ -33,8 +33,8 @@
             width: 64px;
             height: 64px;
             border-radius: 50%;
-            background: #FFD700;
-            color: #1a3a5c;
+            background: #e0e1dd;
+            color: #0d1b2a;
             font-size: 26px;
             font-weight: 700;
             line-height: 64px;
@@ -49,37 +49,36 @@
             font-weight: 600;
         }
 
-        .sidebar-profile small {
-            color: rgba(255,255,255,0.6);
-            font-size: 11px;
-        }
-
-        .sidebar-profile .badge-status {
+        .sidebar-profile .badge-role {
             display: inline-block;
             margin-top: 6px;
-            padding: 3px 10px;
+            padding: 3px 12px;
             border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: #3498db;
+            color: white;
         }
 
         .sidebar-nav {
             flex: 1;
             padding: 8px 0;
+            overflow-y: auto;
         }
 
             .sidebar-nav .nav-section {
                 padding: 12px 16px 4px;
                 font-size: 10px;
                 font-weight: 600;
-                color: rgba(255,255,255,0.35);
+                color: rgba(255,255,255,0.3);
                 text-transform: uppercase;
-                letter-spacing: 0.08em;
+                letter-spacing: 0.1em;
             }
 
             .sidebar-nav .nav-link {
                 color: rgba(255,255,255,0.7);
-                padding: 9px 16px;
+                padding: 10px 16px;
                 font-size: 13px;
                 border-left: 3px solid transparent;
                 display: block;
@@ -89,17 +88,15 @@
                 .sidebar-nav .nav-link:hover,
                 .sidebar-nav .nav-link.active {
                     color: white;
-                    background: rgba(255,255,255,0.08);
-                    border-left-color: #FFD700;
+                    background: rgba(255,255,255,0.05);
+                    border-left-color: #3498db;
                     text-decoration: none;
                 }
 
-                .sidebar-nav .nav-link .nav-icon {
-                    width: 18px;
-                    display: inline-block;
-                    text-align: center;
-                    margin-right: 8px;
-                }
+            .sidebar-nav .nav-icon {
+                margin-right: 10px;
+                font-size: 14px;
+            }
 
         .sidebar-footer {
             padding: 16px;
@@ -115,7 +112,7 @@
 
         .topbar {
             background: white;
-            padding: 12px 24px;
+            padding: 15px 24px;
             border-bottom: 1px solid #e3e6f0;
             display: flex;
             justify-content: space-between;
@@ -126,96 +123,71 @@
             padding: 24px;
             flex: 1;
         }
-
-        .card {
-            border: none;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-        }
     </style>
 </head>
 <body>
 
-    <!-- Student Sidebar -->
-    <div class="student-sidebar">
+    <!-- Admin Sidebar -->
+    <div class="admin-sidebar">
 
         <div class="sidebar-profile">
-            <div class="sidebar-avatar">
-                @(string.IsNullOrEmpty(Session["FullName"]?.ToString())
-                ? "?"
-                : Session["FullName"].ToString().Substring(0,1).ToUpper())
-            </div>
-            <h6>@(Session["FullName"] ?? Session["Username"])</h6>
-            <small>@Session["StudentNumber"]</small><br />
-            <small>@Session["CourseName"]</small>
-            <br />
-            @{
-                string st = Session["StudentStatus"]?.ToString() ?? "";
-                string stColor = st == "Enrolled" ? "#28a745"
-                               : st == "Withdrawn" ? "#dc3545"
-                               : st == "Graduated" ? "#17a2b8"
-                               : "#6c757d";
-            }
-            <span class="badge-status" style="background:@stColor; color:white;">
-                @st
-            </span>
+            <div class="sidebar-avatar">A</div>
+            <h6>@Session["Username"]</h6>
+            <span class="badge-role">System Administrator</span>
         </div>
 
         <nav class="sidebar-nav">
-            <div class="nav-section">Account</div>
-            <a href="@Url.Action("Index", "StudentPortal")"
-               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Index" ? "active" : "")">
-                <span class="nav-icon">&#9632;</span> My Dashboard
+            <div class="nav-section">Main</div>
+            <a href="@Url.Action("Index", "Dashboard")"
+               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Dashboard" ? "active" : "")">
+                <span class="nav-icon">📊</span> Dashboard
             </a>
 
-            <div class="nav-section">Assessments</div>
-            <a href="@Url.Action("Assessments", "StudentPortal")"
-               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Assessments" ? "active" : "")">
-                <span class="nav-icon">&#9632;</span> Fee Assessments
-            </a>
-            <a href="@Url.Action("PaymentHistory", "StudentPortal")"
-               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "PaymentHistory" ? "active" : "")">
-                <span class="nav-icon">&#9632;</span> Payment History
+            <div class="nav-section">Management</div>
+
+            <a href="@Url.Action("Index", "Student")"
+               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Student" ? "active" : "")">
+                <span class="nav-icon">👥</span> Student Management
             </a>
 
-            <div class="nav-section">Reports</div>
-            <a href="@Url.Action("Ledger", "StudentPortal")"
-               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Ledger" ? "active" : "")">
-                <span class="nav-icon">&#9632;</span> My Ledger
-            </a>
-            <a href="@Url.Action("CourseFees", "StudentPortal")"
-               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "CourseFees" ? "active" : "")">
-                <span class="nav-icon">&#9632;</span> Course Fees
+            <a href="@Url.Action("Index", "Course")"
+               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Course" ? "active" : "")">
+                <span class="nav-icon">📚</span> Course Management
             </a>
 
-            <div class="nav-section">Benefits</div>
-            <a href="@Url.Action("Discounts", "StudentPortal")"
-               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Discounts" ? "active" : "")">
-                <span class="nav-icon">&#9632;</span> Scholarships & Discounts
+            <a href="@Url.Action("Index", "Scholarship")"
+               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Scholarship" ? "active" : "")">
+                <span class="nav-icon">🎓</span> Scholarship Management
             </a>
 
-            <div class="nav-section">Account Actions</div>
-            @if (Session["StudentStatus"]?.ToString() == "Enrolled")
-            {
-                <a href="#" class="nav-link text-warning" data-toggle="modal"
-                   data-target="#withdrawalModal">
-                    <span class="nav-icon">&#9650;</span> Request Withdrawal
-                </a>
-            }
-            @if (Session["StudentStatus"]?.ToString() == "Withdrawn")
-            {
-                <a href="#" class="nav-link text-info" data-toggle="modal"
-                   data-target="#reactivationModal">
-                    <span class="nav-icon">&#9650;</span> Request Reactivation
-                </a>
-            }
+            <a href="@Url.Action("Index", "Discount")"
+               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Discount" ? "active" : "")">
+                <span class="nav-icon">🏷️</span> Discount Management
+            </a>
+
+            <a href="@Url.Action("Index", "Assessment")"
+               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Assessment" ? "active" : "")">
+                <span class="nav-icon">📝</span> Assessment Management
+            </a>
+
+            <div class="nav-section">System</div>
+
+            <a href="@Url.Action("Index", "User")"
+               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "User" ? "active" : "")">
+                <span class="nav-icon">⚙️</span> User Management
+            </a>
+
+            <a href="@Url.Action("Refunds", "Assessment")"
+               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Refunds" ? "active" : "")">
+                <span class="nav-icon">💰</span> Refund Requests
+            </a>
         </nav>
 
         <div class="sidebar-footer">
             @using (Html.BeginForm("Logout", "Account", FormMethod.Post))
             {
                 @Html.AntiForgeryToken()
-                <button type="submit"
-                        class="btn btn-outline-light btn-sm btn-block">
+                <button type="submit" class="btn btn-outline-danger btn-sm btn-block">
                     Logout
                 </button>
             }
@@ -225,14 +197,12 @@
     <!-- Main Content -->
     <div class="main-content">
         <div class="topbar">
-            <span style="font-size:15px;font-weight:500;color:#1a3a5c;">
+            <span style="font-size:16px; font-weight:600; color:#0d1b2a;">
                 @ViewBag.Title
             </span>
-            <small class="text-muted">
-                @Session["CourseName"] &nbsp;|&nbsp;
-                Year @Session["YearLevel"] &nbsp;|&nbsp;
-                @Session["Semester"] Sem, @Session["SchoolYear"]
-            </small>
+            <div class="admin-date small text-muted">
+                @DateTime.Now.ToString("D")
+            </div>
         </div>
 
         <div class="page-content">
@@ -240,87 +210,7 @@
         </div>
     </div>
 
-    <!-- Withdrawal Modal -->
-    <div class="modal fade" id="withdrawalModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Request Withdrawal</h5>
-                    <button type="button" class="close text-white"
-                            data-dismiss="modal">
-                        &times;
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to request withdrawal?</p>
-                    <ul class="text-muted small">
-                        <li>Before Prelim paid — No penalty, full refund</li>
-                        <li>After Prelim paid — 25% penalty on total paid</li>
-                        <li>After Midterm paid — 50% penalty on total paid</li>
-                        <li>After Semi-Final/Final — Withdrawal not allowed</li>
-                    </ul>
-                    <p class="text-danger font-weight-bold mb-0">
-                        This request will be reviewed by the admin.
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary"
-                            data-dismiss="modal">
-                        Cancel
-                    </button>
-                    @using (Html.BeginForm("RequestWithdrawal", "StudentPortal",
-                        FormMethod.Post, new { style = "display:inline" }))
-                    {
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-danger">
-                            Confirm Request
-                        </button>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Reactivation Modal -->
-    <div class="modal fade" id="reactivationModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-info text-white">
-                    <h5 class="modal-title">Request Reactivation</h5>
-                    <button type="button" class="close text-white"
-                            data-dismiss="modal">
-                        &times;
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p>Enter your target school year for re-enrollment:</p>
-                    @using (Html.BeginForm("RequestReactivation", "StudentPortal",
-                        FormMethod.Post))
-                    {
-                        @Html.AntiForgeryToken()
-                        <div class="form-group">
-                            <label>Target School Year</label>
-                            <input type="text" name="targetSchoolYear"
-                                   class="form-control"
-                                   placeholder="e.g. 2026-2027" required />
-                        </div>
-                        <div class="form-group">
-                            <label>Target Semester</label>
-                            <select name="targetSemester" class="form-control">
-                                <option value="1st">1st Semester</option>
-                                <option value="2nd">2nd Semester</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-info btn-block">
-                            Submit Reactivation Request
-                        </button>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="~/Scripts/jquery-3.4.1.min.js"></script>
+    <script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
     <script src="~/Scripts/bootstrap.min.js"></script>
     @RenderSection("scripts", required: false)
 

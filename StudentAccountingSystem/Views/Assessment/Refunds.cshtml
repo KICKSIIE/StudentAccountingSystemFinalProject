@@ -1,0 +1,46 @@
+﻿@using System.Data
+@model DataTable
+@{
+    ViewBag.Title = "Refund Management";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<!-- ... existing alert code ... -->
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Date Requested</th>
+            <th>Student Number</th>
+            <th>Student Name</th>
+            <th>Amount</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Rows.Count == 0)
+        {
+            <tr><td colspan="5" class="text-center">No pending refund requests.</td></tr>
+        }
+        @foreach (DataRow row in Model.Rows)
+        {
+            <tr>
+                <td>@Convert.ToDateTime(row["RequestDate"]).ToString("MMM dd, yyyy")</td>
+                <td>@row["StudentNumber"]</td>
+                <td>@row["StudentName"]</td>
+                <td class="text-success font-weight-bold">
+                    ₱@Convert.ToDecimal(row["Amount"]).ToString("N2")
+                </td>
+                <td>
+                    @using (Html.BeginForm("ProcessRefund", "Assessment", FormMethod.Post))
+                    {
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="requestId" value="@row["RequestID"]" />
+                        <button type="submit" name="action" value="Approve" class="btn btn-success btn-sm">Approve</button>
+                        <button type="submit" name="action" value="Reject" class="btn btn-danger btn-sm">Reject</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

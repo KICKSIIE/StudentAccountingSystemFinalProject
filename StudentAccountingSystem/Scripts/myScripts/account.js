@@ -1,15 +1,22 @@
-﻿$(document).ready(function () {
+﻿$("#btnLogin").click(function () {
 
-    // Disable button and show loading on submit
-    $('form').on('submit', function () {
-        var btn = $('#btnLogin');
-        btn.prop('disabled', true).text('Logging in...');
+    var username = $("#txtUsername").val();
+    var password = $("#txtPassword").val();
+
+    if (username == "" || password == "") {
+        $("#result").html("<h3>Please enter username and password.</h3>");
+        return;
+    }
+
+    $.post("../Account/DoLogin", {
+        username: username,
+        password: password
+    }, function (res) {
+        if (res.success) {
+            window.location.href = res.redirect;
+        } else {
+            $("#result").html("<h3>" + res.message + "</h3>");
+        }
     });
-
-    // Re-enable if validation fails (page stays)
-    window.onpageshow = function () {
-        var btn = $('#btnLogin');
-        btn.prop('disabled', false).text('Login');
-    };
 
 });

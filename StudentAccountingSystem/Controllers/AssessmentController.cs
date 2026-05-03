@@ -21,50 +21,54 @@ namespace StudentAccountingSystem.Controllers
             using (var con = new SqlConnection(_conn))
             using (var cmd = new SqlCommand(
                 @"SELECT a.AssessmentID,
-                         s.StudentID,
-                         s.StudentNumber,
-                         s.FirstName + ' ' + s.LastName AS StudentName,
-                         c.CourseName,
-                         a.SchoolYear,
-                         a.Semester,
-                         a.Period,
-                         a.TotalFee,
-                         a.TuitionFee,
-                         a.RegistrationFee,
-                         a.MiscFee,
-                         a.LabFee,
-                         a.DiscountAmount,
-                         a.NetAssessment,
-                         a.PercentRequired,
-                         a.AmountDue,
-                         a.OverpaidAmount,
-                         a.Status,
-                         a.AssessedAt,
-                         ISNULL(SUM(p.AmountPaid), 0) AS TotalPaid
-                  FROM   Assessments a
-                  JOIN   Students s  ON s.StudentID = a.StudentID
-                  JOIN   Courses  c  ON c.CourseID  = s.CourseID
-                  LEFT JOIN Payments p ON p.AssessmentID = a.AssessmentID
-                                      AND p.TransactionType = 'Payment'
-                  GROUP BY
-                         a.AssessmentID, s.StudentID, s.StudentNumber,
-                         s.FirstName, s.LastName, c.CourseName,
-                         a.SchoolYear, a.Semester, a.Period,
-                         a.TotalFee, a.TuitionFee, a.RegistrationFee,
-                         a.MiscFee, a.LabFee, a.DiscountAmount,
-                         a.NetAssessment, a.PercentRequired, a.AmountDue,
-                         a.OverpaidAmount, a.Status, a.AssessedAt
-                  ORDER BY s.StudentNumber, a.SchoolYear, a.Semester,
-                         CASE a.Period
-                              WHEN 'Prelim'     THEN 1
-                              WHEN 'Midterm'    THEN 2
-                              WHEN 'Semi-Final' THEN 3
-                              WHEN 'Final'      THEN 4
-                         END", con))
+                 s.StudentID,
+                 s.StudentNumber,
+                 s.FirstName + ' ' + s.LastName AS StudentName,
+                 c.CourseName,
+                 a.YearLevel, -- 1. ADDED YEAR LEVEL
+                 a.SchoolYear,
+                 a.Semester,
+                 a.Period,
+                 a.TotalFee,
+                 a.TuitionFee,
+                 a.RegistrationFee,
+                 a.MiscFee,
+                 a.LabFee,
+                 a.DiscountAmount,
+                 a.NetAssessment,
+                 a.PercentRequired,
+                 a.AmountDue,
+                 a.OverpaidAmount,
+                 a.Status,
+                 a.AssessedAt,
+                 ISNULL(SUM(p.AmountPaid), 0) AS TotalPaid
+          FROM   Assessments a
+          JOIN   Students s  ON s.StudentID = a.StudentID
+          JOIN   Courses  c  ON c.CourseID  = s.CourseID
+          LEFT JOIN Payments p ON p.AssessmentID = a.AssessmentID
+                               AND p.TransactionType = 'Payment'
+          GROUP BY
+                 a.AssessmentID, s.StudentID, s.StudentNumber,
+                 s.FirstName, s.LastName, c.CourseName,
+                 a.YearLevel, -- 2. ADDED TO GROUP BY
+                 a.SchoolYear, a.Semester, a.Period,
+                 a.TotalFee, a.TuitionFee, a.RegistrationFee,
+                 a.MiscFee, a.LabFee, a.DiscountAmount,
+                 a.NetAssessment, a.PercentRequired, a.AmountDue,
+                 a.OverpaidAmount, a.Status, a.AssessedAt
+          ORDER BY s.StudentNumber, a.YearLevel, a.SchoolYear, a.Semester, -- 3. SORT BY YEAR LEVEL
+                 CASE a.Period
+                      WHEN 'Prelim'     THEN 1
+                      WHEN 'Midterm'    THEN 2
+                      WHEN 'Semi-Final' THEN 3
+                      WHEN 'Final'      THEN 4
+                 END", con))
             {
                 con.Open();
                 using (var r = cmd.ExecuteReader())
+                {
                     while (r.Read())
+                    {
                         list.Add(new AssessmentViewModel
                         {
                             AssessmentID = (int)r["AssessmentID"],
@@ -72,6 +76,7 @@ namespace StudentAccountingSystem.Controllers
                             StudentNumber = r["StudentNumber"].ToString(),
                             StudentName = r["StudentName"].ToString(),
                             CourseName = r["CourseName"].ToString(),
+                            YearLevel = (int)r["YearLevel"], // 4. ASSIGN TO VIEWMODEL
                             SchoolYear = r["SchoolYear"].ToString(),
                             Semester = r["Semester"].ToString(),
                             Period = r["Period"].ToString(),
@@ -90,6 +95,8 @@ namespace StudentAccountingSystem.Controllers
                             Status = r["Status"].ToString(),
                             AssessedAt = (DateTime)r["AssessedAt"]
                         });
+                    }
+                }
             }
             return View(list);
         }
@@ -162,6 +169,96 @@ namespace StudentAccountingSystem.Controllers
             }
             TempData["Success"] = "Assessment unlocked.";
             return RedirectToAction("Index");
+        }
+
+        public ActionResult Refunds()
+        {
+            // Check if Admin
+            if (Session["Role"]?.ToString() != "Admin") return RedirectToAction("Login", "Account");
+
+            var dt = new System.Data.DataTable();
+            using (var con = new SqlConnection(_conn))
+            {
+                con.Open();
+                string sql = @"SELECT r.RequestID, r.Amount, r.RequestDate, r.Status, 
+                              s.FirstName + ' ' + s.LastName AS StudentName, s.StudentNumber
+                       FROM RefundRequests r
+                       JOIN Students s ON r.StudentID = s.StudentID
+                       WHERE r.Status = 'Pending'
+                       ORDER BY r.RequestDate DESC";
+
+                using (var cmd = new SqlCommand(sql, con))
+                {
+                    using (var da = new SqlDataAdapter(cmd))
+                    {
+                        da.Fill(dt);
+                    }
+                }
+            }
+            return View(dt);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult ProcessRefund(int requestId, string action)
+        {
+            using (var con = new SqlConnection(_conn))
+            {
+                con.Open();
+                SqlTransaction trans = con.BeginTransaction();
+                try
+                {
+                    if (action == "Approve")
+                    {
+                        // 1. Get the StudentID and Amount from the request
+                        int studentId = 0;
+                        decimal amount = 0;
+                        using (var cmd = new SqlCommand("SELECT StudentID, Amount FROM RefundRequests WHERE RequestID=@rid", con, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@rid", requestId);
+                            using (var dr = cmd.ExecuteReader())
+                            {
+                                if (dr.Read())
+                                {
+                                    studentId = (int)dr["StudentID"];
+                                    amount = (decimal)dr["Amount"];
+                                }
+                            }
+                        }
+
+                        // 2. Zero out the OverpaidAmount in the Assessments table
+                        using (var cmd = new SqlCommand("UPDATE Assessments SET OverpaidAmount = 0 WHERE StudentID = @sid", con, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@sid", studentId);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // 3. Update Request Status
+                        using (var cmd = new SqlCommand("UPDATE RefundRequests SET Status = 'Approved' WHERE RequestID = @rid", con, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@rid", requestId);
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                    else // Reject
+                    {
+                        using (var cmd = new SqlCommand("UPDATE RefundRequests SET Status = 'Rejected' WHERE RequestID = @rid", con, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@rid", requestId);
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    trans.Commit();
+                    TempData["Success"] = "Refund " + action + "d successfully.";
+                }
+                catch (Exception ex)
+                {
+                    trans.Rollback();
+                    TempData["Error"] = "Error: " + ex.Message;
+                }
+            }
+            return RedirectToAction("Refunds");
         }
     }
 }

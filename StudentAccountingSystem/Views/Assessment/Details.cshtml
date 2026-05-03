@@ -37,13 +37,17 @@
                 </div>
 
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <!-- Changed from col-md-4 to make room -->
+                        <strong>Year Level</strong><br />Year @Model.YearLevel
+                    </div>
+                    <div class="col-md-3">
                         <strong>School Year</strong><br />@Model.SchoolYear
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <strong>Semester</strong><br />@Model.Semester
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <strong>Period</strong><br />
                         <span class="badge badge-info">@Model.Period</span>
                     </div>

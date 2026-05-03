@@ -1,98 +1,83 @@
-﻿@model IEnumerable<StudentAccountingSystem.Models.Course>
-@{
+﻿@{
     ViewBag.Title = "Course Management";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Course Management</h2>
-    <a href="@Url.Action("Create")" class="btn btn-primary">+ Add Course</a>
+<h2>Course Management</h2>
+<hr />
+
+<div id="msgBox"></div>
+
+<input type="button" id="btnShowCreate" value="+ Add New Course" />
+<input type="text" id="txtSearchCourse" placeholder="Search course..." />
+<input type="button" id="btnSearchCourse" value="Search" />
+<br />
+<br />
+
+<!-- COURSE LIST TABLE -->
+<div id="divList">
+    <table border="1" width="100%" style="border-collapse: collapse;">
+        <thead>
+            <tr style="background-color: #eee;">
+                <th>#</th>
+                <th>Code</th>
+                <th>Course Name</th>
+                <th>Enrolled</th>
+                <th>Units</th>
+                <th>Tuition/Unit</th>
+                <th>Reg. Fee</th>
+                <th>Misc. Fee</th>
+                <th>Lab Fee</th>
+                <th>Total Fee</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="tblBody">
+            <tr><td colspan="10">Loading courses...</td></tr>
+        </tbody>
+    </table>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">
-        @TempData["Success"]
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
-    </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show">
-        @TempData["Error"]
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
-    </div>
-}
+<!-- CREATE COURSE FORM -->
+<div id="divRegister" style="display:none;">
+    <h3>Add New Course</h3>
+    <hr />
 
-<div class="card">
-    <div class="card-body">
-        <input type="text" id="searchCourse" class="form-control mb-3"
-               placeholder="Search courses..." />
-        <table class="table table-bordered table-hover table-sm" id="courseTable">
-            <thead class="thead-dark">
-                <tr>
-                    <th>#</th>
-                    <th>Code</th>
-                    <th>Course Name</th>
-                    <th>Units</th>
-                    <th>Tuition/Unit</th>
-                    <th>Reg Fee</th>
-                    <th>Misc Fee</th>
-                    <th>Lab Fee</th>
-                    <th class="text-success">Total/Sem</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @{ int i = 1; }
-                @foreach (var c in Model)
-                {
-                    <tr>
-                        <td>@i++</td>
-                        <td>@c.CourseCode</td>
-                        <td>@c.CourseName</td>
-                        <td>@c.Units</td>
-                        <td>&#8369; @String.Format("{0:N2}", c.TuitionPerUnit)</td>
-                        <td>&#8369; @String.Format("{0:N2}", c.RegistrationFee)</td>
-                        <td>&#8369; @String.Format("{0:N2}", c.MiscFee)</td>
-                        <td>&#8369; @String.Format("{0:N2}", c.LabFee)</td>
-                        <td class="font-weight-bold text-success">
-                            &#8369; @String.Format("{0:N2}", c.TotalFee)
-                        </td>
-                        <td>
-                            <span class="badge badge-@(c.IsActive ? "success" : "secondary")">
-                                @(c.IsActive ? "Active" : "Inactive")
-                            </span>
-                        </td>
-                        <td>
-                            <a href="@Url.Action("Edit", new { id = c.CourseID })"
-                               class="btn btn-sm btn-warning">Edit</a>
-                            @using (Html.BeginForm("Delete", "Course",
-                                new { id = c.CourseID }, FormMethod.Post,
-                                new { style = "display:inline" }))
-                            {
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-danger btn-delete">
-                                    Delete
-                                </button>
-                            }
-                        </td>
-                    </tr>
-                }
-                @if (!Model.GetEnumerator().MoveNext())
-                {
-                    <tr>
-                        <td colspan="11" class="text-center text-muted">
-                            No courses yet.
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    Course Code: <input type="text" id="txtCode" placeholder="e.g. BSIT" /><br /><br />
+    Course Name: <input type="text" id="txtName" size="40" /><br /><br />
+
+    <b>Fee Structure</b><br /><br />
+    No. of Units: <input type="number" id="txtUnits" value="0" />&nbsp;
+    Tuition/Unit: <input type="number" id="txtTpu" value="0" /><br /><br />
+
+    Reg. Fee: <input type="number" id="txtReg" value="0" />&nbsp;
+    Misc. Fee: <input type="number" id="txtMisc" value="0" />&nbsp;
+    Lab Fee: <input id="txtLab" type="number" value="0" /><br /><br />
+
+    <input type="button" id="btnSave" value="Save Course" />
+    <input type="button" id="btnCancelRegister" value="Cancel" />
 </div>
 
-@section scripts {
-    <script src="~/Scripts/myScripts/course.js"></script>
-}
+<!-- EDIT COURSE FORM -->
+<div id="divEdit" style="display:none;">
+    <h3>Edit Course</h3>
+    <hr />
+    <input type="hidden" id="editCourseID" />
+
+    Course Code: <input type="text" id="editCode" /><br /><br />
+    Course Name: <input type="text" id="editName" size="40" /><br /><br />
+
+    <b>Fee Structure</b><br /><br />
+    No. of Units: <input type="number" id="editUnits" />&nbsp;
+    Tuition/Unit: <input type="number" id="editTpu" /><br /><br />
+
+    Reg. Fee: <input type="number" id="editReg" />&nbsp;
+    Misc. Fee: <input type="number" id="editMisc" />&nbsp;
+    Lab Fee: <input type="number" id="editLab" /><br /><br />
+
+    <input type="button" id="btnUpdate" value="Update Course" />
+    <input type="button" id="btnCancelEdit" value="Cancel" />
+</div>
+
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
+<script src="~/Scripts/myScripts/courseList.js"></script>

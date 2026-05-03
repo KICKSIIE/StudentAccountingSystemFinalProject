@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlClient;
-using System.Drawing;
 using System.Web.Mvc;
 
 namespace StudentAccountingSystem.Controllers
@@ -11,7 +11,6 @@ namespace StudentAccountingSystem.Controllers
         private readonly string _conn = ConfigurationManager
             .ConnectionStrings["StudentAccountingDB"].ConnectionString;
 
-        // GET: /Account/Login
         public ActionResult Login()
         {
             if (Session["Role"] != null)
@@ -19,18 +18,28 @@ namespace StudentAccountingSystem.Controllers
             return View();
         }
 
-        // POST: /Account/Login
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Login(string username, string password)
+        public ActionResult DoLogin()
         {
+            // 1. Create the list container like the sample
+            List<object> data = new List<object>();
+
+            string username = Request["username"];
+            string password = Request["password"];
+
+            // Validation
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                data.Add(new { success = false, message = "Please enter username and password." });
+                return Json(data, JsonRequestBehavior.AllowGet);
+            }
+
             using (var con = new SqlConnection(_conn))
-            using (var cmd = new SqlCommand(@"
-        SELECT u.UserID, u.Role, u.StudentID, u.Username
-        FROM Users u
-        WHERE u.Username     = @u
-          AND u.PasswordHash = @p
-          AND u.IsActive     = 1", con))
+            using (var cmd = new SqlCommand(
+                @"SELECT UserID, Role, StudentID, Username
+          FROM   Users
+          WHERE  Username     = @u
+            AND  PasswordHash = @p
+            AND  IsActive     = 1", con))
             {
                 cmd.Parameters.AddWithValue("@u", username.Trim());
                 cmd.Parameters.AddWithValue("@p", password.Trim());
@@ -40,31 +49,43 @@ namespace StudentAccountingSystem.Controllers
                 {
                     if (r.Read())
                     {
+                        // Set Sessions
                         Session["UserID"] = (int)r["UserID"];
                         Session["Role"] = r["Role"].ToString();
                         Session["Username"] = r["Username"].ToString();
 
-                        // If student, store StudentID in session
                         if (r["StudentID"] != DBNull.Value)
                             Session["StudentID"] = (int)r["StudentID"];
 
-                        if (r["Role"].ToString() == "Student")
-                            return RedirectToAction("Index", "StudentPortal");
-                        else
-                            return RedirectToAction("Index", "Dashboard");
+                        string redirect = r["Role"].ToString() == "Student"
+                            ? "/StudentPortal/Index"
+                            : "/Dashboard/Index";
+
+                        // 2. Add the success object to the list
+                        data.Add(new
+                        {
+                            success = true,
+                            redirect = redirect,
+                            mess = 1 // Adding "mess" to match your teacher's sample logic
+                        });
                     }
                     else
                     {
-                        ViewBag.Error = "Invalid username or password.";
-                        return View();
+                        // 3. Add the failure object to the list
+                        data.Add(new
+                        {
+                            success = false,
+                            message = "Invalid username or password.",
+                            mess = 0
+                        });
                     }
                 }
             }
+
+            // 4. Return the list (data) just like in ViewAllStudents
+            return Json(data, JsonRequestBehavior.AllowGet);
         }
 
-        // POST: /Account/Logout
-        [HttpPost]
-        [ValidateAntiForgeryToken]
         public ActionResult Logout()
         {
             Session.Clear();

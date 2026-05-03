@@ -11,7 +11,6 @@ namespace StudentAccountingSystem.Controllers
         private readonly string _conn = ConfigurationManager
             .ConnectionStrings["StudentAccountingDB"].ConnectionString;
 
-        // GET: /Withdrawal/ — Admin sees all pending requests
         public ActionResult Index()
         {
             if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
@@ -47,14 +46,15 @@ namespace StudentAccountingSystem.Controllers
                             TotalPaid = (decimal)r["TotalPaid"],
                             PenaltyAmount = (decimal)r["PenaltyAmount"],
                             RefundableAmount = (decimal)r["RefundableAmount"],
-                            ProcessedDate = r["ProcessedDate"] == DBNull.Value ? (DateTime?)null : (DateTime)r["ProcessedDate"],
-                            Remarks = r["Remarks"] == DBNull.Value ? "" : r["Remarks"].ToString()
+                            ProcessedDate = r["ProcessedDate"] == DBNull.Value
+                                              ? (DateTime?)null : (DateTime)r["ProcessedDate"],
+                            Remarks = r["Remarks"] == DBNull.Value
+                                              ? "" : r["Remarks"].ToString()
                         });
             }
             return View(list);
         }
 
-        // POST: /Withdrawal/Approve/5 — Admin approves
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Approve(int id)
@@ -68,7 +68,6 @@ namespace StudentAccountingSystem.Controllers
             {
                 con.Open();
 
-                // Get request details
                 int studentID = 0;
                 decimal penaltyAmount = 0;
                 decimal refundableAmount = 0;
@@ -113,26 +112,78 @@ namespace StudentAccountingSystem.Controllers
                     cmd.ExecuteNonQuery();
                 }
 
-                // Record penalty as a transaction if any
-                if (penaltyAmount > 0)
+                // Get the most recent assessment to link refund to
+                int linkedAssessmentID = 0;
+                string linkedPeriod = "Prelim";
+
+                using (var cmd = new SqlCommand(
+                    @"SELECT TOP 1 AssessmentID, Period
+                      FROM   Assessments
+                      WHERE  StudentID  = @sid
+                        AND  SchoolYear = @sy
+                        AND  Semester   = @sem
+                      ORDER BY AssessmentID DESC", con))
                 {
+                    cmd.Parameters.AddWithValue("@sid", studentID);
+                    cmd.Parameters.AddWithValue("@sy", schoolYear);
+                    cmd.Parameters.AddWithValue("@sem", semester);
+                    using (var r = cmd.ExecuteReader())
+                        if (r.Read())
+                        {
+                            linkedAssessmentID = (int)r["AssessmentID"];
+                            linkedPeriod = r["Period"].ToString();
+                        }
+                }
+
+                // Record penalty as a transaction if any
+                if (penaltyAmount > 0 && linkedAssessmentID > 0)
+                {
+                    string penaltyOR = "PEN-" + DateTime.Now.ToString("yyyyMMdd") +
+                                       "-" + studentID.ToString("D4");
                     using (var cmd = new SqlCommand(
                         @"INSERT INTO Payments
                             (StudentID, AssessmentID, ORNumber, AmountPaid,
                              PaymentMode, Period, SchoolYear, Semester,
                              Remarks, PaymentDate, ReceivedBy, TransactionType)
-                          SELECT TOP 1
-                            @sid, AssessmentID,
-                            'PENALTY-' + CONVERT(NVARCHAR, GETDATE(), 112),
-                            @penalty, 'System', Period, @sy, @sem,
-                            'Withdrawal penalty', GETDATE(), @admin, 'Penalty'
-                          FROM Assessments
-                          WHERE StudentID = @sid
-                            AND SchoolYear = @sy AND Semester = @sem
-                          ORDER BY AssessmentID", con))
+                          VALUES
+                            (@sid, @aid, @or, @amount,
+                             'System', @period, @sy, @sem,
+                             'Withdrawal penalty deducted', GETDATE(),
+                             @admin, 'Penalty')", con))
                     {
                         cmd.Parameters.AddWithValue("@sid", studentID);
-                        cmd.Parameters.AddWithValue("@penalty", penaltyAmount);
+                        cmd.Parameters.AddWithValue("@aid", linkedAssessmentID);
+                        cmd.Parameters.AddWithValue("@or", penaltyOR);
+                        cmd.Parameters.AddWithValue("@amount", penaltyAmount);
+                        cmd.Parameters.AddWithValue("@period", linkedPeriod);
+                        cmd.Parameters.AddWithValue("@sy", schoolYear);
+                        cmd.Parameters.AddWithValue("@sem", semester);
+                        cmd.Parameters.AddWithValue("@admin", adminID);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                // ── KEY PART: Auto-insert refund payment ──────────────
+                if (refundableAmount > 0 && linkedAssessmentID > 0)
+                {
+                    string refundOR = "WREF-" + DateTime.Now.ToString("yyyyMMdd") +
+                                      "-" + studentID.ToString("D4");
+                    using (var cmd = new SqlCommand(
+                        @"INSERT INTO Payments
+                            (StudentID, AssessmentID, ORNumber, AmountPaid,
+                             PaymentMode, Period, SchoolYear, Semester,
+                             Remarks, PaymentDate, ReceivedBy, TransactionType)
+                          VALUES
+                            (@sid, @aid, @or, @amount,
+                             'Cash Refund', @period, @sy, @sem,
+                             'Withdrawal refund — processed by admin', GETDATE(),
+                             @admin, 'Refund')", con))
+                    {
+                        cmd.Parameters.AddWithValue("@sid", studentID);
+                        cmd.Parameters.AddWithValue("@aid", linkedAssessmentID);
+                        cmd.Parameters.AddWithValue("@or", refundOR);
+                        cmd.Parameters.AddWithValue("@amount", refundableAmount);
+                        cmd.Parameters.AddWithValue("@period", linkedPeriod);
                         cmd.Parameters.AddWithValue("@sy", schoolYear);
                         cmd.Parameters.AddWithValue("@sem", semester);
                         cmd.Parameters.AddWithValue("@admin", adminID);
@@ -150,11 +201,11 @@ namespace StudentAccountingSystem.Controllers
 
                 // Mark request as Approved
                 using (var cmd = new SqlCommand(
-                    @"UPDATE WithdrawalRequests
-                      SET    Status        = 'Approved',
-                             ProcessedBy   = @admin,
-                             ProcessedDate = GETDATE()
-                      WHERE  RequestID = @rid", con))
+                    @"UPDATE WithdrawalRequests SET
+                        Status        = 'Approved',
+                        ProcessedBy   = @admin,
+                        ProcessedDate = GETDATE()
+                      WHERE RequestID = @rid", con))
                 {
                     cmd.Parameters.AddWithValue("@admin", adminID);
                     cmd.Parameters.AddWithValue("@rid", id);
@@ -162,11 +213,10 @@ namespace StudentAccountingSystem.Controllers
                 }
             }
 
-            TempData["Success"] = "Withdrawal approved. Student status set to Withdrawn.";
+            TempData["Success"] = "Withdrawal approved. Refund has been automatically processed.";
             return RedirectToAction("Index");
         }
 
-        // POST: /Withdrawal/Reject/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Reject(int id)
@@ -178,11 +228,11 @@ namespace StudentAccountingSystem.Controllers
 
             using (var con = new SqlConnection(_conn))
             using (var cmd = new SqlCommand(
-                @"UPDATE WithdrawalRequests
-                  SET    Status        = 'Rejected',
-                         ProcessedBy   = @admin,
-                         ProcessedDate = GETDATE()
-                  WHERE  RequestID = @rid AND Status = 'Pending'", con))
+                @"UPDATE WithdrawalRequests SET
+                    Status        = 'Rejected',
+                    ProcessedBy   = @admin,
+                    ProcessedDate = GETDATE()
+                  WHERE RequestID = @rid AND Status = 'Pending'", con))
             {
                 cmd.Parameters.AddWithValue("@admin", adminID);
                 cmd.Parameters.AddWithValue("@rid", id);
@@ -191,76 +241,6 @@ namespace StudentAccountingSystem.Controllers
             }
 
             TempData["Success"] = "Withdrawal request rejected.";
-            return RedirectToAction("Index");
-        }
-
-        // POST: /Withdrawal/Refund — Admin issues cash refund for overpayment
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Refund(int studentID, decimal refundAmount, string remarks)
-        {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-
-            int adminID = (int)Session["UserID"];
-
-            using (var con = new SqlConnection(_conn))
-            {
-                con.Open();
-
-                // Get the most recent paid/partial assessment to link refund to
-                int assessmentID = 0;
-                string schoolYear = "", semester = "", period = "";
-
-                using (var cmd = new SqlCommand(
-                    @"SELECT TOP 1 AssessmentID, SchoolYear, Semester, Period
-                      FROM   Assessments
-                      WHERE  StudentID = @sid
-                        AND  Status IN ('Paid','Partial')
-                      ORDER BY AssessmentID DESC", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", studentID);
-                    using (var r = cmd.ExecuteReader())
-                    {
-                        if (!r.Read())
-                        {
-                            TempData["Error"] = "No paid assessment found for this student.";
-                            return RedirectToAction("Index");
-                        }
-                        assessmentID = (int)r["AssessmentID"];
-                        schoolYear = r["SchoolYear"].ToString();
-                        semester = r["Semester"].ToString();
-                        period = r["Period"].ToString();
-                    }
-                }
-
-                string orNumber = "REF-" + DateTime.Now.ToString("yyyyMMdd") + "-" +
-                                  studentID.ToString("D4");
-
-                using (var cmd = new SqlCommand(
-                    @"INSERT INTO Payments
-                        (StudentID, AssessmentID, ORNumber, AmountPaid,
-                         PaymentMode, Period, SchoolYear, Semester,
-                         Remarks, PaymentDate, ReceivedBy, TransactionType)
-                      VALUES
-                        (@sid, @aid, @or, @amount,
-                         'Cash Refund', @period, @sy, @sem,
-                         @remarks, GETDATE(), @admin, 'Refund')", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", studentID);
-                    cmd.Parameters.AddWithValue("@aid", assessmentID);
-                    cmd.Parameters.AddWithValue("@or", orNumber);
-                    cmd.Parameters.AddWithValue("@amount", refundAmount);
-                    cmd.Parameters.AddWithValue("@period", period);
-                    cmd.Parameters.AddWithValue("@sy", schoolYear);
-                    cmd.Parameters.AddWithValue("@sem", semester);
-                    cmd.Parameters.AddWithValue("@remarks", string.IsNullOrEmpty(remarks) ? "Cash refund issued by admin" : remarks);
-                    cmd.Parameters.AddWithValue("@admin", adminID);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-
-            TempData["Success"] = "Refund of ₱" + refundAmount.ToString("N2") + " recorded.";
             return RedirectToAction("Index");
         }
     }

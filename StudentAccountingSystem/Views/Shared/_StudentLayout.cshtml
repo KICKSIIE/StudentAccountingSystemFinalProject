@@ -308,29 +308,45 @@
                     display:flex; justify-content:space-between; align-items:center;">
                 <h5 style="margin:0;">Request Reactivation</h5>
                 <button onclick="document.getElementById('reactivationModal').style.display='none';"
-                        style="background:none;border:none;color:white;
-                           font-size:20px;cursor:pointer;">
+                        style="background:none;border:none;color:white;font-size:20px;
+                           cursor:pointer;">
                     &times;
                 </button>
             </div>
             <div style="padding:20px;">
-                <p>You will be re-enrolled at:</p>
-                <table class="table table-sm table-bordered">
+                <p>You will be re-enrolled with the following details:</p>
+                <table class="table table-sm">
                     <tr>
                         <td class="text-muted">Year Level</td>
-                        <td class="font-weight-bold" id="reactYearLevel">—</td>
+                        <td><strong>@Session["YearLevel"] (same as before)</strong></td>
                     </tr>
                     <tr>
                         <td class="text-muted">Semester</td>
-                        <td class="font-weight-bold" id="reactSemester">—</td>
+                        <td><strong>@Session["Semester"] (same as before)</strong></td>
                     </tr>
                     <tr>
                         <td class="text-muted">School Year</td>
-                        <td class="font-weight-bold" id="reactSchoolYear">—</td>
+                        <td>
+                            <strong>
+                                @{
+                                    string sy = Session["SchoolYear"]?.ToString() ?? "";
+                                    var pts = sy.Split('-');
+                                    if (pts.Length == 2 &&
+                                        int.TryParse(pts[0], out int s1) &&
+                                        int.TryParse(pts[1], out int s2))
+                                    {
+                                        @((s1 + 1) + "-" + (s2 + 1))
+                                    }
+                                    else
+                                    { @sy }
+                                }
+                                (next school year)
+                            </strong>
+                        </td>
                     </tr>
                 </table>
                 <p class="text-muted small mb-0">
-                    This will be reviewed by the admin before taking effect.
+                    New assessments will be generated automatically after admin approval.
                 </p>
             </div>
             <div style="padding:12px 20px; border-top:1px solid #dee2e6;
@@ -340,8 +356,8 @@
                     Cancel
                 </button>
                 <button type="button" class="btn btn-info"
-                        onclick="submitReactivation();">
-                    Submit Request
+                        onclick="submitReactivationDirect();">
+                    Confirm Request
                 </button>
             </div>
         </div>
@@ -366,9 +382,36 @@
             <span class="nav-icon">&#9650;</span> Request Reactivation
         </button>
     }
-
-    <script src="~/Scripts/jquery-3.7.0.min.js"></script>
-    <script src="~/Scripts/bootstrap.min.js"></script>
-    @RenderSection("scripts", required: false)
 </body>
 </html>
+
+<script>
+    function showWithdrawalModal() {
+        document.getElementById('withdrawalModal').style.display = 'flex';
+    }
+
+    function showReactivationModal() {
+        document.getElementById('reactivationModal').style.display = 'flex';
+    }
+
+    function submitReactivationDirect() {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/StudentPortal/RequestReactivation';
+
+        var token = document.querySelector('input[name="__RequestVerificationToken"]');
+        if (token) {
+            var tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '__RequestVerificationToken';
+            tokenInput.value = token.value;
+            form.appendChild(tokenInput);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
+<script src="~/Scripts/bootstrap.min.js"></script>
+@RenderSection("scripts", required: false)

@@ -1,158 +1,124 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlClient;
 using System.Web.Mvc;
-using StudentAccountingSystem.Models;
 
 namespace StudentAccountingSystem.Controllers
 {
     public class ScholarshipController : Controller
     {
-        private readonly string _conn = ConfigurationManager
-            .ConnectionStrings["StudentAccountingDB"].ConnectionString;
+        string connDB = ConfigurationManager.ConnectionStrings["StudentAccountingDB"].ConnectionString;
 
-        public ActionResult Index()
+        public ActionResult Index() { return View(); }
+
+        public ActionResult ViewAllScholarships()
         {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-
-            var list = new List<Scholarship>();
-            using (var con = new SqlConnection(_conn))
-            using (var cmd = new SqlCommand(
-                "SELECT ScholarshipID, ScholarshipName, Type, DiscountPercent, DiscountAmount, IsActive FROM Scholarships ORDER BY ScholarshipName", con))
+            var list = new List<object>();
+            using (var db = new SqlConnection(connDB))
             {
-                con.Open();
-                using (var r = cmd.ExecuteReader())
-                    while (r.Read())
-                        list.Add(new Scholarship
-                        {
-                            ScholarshipID = (int)r["ScholarshipID"],
-                            ScholarshipName = r["ScholarshipName"].ToString(),
-                            Type = r["Type"].ToString(),
-                            DiscountPercent = r["DiscountPercent"] == System.DBNull.Value ? (decimal?)null : (decimal)r["DiscountPercent"],
-                            DiscountAmount = r["DiscountAmount"] == System.DBNull.Value ? (decimal?)null : (decimal)r["DiscountAmount"],
-                            IsActive = (bool)r["IsActive"]
-                        });
-            }
-            return View(list);
-        }
-
-        public ActionResult Create()
-        {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-            return View(new Scholarship());
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(Scholarship model)
-        {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-
-            if (!ModelState.IsValid) return View(model);
-
-            using (var con = new SqlConnection(_conn))
-            using (var cmd = new SqlCommand(
-                @"INSERT INTO Scholarships (ScholarshipName, Type, DiscountPercent, DiscountAmount, IsActive)
-                  VALUES (@name, @type, @percent, @amount, 1)", con))
-            {
-                cmd.Parameters.AddWithValue("@name", model.ScholarshipName.Trim());
-                cmd.Parameters.AddWithValue("@type", model.Type);
-                cmd.Parameters.AddWithValue("@percent", model.DiscountPercent.HasValue ? (object)model.DiscountPercent.Value : System.DBNull.Value);
-                cmd.Parameters.AddWithValue("@amount", model.DiscountAmount.HasValue ? (object)model.DiscountAmount.Value : System.DBNull.Value);
-                con.Open();
-                cmd.ExecuteNonQuery();
-            }
-            TempData["Success"] = "Scholarship added successfully.";
-            return RedirectToAction("Index");
-        }
-
-        public ActionResult Edit(int id)
-        {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-
-            Scholarship model = null;
-            using (var con = new SqlConnection(_conn))
-            using (var cmd = new SqlCommand(
-                "SELECT ScholarshipID, ScholarshipName, Type, DiscountPercent, DiscountAmount, IsActive FROM Scholarships WHERE ScholarshipID = @id", con))
-            {
-                cmd.Parameters.AddWithValue("@id", id);
-                con.Open();
-                using (var r = cmd.ExecuteReader())
-                    if (r.Read())
-                        model = new Scholarship
-                        {
-                            ScholarshipID = (int)r["ScholarshipID"],
-                            ScholarshipName = r["ScholarshipName"].ToString(),
-                            Type = r["Type"].ToString(),
-                            DiscountPercent = r["DiscountPercent"] == System.DBNull.Value ? (decimal?)null : (decimal)r["DiscountPercent"],
-                            DiscountAmount = r["DiscountAmount"] == System.DBNull.Value ? (decimal?)null : (decimal)r["DiscountAmount"],
-                            IsActive = (bool)r["IsActive"]
-                        };
-            }
-            if (model == null) return HttpNotFound();
-            return View(model);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(Scholarship model)
-        {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-
-            if (!ModelState.IsValid) return View(model);
-
-            using (var con = new SqlConnection(_conn))
-            using (var cmd = new SqlCommand(
-                @"UPDATE Scholarships SET
-                    ScholarshipName = @name,
-                    Type            = @type,
-                    DiscountPercent = @percent,
-                    DiscountAmount  = @amount,
-                    IsActive        = @active
-                  WHERE ScholarshipID = @id", con))
-            {
-                cmd.Parameters.AddWithValue("@name", model.ScholarshipName.Trim());
-                cmd.Parameters.AddWithValue("@type", model.Type);
-                cmd.Parameters.AddWithValue("@percent", model.DiscountPercent.HasValue ? (object)model.DiscountPercent.Value : System.DBNull.Value);
-                cmd.Parameters.AddWithValue("@amount", model.DiscountAmount.HasValue ? (object)model.DiscountAmount.Value : System.DBNull.Value);
-                cmd.Parameters.AddWithValue("@active", model.IsActive);
-                cmd.Parameters.AddWithValue("@id", model.ScholarshipID);
-                con.Open();
-                cmd.ExecuteNonQuery();
-            }
-            TempData["Success"] = "Scholarship updated successfully.";
-            return RedirectToAction("Index");
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id)
-        {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-
-            try
-            {
-                using (var con = new SqlConnection(_conn))
-                using (var cmd = new SqlCommand(
-                    "DELETE FROM Scholarships WHERE ScholarshipID = @id", con))
+                db.Open();
+                string sql = @"SELECT s.*, 
+                              (SELECT COUNT(*) FROM Students st WHERE st.ScholarshipID = s.ScholarshipID) as EnrolledCount 
+                              FROM Scholarships s ORDER BY s.ScholarshipName";
+                SqlCommand cmd = new SqlCommand(sql, db);
+                SqlDataReader r = cmd.ExecuteReader();
+                while (r.Read())
                 {
-                    cmd.Parameters.AddWithValue("@id", id);
-                    con.Open();
-                    cmd.ExecuteNonQuery();
+                    list.Add(new
+                    {
+                        id = r["ScholarshipID"],
+                        name = r["ScholarshipName"],
+                        type = r["Type"],
+                        percent = r["DiscountPercent"],
+                        amount = r["DiscountAmount"],
+                        enrolled = r["EnrolledCount"]
+                    });
                 }
-                TempData["Success"] = "Scholarship deleted successfully.";
             }
-            catch
+            return Json(list, JsonRequestBehavior.AllowGet);
+        }
+
+        public ActionResult SaveScholarship()
+        {
+            using (var db = new SqlConnection(connDB))
             {
-                TempData["Error"] = "Cannot delete — scholarship is already assigned to a student.";
+                db.Open();
+                string sql = "INSERT INTO Scholarships (ScholarshipName, Type, DiscountPercent, DiscountAmount, IsActive) VALUES (@n, @t, @p, @a, 1)";
+                SqlCommand cmd = new SqlCommand(sql, db);
+                cmd.Parameters.AddWithValue("@n", Request["name"]);
+                cmd.Parameters.AddWithValue("@t", Request["type"]);
+                cmd.Parameters.AddWithValue("@p", string.IsNullOrEmpty(Request["percent"]) ? (object)DBNull.Value : Request["percent"]);
+                cmd.Parameters.AddWithValue("@a", string.IsNullOrEmpty(Request["amount"]) ? (object)DBNull.Value : Request["amount"]);
+                cmd.ExecuteNonQuery();
             }
-            return RedirectToAction("Index");
+            return Json(new[] { new { mess = 1, message = "Saved Successfully!" } });
+        }
+
+        public ActionResult GetScholarshipByID(int id)
+        {
+            object data = null;
+            using (var db = new SqlConnection(connDB))
+            {
+                db.Open();
+                SqlCommand cmd = new SqlCommand("SELECT * FROM Scholarships WHERE ScholarshipID = @id", db);
+                cmd.Parameters.AddWithValue("@id", id);
+                SqlDataReader r = cmd.ExecuteReader();
+                if (r.Read())
+                {
+                    data = new
+                    {
+                        id = r["ScholarshipID"],
+                        name = r["ScholarshipName"],
+                        type = r["Type"],
+                        percent = r["DiscountPercent"],
+                        amount = r["DiscountAmount"]
+                    };
+                }
+            }
+            return Json(data, JsonRequestBehavior.AllowGet);
+        }
+
+        public ActionResult UpdateScholarship()
+        {
+            using (var db = new SqlConnection(connDB))
+            {
+                db.Open();
+                string sql = "UPDATE Scholarships SET ScholarshipName=@n, Type=@t, DiscountPercent=@p, DiscountAmount=@a WHERE ScholarshipID=@id";
+                SqlCommand cmd = new SqlCommand(sql, db);
+                cmd.Parameters.AddWithValue("@id", Request["id"]);
+                cmd.Parameters.AddWithValue("@n", Request["name"]);
+                cmd.Parameters.AddWithValue("@t", Request["type"]);
+                cmd.Parameters.AddWithValue("@p", string.IsNullOrEmpty(Request["percent"]) ? (object)DBNull.Value : Request["percent"]);
+                cmd.Parameters.AddWithValue("@a", string.IsNullOrEmpty(Request["amount"]) ? (object)DBNull.Value : Request["amount"]);
+                cmd.ExecuteNonQuery();
+            }
+            return Json(new[] { new { mess = 1, message = "Updated Successfully!" } });
+        }
+
+        public ActionResult DeleteScholarship()
+        {
+            string id = Request["id"];
+            var data = new List<object>();
+            using (var db = new SqlConnection(connDB))
+            {
+                db.Open();
+                // Check if students are using it
+                SqlCommand check = new SqlCommand("SELECT COUNT(*) FROM Students WHERE ScholarshipID = @id", db);
+                check.Parameters.AddWithValue("@id", id);
+                if ((int)check.ExecuteScalar() > 0)
+                {
+                    data.Add(new { mess = 0, message = "Cannot delete: Scholarship is assigned to students." });
+                }
+                else
+                {
+                    SqlCommand cmd = new SqlCommand("DELETE FROM Scholarships WHERE ScholarshipID = @id", db);
+                    cmd.Parameters.AddWithValue("@id", id);
+                    cmd.ExecuteNonQuery();
+                    data.Add(new { mess = 1, message = "Deleted Successfully." });
+                }
+            }
+            return Json(data, JsonRequestBehavior.AllowGet);
         }
     }
 }

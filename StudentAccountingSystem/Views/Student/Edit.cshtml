@@ -1,148 +1,123 @@
 ﻿@model StudentAccountingSystem.Models.Student
 @{
     ViewBag.Title = "Edit Student";
-    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-warning">
-                <h5 class="mb-0">Edit Student — @Model.StudentNumber</h5>
-            </div>
-            <div class="card-body">
-                @using (Html.BeginForm("Edit", "Student", FormMethod.Post))
-                {
-                    @Html.AntiForgeryToken()
-                    @Html.HiddenFor(m => m.StudentID)
-                    @Html.HiddenFor(m => m.StudentNumber)
+<html>
+<body>
+    <h2>Edit Student</h2><br /><br />
 
-                    <h6 class="text-muted mb-3">Personal Information</h6>
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.LastName)
-                            @Html.TextBoxFor(m => m.LastName, new { @class = "form-control" })
-                            @Html.ValidationMessageFor(m => m.LastName, "",
-                                new { @class = "text-danger small" })
-                        </div>
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.FirstName)
-                            @Html.TextBoxFor(m => m.FirstName, new { @class = "form-control" })
-                            @Html.ValidationMessageFor(m => m.FirstName, "",
-                                new { @class = "text-danger small" })
-                        </div>
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.MiddleName)
-                            @Html.TextBoxFor(m => m.MiddleName, new { @class = "form-control" })
-                        </div>
-                    </div>
+    <input type="hidden" id="hdnStudentID" value="@Model.StudentID" />
 
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.Gender)
-                            @Html.DropDownListFor(m => m.Gender,
-                                new SelectList(new[] { "Male", "Female" }, Model.Gender),
-                                new { @class = "form-control" })
-                        </div>
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.BirthDate)
-                            @Html.TextBoxFor(m => m.BirthDate,
-                                "{0:yyyy-MM-dd}",
-                                new { @class = "form-control", type = "date" })
-                        </div>
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.ContactNumber)
-                            @Html.TextBoxFor(m => m.ContactNumber, new { @class = "form-control" })
-                        </div>
-                    </div>
+    Student Number: <input type="text" id="txtStudentNumber" value="@Model.StudentNumber" disabled /><br />
+    Lastname: <input id="txtLname" type="text" value="@Model.LastName" /><br />
+    Firstname: <input id="txtFname" type="text" value="@Model.FirstName" /><br />
+    Middlename: <input id="txtMname" type="text" value="@Model.MiddleName" /><br />
+    Gender:
+    <select id="selGender">
+        <option value="">-- Select Gender --</option>
+        <option value="Male" @(Model.Gender == "Male" ? "selected" : "")>Male</option>
+        <option value="Female" @(Model.Gender == "Female" ? "selected" : "")>Female</option>
+    </select><br />
+    Birth Date: <input id="txtBirthDate" type="date" value="@Model.BirthDate.ToString("yyyy-MM-dd")" /><br />
+    Contact Number: <input id="txtContact" type="text" value="@Model.ContactNumber" /><br />
+    Address: <input id="txtAddress" type="text" value="@Model.Address" /><br />
+    Email: <input id="txtEmail" type="email" value="@Model.Email" /><br />
+    Course:
+    <select id="selCourse">
+        @foreach (var course in ViewBag.Courses)
+        {
+            <option value="@course.Value" @(Model.CourseID.ToString() == course.Value ? "selected" : "")>@course.Text</option>
+        }
+    </select><br />
+    Year Level:
+    <select id="selYearLevel">
+        <option value="1" @(Model.YearLevel == 1 ? "selected" : "")>1st Year</option>
+        <option value="2" @(Model.YearLevel == 2 ? "selected" : "")>2nd Year</option>
+        <option value="3" @(Model.YearLevel == 3 ? "selected" : "")>3rd Year</option>
+        <option value="4" @(Model.YearLevel == 4 ? "selected" : "")>4th Year</option>
+    </select><br />
+    Semester:
+    <select id="selSemester">
+        <option value="1st" @(Model.Semester == "1st" ? "selected" : "")>1st Semester</option>
+        <option value="2nd" @(Model.Semester == "2nd" ? "selected" : "")>2nd Semester</option>
+        <option value="Summer" @(Model.Semester == "Summer" ? "selected" : "")>Summer</option>
+    </select><br />
+    School Year:
+    <select id="selSchoolYear">
+        @foreach (var sy in ViewBag.SchoolYears)
+        {
+            <option value="@sy.Text" @(Model.SchoolYear == sy.Text ? "selected" : "")>@sy.Text</option>
+        }
+    </select><br />
+    Status:
+    <select id="selStatus">
+        <option value="Enrolled" @(Model.Status == "Enrolled" ? "selected" : "")>Enrolled</option>
+        <option value="Dropped" @(Model.Status == "Dropped" ? "selected" : "")>Dropped</option>
+        <option value="Graduated" @(Model.Status == "Graduated" ? "selected" : "")>Graduated</option>
+        <option value="LOA" @(Model.Status == "LOA" ? "selected" : "")>LOA</option>
+    </select><br />
+    Scholarship:
+             <select id="selScholarship">
+                 <option value="">-- None --</option>
+                 @foreach (var sch in ViewBag.Scholarships)
+                 {
+                     @* Use ?.ToString() to avoid errors if ScholarshipID is null *@
+                     <option value="@sch.Value" @(Model.ScholarshipID?.ToString() == sch.Value ? "selected" : "")>
+                         @sch.Text
+                     </option>
+                 }
+             </select>
+    Discount:
+             <select id="selDiscount">
+                 <option value="">-- None --</option>
+                 @foreach (var dis in ViewBag.Discounts)
+                 {
+                     <option value="@dis.Value" @(Model.DiscountID?.ToString() == dis.Value ? "selected" : "")>
+                         @dis.Text
+                     </option>
+                 }
+             </select>
 
-                    <div class="form-row">
-                        <div class="form-group col-md-8">
-                            @Html.LabelFor(m => m.Address)
-                            @Html.TextBoxFor(m => m.Address, new { @class = "form-control" })
-                        </div>
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.Email)
-                            @Html.TextBoxFor(m => m.Email, new { @class = "form-control" })
-                        </div>
-                    </div>
+    <input id="btnUpdate" type="button" value="Update Student" />
+    <a href="/Student/Index">Back to List</a>
+    <br /><br />
 
-                    <hr />
-                    <h6 class="text-muted mb-3">Enrollment Information</h6>
+    <div id="result"></div>
+</body>
+</html>
 
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            @Html.LabelFor(m => m.CourseID)
-                            @Html.DropDownListFor(m => m.CourseID,
-                                (List<SelectListItem>)ViewBag.Courses,
-                                new { @class = "form-control" })
-                        </div>
-                        <div class="form-group col-md-3">
-                            @Html.LabelFor(m => m.YearLevel)
-                            @Html.DropDownListFor(m => m.YearLevel,
-                                new SelectList(new[] {
-                                    new { Value = "1", Text = "1st Year" },
-                                    new { Value = "2", Text = "2nd Year" },
-                                    new { Value = "3", Text = "3rd Year" },
-                                    new { Value = "4", Text = "4th Year" }
-                                }, "Value", "Text", Model.YearLevel),
-                                new { @class = "form-control" })
-                        </div>
-                        <div class="form-group col-md-3">
-                            @Html.LabelFor(m => m.Semester)
-                            @Html.DropDownListFor(m => m.Semester,
-                                new SelectList(new[] { "1st", "2nd", "Summer" }, Model.Semester),
-                                new { @class = "form-control" })
-                        </div>
-                    </div>
+<script src="~/Scripts/jquery-3.4.1.js"></script>
+<script>
+    $("#btnUpdate").click(function () {
+        var formData = {
+            studentID: $("#hdnStudentID").val(),
+            lastname: $("#txtLname").val(),
+            firstname: $("#txtFname").val(),
+            middlename: $("#txtMname").val(),
+            gender: $("#selGender").val(),
+            birthdate: $("#txtBirthDate").val(),
+            contact: $("#txtContact").val(),
+            address: $("#txtAddress").val(),
+            email: $("#txtEmail").val(),
+            courseID: $("#selCourse").val(),
+            yearLevel: $("#selYearLevel").val(),
+            semester: $("#selSemester").val(),
+            schoolYear: $("#selSchoolYear").val(),
+            status: $("#selStatus").val(),
+            scholarshipID: $("#selScholarship").val(),
+            discountID: $("#selDiscount").val()
+        };
 
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.SchoolYear)
-                            @Html.TextBoxFor(m => m.SchoolYear, new { @class = "form-control" })
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label>Status</label>
-                            @Html.DropDownListFor(m => m.Status,
-                                new SelectList(new[] { "Enrolled", "Dropped", "Graduated", "LOA" }, Model.Status),
-                                new { @class = "form-control" })
-                        </div>
-                    </div>
-
-                    <hr />
-                    <h6 class="text-muted mb-3">Scholarships & Discounts <small>(optional)</small></h6>
-
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label>Scholarship</label>
-                            @Html.DropDownListFor(m => m.ScholarshipID,
-                                (List<SelectListItem>)ViewBag.Scholarships,
-                                "-- None --",
-                                new { @class = "form-control" })
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label>Discount</label>
-                            @Html.DropDownListFor(m => m.DiscountID,
-                                (List<SelectListItem>)ViewBag.Discounts,
-                                "-- None --",
-                                new { @class = "form-control" })
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-between mt-3">
-                        <a href="@Url.Action("Index")" class="btn btn-secondary">
-                            &larr; Back
-                        </a>
-                        <button type="submit" class="btn btn-warning">
-                            Update Student
-                        </button>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-</div>
-
-@section scripts {
-    <script src="~/Scripts/myScripts/student.js"></script>
-}
+        $.post("/Student/UpdateStudent", formData, function (res) {
+            if (res[0].mess == 1) {
+                $("#result").html("<h3 style='color:green'>" + res[0].message + "</h3>");
+                setTimeout(function () {
+                    window.location.href = "/Student/Index";
+                }, 2000);
+            } else {
+                $("#result").html("<h3 style='color:red'>" + res[0].message + "</h3>");
+            }
+        });
+    });
+</script>

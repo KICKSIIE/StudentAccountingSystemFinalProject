@@ -9,7 +9,7 @@ namespace StudentAccountingSystem.Models
         public int StudentID { get; set; }
 
         [Display(Name = "Student No.")]
-        public string StudentNumber { get; set; }
+        public long StudentNumber { get; set; }
 
         [Required(ErrorMessage = "Last name is required.")]
         [StringLength(50)]

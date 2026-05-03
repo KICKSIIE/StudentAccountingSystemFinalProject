@@ -15,10 +15,15 @@ namespace StudentAccountingSystem.Models
         public string Status { get; set; } = "";
 
         public bool HasPendingWithdrawal { get; set; }
+        public bool HasPendingReactivation { get; set; }
+        public bool IsWithdrawn { get; set; }
+        public decimal OverpaidBalance { get; set; }
+        public bool CanRequestRefund { get; set; }
         // Lists
         public List<StudentAssessmentRow> Assessments { get; set; } = new List<StudentAssessmentRow>();
         public List<StudentDeductionRow> Deductions { get; set; } = new List<StudentDeductionRow>();
         public List<StudentPaymentRow> Payments { get; set; } = new List<StudentPaymentRow>();
+
         // Computed totals
         public decimal TotalAmountDue => 0; // shown per period
         public decimal TotalPaid => 0;
@@ -42,6 +47,7 @@ namespace StudentAccountingSystem.Models
         public string Status { get; set; }
         public bool IsLocked => Status == "Locked";
         public DateTime AssessedAt { get; set; }
+        public decimal OverpaidAmount { get; set; }
         public List<StudentPaymentRow> Payments { get; set; } = new List<StudentPaymentRow>();
     }
 

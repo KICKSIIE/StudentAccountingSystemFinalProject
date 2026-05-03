@@ -1,172 +1,46 @@
-﻿@model StudentAccountingSystem.Models.Course
-@{
+﻿@{
     ViewBag.Title = "Add Course";
-    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-7">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Add New Course</h5>
-            </div>
-            <div class="card-body">
-                @using (Html.BeginForm("Create", "Course", FormMethod.Post))
-                {
-                    @Html.AntiForgeryToken()
+<h2>Add New Course</h2>
+<hr />
 
-                    <h6 class="text-muted mb-3">Course Information</h6>
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.CourseCode)
-                            @Html.TextBoxFor(m => m.CourseCode,
-                                new { @class = "form-control", placeholder = "e.g. BSIT" })
-                            @Html.ValidationMessageFor(m => m.CourseCode, "",
-                                new { @class = "text-danger small" })
-                        </div>
-                        <div class="form-group col-md-8">
-                            @Html.LabelFor(m => m.CourseName)
-                            @Html.TextBoxFor(m => m.CourseName,
-                                new
-                                     {
-                                         @class = "form-control",
-                                      placeholder = "e.g. Bachelor of Science in Information Technology"
-                                     })
-                            @Html.ValidationMessageFor(m => m.CourseName, "",
-                                new { @class = "text-danger small" })
-                        </div>
-                    </div>
+<div style="border: 1px solid #ccc; padding: 20px; display: inline-block; background-color: #f9f9f9;">
+    <h3 style="margin-top: 0;">Course Information</h3>
 
-                    <div class="form-group">
-                        <div class="form-check">
-                            @Html.CheckBoxFor(m => m.IsActive,
-                                new { @class = "form-check-input" })
-                            @Html.LabelFor(m => m.IsActive,
-                                new { @class = "form-check-label" })
-                        </div>
-                    </div>
+    Course Code: <br />
+    <input id="txtCode" type="text" placeholder="e.g. BSIT" /><br />
 
-                    <hr />
-                    <h6 class="text-muted mb-3">Fee Structure</h6>
+    Course Name: <br />
+    <input id="txtName" type="text" style="width: 300px;" /><br />
 
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.Units)
-                            @Html.TextBoxFor(m => m.Units,
-                                new
-                                     {
-                                         @class = "form-control fee-input",
-                                      type = "number",
-                                         min = "1",
-                                         max = "50",
-                                         id = "Units"
-                                     })
-                            @Html.ValidationMessageFor(m => m.Units, "",
-                                new { @class = "text-danger small" })
-                        </div>
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.TuitionPerUnit)
-                            @Html.TextBoxFor(m => m.TuitionPerUnit,
-                                new
-                                     {
-                                         @class = "form-control fee-input",
-                                      type = "number",
-                                         step = "0.01",
-                                         min = "0",
-                                      id = "TuitionPerUnit"
-                                     })
-                            @Html.ValidationMessageFor(m => m.TuitionPerUnit, "",
-                                new { @class = "text-danger small" })
-                        </div>
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.RegistrationFee)
-                            @Html.TextBoxFor(m => m.RegistrationFee,
-                                new
-                                     {
-                                         @class = "form-control fee-input",
-                                      type = "number",
-                                         step = "0.01",
-                                         min = "0",
-                                      id = "RegistrationFee"
-                                     })
-                            @Html.ValidationMessageFor(m => m.RegistrationFee, "",
-                                new { @class = "text-danger small" })
-                        </div>
-                    </div>
+    <hr />
+    <h3>Fee Structure</h3>
 
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.MiscFee)
-                            @Html.TextBoxFor(m => m.MiscFee,
-                                new
-                                     {
-                                         @class = "form-control fee-input",
-                                      type = "number",
-                                         step = "0.01",
-                                         min = "0",
-                                      id = "MiscFee"
-                                     })
-                            @Html.ValidationMessageFor(m => m.MiscFee, "",
-                                new { @class = "text-danger small" })
-                        </div>
-                        <div class="form-group col-md-4">
-                            @Html.LabelFor(m => m.LabFee)
-                            @Html.TextBoxFor(m => m.LabFee,
-                                new
-                                     {
-                                         @class = "form-control fee-input",
-                                      type = "number",
-                                         step = "0.01",
-                                         min = "0",
-                                      id = "LabFee"
-                                     })
-                            @Html.ValidationMessageFor(m => m.LabFee, "",
-                                new { @class = "text-danger small" })
-                        </div>
-                    </div>
+    No. of Units: <br />
+    <input id="txtUnits" type="number" value="0" /><br />
 
-                    <!-- Live Total Preview -->
-                    <div class="card bg-light mb-3">
-                        <div class="card-body p-2">
-                            <table class="table table-sm mb-0" style="font-size:13px;">
-                                <tr>
-                                    <td class="text-muted">
-                                        Tuition
-                                        (<span id="previewUnits">0</span> units
-                                        × ₱<span id="previewRate">0.00</span>)
-                                    </td>
-                                    <td class="text-right" id="previewTuition">₱0.00</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted">Registration Fee</td>
-                                    <td class="text-right" id="previewReg">₱0.00</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted">Miscellaneous Fee</td>
-                                    <td class="text-right" id="previewMisc">₱0.00</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted">Laboratory Fee</td>
-                                    <td class="text-right" id="previewLab">₱0.00</td>
-                                </tr>
-                                <tr class="font-weight-bold text-success">
-                                    <td>Total Fee per Semester</td>
-                                    <td class="text-right" id="previewTotal">₱0.00</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
+    Tuition Per Unit: <br />
+    <input id="txtTpu" type="number" value="0" /><br />
 
-                    <div class="d-flex justify-content-between">
-                        <a href="@Url.Action("Index")" class="btn btn-secondary">&larr; Back</a>
-                        <button type="submit" class="btn btn-primary">Save Course</button>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
+    Registration Fee: <br />
+    <input id="txtReg" type="number" value="0" /><br />
+
+    Miscellaneous Fee: <br />
+    <input id="txtMisc" type="number" value="0" /><br />
+
+    Laboratory Fee: <br />
+    <input id="txtLab" type="number" value="0" /><br /><br />
+
+    <input id="btnSave" type="button" value="Save Course" />
+    <a href="../Course/Index"><input type="button" value="Back to List" /></a>
 </div>
 
-@section scripts {
-    <script src="~/Scripts/myScripts/course.js"></script>
-}
+<br />
+<br />
+<div id="result">
+    <!-- Feedback message will appear here -->
+</div>
+
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
+<script src="~/Scripts/myScripts/course.js"></script>

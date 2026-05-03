@@ -1,96 +1,168 @@
-﻿@model IEnumerable<StudentAccountingSystem.Models.Student>
-@{
-    ViewBag.Title = "Students";
+﻿@{
+    ViewBag.Title = "Student Management";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Student Accounts</h2>
-    <a href="@Url.Action("Create")" class="btn btn-primary">+ Register Student</a>
+<h2>Student Management</h2>
+<hr />
+
+<div id="msgBox"></div>
+
+<input type="button" id="btnShowRegister" value="+ Register Student" />
+<input type="text" id="txtSearch" placeholder="Search student..." />
+<input type="button" id="btnSearch" value="Search" />
+<br />
+<br />
+
+<!-- STUDENT LIST TABLE -->
+<div id="divList">
+    <table border="1" width="100%">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Student No.</th>
+                <th>Last Name</th>
+                <th>First Name</th>
+                <th>Course</th>
+                <th>Year</th>
+                <th>Semester</th>
+                <th>School Year</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="tblBody">
+            <tr><td colspan="10">Loading...</td></tr>
+        </tbody>
+    </table>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">
-        @TempData["Success"]
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
-    </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show">
-        @TempData["Error"]
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
-    </div>
-}
+<!-- REGISTER FORM -->
+<div id="divRegister" style="display:none;">
+    <h3>Register New Student</h3>
+    <hr />
+    <b>Personal Information</b><br /><br />
 
-<div class="card">
-    <div class="card-body">
-        <input type="text" id="searchStudent" class="form-control mb-3"
-               placeholder="Search by name, student no, or course..." />
-        <table class="table table-bordered table-hover table-sm" id="studentTable">
-            <thead class="thead-dark">
-                <tr>
-                    <th>#</th>
-                    <th>Student No.</th>
-                    <th>Last Name</th>
-                    <th>First Name</th>
-                    <th>Course</th>
-                    <th>Year</th>
-                    <th>Semester</th>
-                    <th>School Year</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @{ int i = 1; }
-                @foreach (var s in Model)
-                {
-                    <tr>
-                        <td>@i++</td>
-                        <td>@s.StudentNumber</td>
-                        <td>@s.LastName</td>
-                        <td>@s.FirstName</td>
-                        <td>@s.CourseCode</td>
-                        <td>@s.YearLevel</td>
-                        <td>@s.Semester</td>
-                        <td>@s.SchoolYear</td>
-                        <td>
-                            <span class="badge badge-@(s.Status == "Enrolled" ? "success" : "secondary")">
-                                @s.Status
-                            </span>
-                        </td>
-                        <td>
-                            <a href="@Url.Action("Details", new { id = s.StudentID })"
-                               class="btn btn-sm btn-info">View</a>
-                            <a href="@Url.Action("Edit", new { id = s.StudentID })"
-                               class="btn btn-sm btn-warning">Edit</a>
-                            @using (Html.BeginForm("Delete", "Student",
-                                new { id = s.StudentID }, FormMethod.Post,
-                                new { style = "display:inline" }))
-                            {
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-danger btn-delete">
-                                    Delete
-                                </button>
-                            }
-                        </td>
-                    </tr>
-                }
-                @if (!Model.GetEnumerator().MoveNext())
-                {
-                    <tr>
-                        <td colspan="10" class="text-center text-muted">
-                            No students registered yet.
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    Last Name: <input type="text" id="txtLastName" />&nbsp;
+    First Name: <input type="text" id="txtFirstName" />&nbsp;
+    Middle Name: <input type="text" id="txtMiddleName" /><br /><br />
+
+    Gender:
+    <select id="selGender">
+        <option value="">-- Select --</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+    </select>&nbsp;
+    Birth Date: <input type="date" id="txtBirthDate" />&nbsp;
+    Contact: <input type="text" id="txtContact" /><br /><br />
+
+    Address: <input type="text" id="txtAddress" size="40" />&nbsp;
+    Email: <input type="text" id="txtEmail" /><br /><br />
+
+    <b>Enrollment Information</b><br /><br />
+
+    Course:
+    <select id="selCourse">
+        <option value="">-- Select Course --</option>
+    </select>&nbsp;
+    Year Level:
+    <select id="selYear">
+        <option value="">-- Year --</option>
+        <option value="1">1st Year</option>
+        <option value="2">2nd Year</option>
+        <option value="3">3rd Year</option>
+        <option value="4">4th Year</option>
+    </select>&nbsp;
+    Semester:
+    <select id="selSemester">
+        <option value="">-- Semester --</option>
+        <option value="1st">1st</option>
+        <option value="2nd">2nd</option>
+        <!-- Remove Summer option -->
+    </select>&nbsp;
+
+    School Year:
+    <select id="selSchoolYear"></select><br /><br />
+
+    <b>Scholarship &amp; Discount (optional)</b><br /><br />
+
+    Scholarship:
+    <select id="selScholarship">
+        <option value="">-- None --</option>
+    </select>&nbsp;
+    Discount:
+    <select id="selDiscount">
+        <option value="">-- None --</option>
+    </select><br /><br />
+
+    <input type="button" id="btnRegister" value="Register Student" />
+    <input type="button" id="btnCancelRegister" value="Cancel" />
 </div>
 
-@section scripts {
-    <script src="~/Scripts/myScripts/student.js"></script>
-}
+<!-- EDIT FORM -->
+<div id="divEdit" style="display:none;">
+    <h3>Edit Student</h3>
+    <hr />
+    <input type="hidden" id="editStudentID" />
+    <b>Student No: </b><span id="editStudentNumber"></span><br /><br />
+
+    <b>Personal Information</b><br /><br />
+
+    Last Name: <input type="text" id="editLastName" />&nbsp;
+    First Name: <input type="text" id="editFirstName" />&nbsp;
+    Middle Name: <input type="text" id="editMiddleName" /><br /><br />
+
+    Gender:
+    <select id="editGender">
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+    </select>&nbsp;
+    Birth Date: <input type="date" id="editBirthDate" />&nbsp;
+    Contact: <input type="text" id="editContact" /><br /><br />
+
+    Address: <input type="text" id="editAddress" size="40" />&nbsp;
+    Email: <input type="text" id="editEmail" /><br /><br />
+
+    <b>Enrollment Information</b><br /><br />
+
+    Course:
+    <select id="editCourse">
+        <option value="">-- Select Course --</option>
+    </select>&nbsp;
+    Year Level:
+    <select id="editYear">
+        <option value="1">1st Year</option>
+        <option value="2">2nd Year</option>
+        <option value="3">3rd Year</option>
+        <option value="4">4th Year</option>
+    </select>&nbsp;
+    Semester:
+    <select id="editSemester">
+        <option value="1st">1st</option>
+        <option value="2nd">2nd</option>
+        <option value="Summer">Summer</option>
+    </select>&nbsp;
+    School Year: <input type="text" id="editSchoolYear" /><br /><br />
+
+    Status:
+    <select id="editStatus">
+        <option value="Enrolled">Enrolled</option>
+        <option value="Withdrawn">Withdrawn</option>
+        <option value="Graduated">Graduated</option>
+    </select><br /><br />
+
+    Scholarship:
+    <select id="editScholarship">
+        <option value="">-- None --</option>
+    </select>&nbsp;
+    Discount:
+    <select id="editDiscount">
+        <option value="">-- None --</option>
+    </select><br /><br />
+
+    <input type="button" id="btnUpdate" value="Update Student" />
+    <input type="button" id="btnCancelEdit" value="Cancel" />
+</div>
+<!-- SCRIPTS - REMOVED the inline script and kept only the external reference -->
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
+<script src="~/Scripts/myScripts/studentList.js"></script>

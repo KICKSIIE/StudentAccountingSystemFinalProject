@@ -26,6 +26,7 @@ namespace StudentAccountingSystem.Models
         public decimal Balance { get; set; }
         public string Status { get; set; }
         public DateTime AssessedAt { get; set; }
+        public int YearLevel { get; set; }
     }
 
     public class AssessmentFormModel
@@ -38,5 +39,6 @@ namespace StudentAccountingSystem.Models
         public string Semester { get; set; }
         [System.ComponentModel.DataAnnotations.Required]
         public string Period { get; set; }
+        public int YearLevel { get; set; }
     }
 }

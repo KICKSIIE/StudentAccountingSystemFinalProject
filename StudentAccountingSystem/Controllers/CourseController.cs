@@ -1,180 +1,180 @@
-﻿using System.Collections.Generic;
+﻿using StudentAccountingSystem.Models;
+using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlClient;
 using System.Web.Mvc;
-using StudentAccountingSystem.Models;
 
 namespace StudentAccountingSystem.Controllers
 {
     public class CourseController : Controller
     {
-        private readonly string _conn = ConfigurationManager
-            .ConnectionStrings["StudentAccountingDB"].ConnectionString;
+        string connDB = ConfigurationManager.ConnectionStrings["StudentAccountingDB"].ConnectionString;
 
         public ActionResult Index()
         {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-
-            var list = new List<Course>();
-            using (var con = new SqlConnection(_conn))
-            using (var cmd = new SqlCommand(
-                @"SELECT CourseID, CourseCode, CourseName, IsActive,
-                         Units, TuitionPerUnit, RegistrationFee, MiscFee, LabFee
-                  FROM   Courses ORDER BY CourseCode", con))
-            {
-                con.Open();
-                using (var r = cmd.ExecuteReader())
-                    while (r.Read())
-                        list.Add(new Course
-                        {
-                            CourseID = (int)r["CourseID"],
-                            CourseCode = r["CourseCode"].ToString(),
-                            CourseName = r["CourseName"].ToString(),
-                            IsActive = (bool)r["IsActive"],
-                            Units = (int)r["Units"],
-                            TuitionPerUnit = (decimal)r["TuitionPerUnit"],
-                            RegistrationFee = (decimal)r["RegistrationFee"],
-                            MiscFee = (decimal)r["MiscFee"],
-                            LabFee = (decimal)r["LabFee"]
-                        });
-            }
-            return View(list);
+            return View();
         }
 
-        public ActionResult Create()
+        public ActionResult ViewAllCourses()
         {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-            return View(new Course());
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(Course model)
-        {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-
-            if (!ModelState.IsValid) return View(model);
-
-            using (var con = new SqlConnection(_conn))
-            using (var cmd = new SqlCommand(
-                @"INSERT INTO Courses
-                    (CourseCode, CourseName, IsActive,
-                     Units, TuitionPerUnit, RegistrationFee, MiscFee, LabFee)
-                  VALUES
-                    (@code, @name, 1,
-                     @units, @tpu, @reg, @misc, @lab)", con))
+            var list = new List<object>();
+            using (var db = new SqlConnection(connDB))
             {
-                cmd.Parameters.AddWithValue("@code", model.CourseCode.Trim().ToUpper());
-                cmd.Parameters.AddWithValue("@name", model.CourseName.Trim());
-                cmd.Parameters.AddWithValue("@units", model.Units);
-                cmd.Parameters.AddWithValue("@tpu", model.TuitionPerUnit);
-                cmd.Parameters.AddWithValue("@reg", model.RegistrationFee);
-                cmd.Parameters.AddWithValue("@misc", model.MiscFee);
-                cmd.Parameters.AddWithValue("@lab", model.LabFee);
-                con.Open();
-                cmd.ExecuteNonQuery();
-            }
-            TempData["Success"] = "Course added successfully.";
-            return RedirectToAction("Index");
-        }
+                db.Open();
+                // SQL now counts students from the Students table
+                string sql = @"SELECT c.*, 
+                      (SELECT COUNT(*) FROM Students s WHERE s.CourseID = c.CourseID) as StudentCount 
+                      FROM Courses c";
 
-        public ActionResult Edit(int id)
-        {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-
-            Course model = null;
-            using (var con = new SqlConnection(_conn))
-            using (var cmd = new SqlCommand(
-                @"SELECT CourseID, CourseCode, CourseName, IsActive,
-                         Units, TuitionPerUnit, RegistrationFee, MiscFee, LabFee
-                  FROM   Courses WHERE CourseID = @id", con))
-            {
-                cmd.Parameters.AddWithValue("@id", id);
-                con.Open();
-                using (var r = cmd.ExecuteReader())
-                    if (r.Read())
-                        model = new Course
-                        {
-                            CourseID = (int)r["CourseID"],
-                            CourseCode = r["CourseCode"].ToString(),
-                            CourseName = r["CourseName"].ToString(),
-                            IsActive = (bool)r["IsActive"],
-                            Units = (int)r["Units"],
-                            TuitionPerUnit = (decimal)r["TuitionPerUnit"],
-                            RegistrationFee = (decimal)r["RegistrationFee"],
-                            MiscFee = (decimal)r["MiscFee"],
-                            LabFee = (decimal)r["LabFee"]
-                        };
-            }
-            if (model == null) return HttpNotFound();
-            return View(model);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(Course model)
-        {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-
-            if (!ModelState.IsValid) return View(model);
-
-            using (var con = new SqlConnection(_conn))
-            using (var cmd = new SqlCommand(
-                @"UPDATE Courses SET
-                    CourseCode      = @code,
-                    CourseName      = @name,
-                    IsActive        = @active,
-                    Units           = @units,
-                    TuitionPerUnit  = @tpu,
-                    RegistrationFee = @reg,
-                    MiscFee         = @misc,
-                    LabFee          = @lab
-                  WHERE CourseID = @id", con))
-            {
-                cmd.Parameters.AddWithValue("@code", model.CourseCode.Trim().ToUpper());
-                cmd.Parameters.AddWithValue("@name", model.CourseName.Trim());
-                cmd.Parameters.AddWithValue("@active", model.IsActive);
-                cmd.Parameters.AddWithValue("@units", model.Units);
-                cmd.Parameters.AddWithValue("@tpu", model.TuitionPerUnit);
-                cmd.Parameters.AddWithValue("@reg", model.RegistrationFee);
-                cmd.Parameters.AddWithValue("@misc", model.MiscFee);
-                cmd.Parameters.AddWithValue("@lab", model.LabFee);
-                cmd.Parameters.AddWithValue("@id", model.CourseID);
-                con.Open();
-                cmd.ExecuteNonQuery();
-            }
-            TempData["Success"] = "Course updated successfully.";
-            return RedirectToAction("Index");
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id)
-        {
-            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
-                return RedirectToAction("Login", "Account");
-            try
-            {
-                using (var con = new SqlConnection(_conn))
-                using (var cmd = new SqlCommand(
-                    "DELETE FROM Courses WHERE CourseID = @id", con))
+                using (var cmd = new SqlCommand(sql, db))
                 {
-                    cmd.Parameters.AddWithValue("@id", id);
-                    con.Open();
+                    SqlDataReader r = cmd.ExecuteReader();
+                    while (r.Read())
+                    {
+                        list.Add(new
+                        {
+                            id = r["CourseID"],
+                            code = r["CourseCode"],
+                            name = r["CourseName"],
+                            units = r["Units"],
+                            tpu = r["TuitionPerUnit"],
+                            reg = r["RegistrationFee"],
+                            misc = r["MiscFee"],
+                            lab = r["LabFee"],
+                            enrolled = r["StudentCount"], // The count from SQL
+                            totalFee = (Convert.ToDecimal(r["TuitionPerUnit"]) * Convert.ToInt32(r["Units"]) +
+                                        Convert.ToDecimal(r["RegistrationFee"]) +
+                                        Convert.ToDecimal(r["MiscFee"]) +
+                                        Convert.ToDecimal(r["LabFee"])).ToString("N2")
+                        });
+                    }
+                }
+            }
+            return Json(list, JsonRequestBehavior.AllowGet);
+        }
+
+        public ActionResult SaveCourse()
+        {
+            using (var db = new SqlConnection(connDB))
+            {
+                db.Open();
+                string sql = "INSERT INTO Courses (CourseCode, CourseName, Units, TuitionPerUnit, RegistrationFee, MiscFee, LabFee, IsActive) " +
+                             "VALUES (@code, @name, @units, @tpu, @reg, @misc, @lab, 1)";
+
+                using (var cmd = new SqlCommand(sql, db))
+                {
+                    cmd.Parameters.AddWithValue("@code", Request["code"]);
+                    cmd.Parameters.AddWithValue("@name", Request["name"]);
+                    cmd.Parameters.AddWithValue("@units", Request["units"]);
+                    cmd.Parameters.AddWithValue("@tpu", Request["tpu"]);
+                    cmd.Parameters.AddWithValue("@reg", Request["reg"]);
+                    cmd.Parameters.AddWithValue("@misc", Request["misc"]);
+                    cmd.Parameters.AddWithValue("@lab", Request["lab"]);
+
                     cmd.ExecuteNonQuery();
                 }
-                TempData["Success"] = "Course deleted.";
+            }
+            return Json(new { message = "Saved!" }, JsonRequestBehavior.AllowGet);
+        }
+
+        // Get a single course to fill the Edit form
+        public ActionResult GetCourseByID(int id)
+        {
+            object data = null;
+            using (var db = new SqlConnection(connDB))
+            {
+                db.Open();
+                string sql = "SELECT * FROM Courses WHERE CourseID = @id";
+                using (var cmd = new SqlCommand(sql, db))
+                {
+                    cmd.Parameters.AddWithValue("@id", id);
+                    SqlDataReader r = cmd.ExecuteReader();
+                    if (r.Read())
+                    {
+                        data = new
+                        {
+                            id = r["CourseID"],
+                            code = r["CourseCode"],
+                            name = r["CourseName"],
+                            units = r["Units"],
+                            tpu = r["TuitionPerUnit"],
+                            reg = r["RegistrationFee"],
+                            misc = r["MiscFee"],
+                            lab = r["LabFee"]
+                        };
+                    }
+                }
+            }
+            return Json(data, JsonRequestBehavior.AllowGet);
+        }
+
+        // Update the record in DB
+        public ActionResult UpdateCourse()
+        {
+            using (var db = new SqlConnection(connDB))
+            {
+                db.Open();
+                string sql = @"UPDATE Courses SET 
+                        CourseCode=@code, CourseName=@name, Units=@units, 
+                        TuitionPerUnit=@tpu, RegistrationFee=@reg, 
+                        MiscFee=@misc, LabFee=@lab 
+                      WHERE CourseID=@id";
+
+                using (var cmd = new SqlCommand(sql, db))
+                {
+                    cmd.Parameters.AddWithValue("@id", Request["courseID"]);
+                    cmd.Parameters.AddWithValue("@code", Request["code"]);
+                    cmd.Parameters.AddWithValue("@name", Request["name"]);
+                    cmd.Parameters.AddWithValue("@units", Request["units"]);
+                    cmd.Parameters.AddWithValue("@tpu", Request["tpu"]);
+                    cmd.Parameters.AddWithValue("@reg", Request["reg"]);
+                    cmd.Parameters.AddWithValue("@misc", Request["misc"]);
+                    cmd.Parameters.AddWithValue("@lab", Request["lab"]);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            return Json(new { message = "Course Updated Successfully!" }, JsonRequestBehavior.AllowGet);
+        }
+
+        public ActionResult DeleteCourse()
+        {
+            string id = Request["id"];
+            var data = new List<object>();
+
+            try
+            {
+                using (var con = new SqlConnection(connDB))
+                {
+                    con.Open();
+                    // 1. Check if students are enrolled before trying to delete
+                    string checkSql = "SELECT COUNT(*) FROM Students WHERE CourseID = @id";
+                    using (var cmdCheck = new SqlCommand(checkSql, con))
+                    {
+                        cmdCheck.Parameters.AddWithValue("@id", id);
+                        int count = (int)cmdCheck.ExecuteScalar();
+                        if (count > 0)
+                        {
+                            data.Add(new { mess = 0, message = "Cannot delete: " + count + " student(s) currently enrolled." });
+                            return Json(data, JsonRequestBehavior.AllowGet);
+                        }
+                    }
+
+                    // 2. If count is 0, proceed with delete
+                    using (var cmd = new SqlCommand("DELETE FROM Courses WHERE CourseID = @id", con))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                data.Add(new { mess = 1, message = "Course deleted successfully." });
             }
             catch
             {
-                TempData["Error"] = "Cannot delete — course is assigned to a student.";
+                data.Add(new { mess = 0, message = "Could not delete course due to a database error." });
             }
-            return RedirectToAction("Index");
+            return Json(data, JsonRequestBehavior.AllowGet);
         }
     }
 }
+
