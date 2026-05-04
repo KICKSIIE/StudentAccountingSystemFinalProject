@@ -181,6 +181,11 @@
                class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Refunds" ? "active" : "")">
                 <span class="nav-icon">💰</span> Refund Requests
             </a>
+
+            <a href="@Url.Action("Index", "Report")"
+               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Report" ? "active" : "")">
+                <span class="nav-icon">📊</span> Reports
+            </a>
         </nav>
 
         <div class="sidebar-footer">

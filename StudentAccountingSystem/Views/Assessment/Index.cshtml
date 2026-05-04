@@ -112,16 +112,9 @@
                                class="btn btn-sm btn-info">View</a>
                             @if (a.Status == "Locked")
                             {
-                                using (Html.BeginForm("Unlock", "Assessment",
-                                    new { id = a.AssessmentID }, FormMethod.Post,
-                                    new { style = "display:inline" }))
-                                {
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit"
-                                            class="btn btn-sm btn-warning btn-unlock">
-                                        Unlock
-                                    </button>
-                                }
+                                <input type="button" class="btn btn-sm btn-warning btn-unlock"
+                                       value="Unlock"
+                                       onclick="unlockAssessment(@a.AssessmentID)" />
                             }
                         </td>
                     </tr>

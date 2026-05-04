@@ -148,24 +148,31 @@ namespace StudentAccountingSystem.Controllers
         }
 
         // Admin override — manually unlock an assessment
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        // REPLACE the entire Unlock action
         public ActionResult Unlock(int id)
         {
             if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
                 return RedirectToAction("Login", "Account");
 
-            using (var con = new SqlConnection(_conn))
-            using (var cmd = new SqlCommand(
-                @"UPDATE Assessments SET Status = 'Unpaid'
-                  WHERE  AssessmentID = @id AND Status = 'Locked'", con))
+            var data = new List<object>();
+            try
             {
-                cmd.Parameters.AddWithValue("@id", id);
-                con.Open();
-                cmd.ExecuteNonQuery();
+                using (var con = new SqlConnection(_conn))
+                using (var cmd = new SqlCommand(
+                    @"UPDATE Assessments SET Status = 'Unpaid'
+              WHERE AssessmentID = @id AND Status = 'Locked'", con))
+                {
+                    cmd.Parameters.AddWithValue("@id", id);
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+                data.Add(new { mess = 1, message = "Assessment unlocked." });
             }
-            TempData["Success"] = "Assessment unlocked.";
-            return RedirectToAction("Index");
+            catch
+            {
+                data.Add(new { mess = 0, message = "Could not unlock assessment." });
+            }
+            return Json(data, JsonRequestBehavior.AllowGet);
         }
 
         public ActionResult Refunds()
@@ -195,10 +202,9 @@ namespace StudentAccountingSystem.Controllers
             return View(dt);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
         public ActionResult ProcessRefund(int requestId, string action)
         {
+            var data = new List<object>();
             using (var con = new SqlConnection(_conn))
             {
                 con.Open();
@@ -207,39 +213,38 @@ namespace StudentAccountingSystem.Controllers
                 {
                     if (action == "Approve")
                     {
-                        // 1. Get the StudentID and Amount from the request
                         int studentId = 0;
                         decimal amount = 0;
-                        using (var cmd = new SqlCommand("SELECT StudentID, Amount FROM RefundRequests WHERE RequestID=@rid", con, trans))
+                        using (var cmd = new SqlCommand(
+                            "SELECT StudentID, Amount FROM RefundRequests WHERE RequestID=@rid", con, trans))
                         {
                             cmd.Parameters.AddWithValue("@rid", requestId);
                             using (var dr = cmd.ExecuteReader())
-                            {
                                 if (dr.Read())
                                 {
                                     studentId = (int)dr["StudentID"];
                                     amount = (decimal)dr["Amount"];
                                 }
-                            }
                         }
 
-                        // 2. Zero out the OverpaidAmount in the Assessments table
-                        using (var cmd = new SqlCommand("UPDATE Assessments SET OverpaidAmount = 0 WHERE StudentID = @sid", con, trans))
+                        using (var cmd = new SqlCommand(
+                            "UPDATE Assessments SET OverpaidAmount = 0 WHERE StudentID = @sid", con, trans))
                         {
                             cmd.Parameters.AddWithValue("@sid", studentId);
                             cmd.ExecuteNonQuery();
                         }
 
-                        // 3. Update Request Status
-                        using (var cmd = new SqlCommand("UPDATE RefundRequests SET Status = 'Approved' WHERE RequestID = @rid", con, trans))
+                        using (var cmd = new SqlCommand(
+                            "UPDATE RefundRequests SET Status = 'Approved' WHERE RequestID = @rid", con, trans))
                         {
                             cmd.Parameters.AddWithValue("@rid", requestId);
                             cmd.ExecuteNonQuery();
                         }
                     }
-                    else // Reject
+                    else
                     {
-                        using (var cmd = new SqlCommand("UPDATE RefundRequests SET Status = 'Rejected' WHERE RequestID = @rid", con, trans))
+                        using (var cmd = new SqlCommand(
+                            "UPDATE RefundRequests SET Status = 'Rejected' WHERE RequestID = @rid", con, trans))
                         {
                             cmd.Parameters.AddWithValue("@rid", requestId);
                             cmd.ExecuteNonQuery();
@@ -247,15 +252,15 @@ namespace StudentAccountingSystem.Controllers
                     }
 
                     trans.Commit();
-                    TempData["Success"] = "Refund " + action + "d successfully.";
+                    data.Add(new { mess = 1, message = "Refund " + action + "d successfully." });
                 }
                 catch (Exception ex)
                 {
                     trans.Rollback();
-                    TempData["Error"] = "Error: " + ex.Message;
+                    data.Add(new { mess = 0, message = "Error: " + ex.Message });
                 }
             }
-            return RedirectToAction("Refunds");
+            return Json(data, JsonRequestBehavior.AllowGet);
         }
     }
 }

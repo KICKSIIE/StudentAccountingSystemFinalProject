@@ -32,3 +32,29 @@
     });
 
 });
+
+function unlockAssessment(id) {
+    if (confirm('Manually unlock this assessment?\nThis overrides the sequential payment rule.')) {
+        $.post("/Assessment/Unlock", { id: id }, function (res) {
+            if (res[0].mess == 1) {
+                alert(res[0].message);
+                location.reload();
+            } else {
+                alert(res[0].message);
+            }
+        });
+    }
+}
+
+function processRefund(requestId, action) {
+    if (confirm('Are you sure you want to ' + action + ' this refund?')) {
+        $.post("/Assessment/ProcessRefund", { requestId: requestId, action: action }, function (res) {
+            if (res[0].mess == 1) {
+                alert(res[0].message);
+                location.reload();
+            } else {
+                alert(res[0].message);
+            }
+        });
+    }
+}

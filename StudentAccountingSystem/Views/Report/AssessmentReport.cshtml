@@ -1,0 +1,214 @@
+﻿@{
+    ViewBag.Title = "Assessment Report";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Assessment Report</h2>
+<hr />
+<div id="msgBox"></div>
+
+<!-- FILTERS -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <div class="form-row">
+            <div class="col-md-2">
+                <label>School Year <span class="text-danger">*</span></label>
+                <select id="selSchoolYear" class="form-control">
+                    <option value="">-- Select --</option>
+                    @{
+                        int curYear = DateTime.Now.Year;
+                        for (int y = curYear - 2; y <= curYear + 2; y++)
+                        {
+                            string sy = y + "-" + (y + 1);
+                            <option value="@sy">@sy</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label>Semester <span class="text-danger">*</span></label>
+                <select id="selSemester" class="form-control">
+                    <option value="">-- Select --</option>
+                    <option value="1st">1st</option>
+                    <option value="2nd">2nd</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label>Course</label>
+                <select id="selCourse" class="form-control">
+                    <option value="">All Courses</option>
+                    @foreach (SelectListItem c in ViewBag.Courses)
+                    {
+                        <option value="@c.Value">@c.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label>Year Level</label>
+                <select id="selYear" class="form-control">
+                    <option value="">All</option>
+                    <option value="1">1st</option>
+                    <option value="2">2nd</option>
+                    <option value="3">3rd</option>
+                    <option value="4">4th</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label>Period</label>
+                <select id="selPeriod" class="form-control">
+                    <option value="">All Periods</option>
+                    <option value="Prelim">Prelim</option>
+                    <option value="Midterm">Midterm</option>
+                    <option value="Semi-Final">Semi-Final</option>
+                    <option value="Final">Final</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label>Status</label>
+                <select id="selStatus" class="form-control">
+                    <option value="">All</option>
+                    <option value="Unpaid">Unpaid</option>
+                    <option value="Partial">Partial</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Locked">Locked</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-primary btn-block" onclick="loadReport()">
+                    Generate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- REPORT OUTPUT -->
+<div id="divReport" style="display:none;">
+    <div class="d-flex justify-content-between mb-2">
+        <h5 id="reportTitle"></h5>
+        <button class="btn btn-secondary btn-sm" onclick="printReport()">
+            🖨 Print
+        </button>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm mb-0" id="reportTable">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Student ID</th>
+                            <th>Student Name</th>
+                            <th>Course</th>
+                            <th>Year</th>
+                            <th>Period</th>
+                            <th class="text-right">Tuition</th>
+                            <th class="text-right">Reg. Fee</th>
+                            <th class="text-right">Misc</th>
+                            <th class="text-right">Lab</th>
+                            <th class="text-right">Discount</th>
+                            <th class="text-right">Net Assessment</th>
+                            <th class="text-right">Amount Due</th>
+                            <th class="text-right">Total Paid</th>
+                            <th class="text-right">Balance</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportBody">
+                    </tbody>
+                    <tfoot>
+                        <tr class="bg-dark text-white font-weight-bold">
+                            <td colspan="12" class="text-right">TOTALS</td>
+                            <td class="text-right" id="sumAmountDue"></td>
+                            <td class="text-right" id="sumTotalPaid"></td>
+                            <td class="text-right" id="sumBalance"></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
+<script>
+    function loadReport() {
+        var sy = $("#selSchoolYear").val();
+        var sem = $("#selSemester").val();
+        if (!sy || !sem) { alert("School Year and Semester are required."); return; }
+
+        $.post("/Report/GetAssessmentReport", {
+            schoolYear: sy,
+            semester: sem,
+            courseID: $("#selCourse").val(),
+            yearLevel: $("#selYear").val(),
+            period: $("#selPeriod").val(),
+            status: $("#selStatus").val()
+        }, function (res) {
+            if (res.length == 0) {
+                $("#msgBox").html("<div class='alert alert-warning'>No records found.</div>");
+                $("#divReport").hide();
+                return;
+            }
+            if (res[0].mess == 0) {
+                $("#msgBox").html("<div class='alert alert-danger'>" + res[0].message + "</div>");
+                return;
+            }
+
+            $("#msgBox").html("");
+            $("#reportTitle").text("Assessment Report — " + sy + " | " + sem + " Semester");
+
+            var html = "";
+            var sumDue = 0, sumPaid = 0, sumBal = 0;
+
+            for (var i = 0; i < res.length; i++) {
+                var r = res[i];
+                var bal = parseFloat(r.balance);
+                sumDue += parseFloat(r.amountDue);
+                sumPaid += parseFloat(r.totalPaid);
+                sumBal += bal;
+
+                var statusBadge = r.status == "Paid" ? "success"
+                    : r.status == "Partial" ? "warning"
+                    : r.status == "Unpaid" ? "danger"
+                    : r.status == "Locked" ? "secondary" : "light";
+
+                html += "<tr>";
+                html += "<td>" + (i + 1) + "</td>";
+                html += "<td>" + r.studentID + "</td>";
+                html += "<td>" + r.studentName + "</td>";
+                html += "<td>" + r.courseCode + "</td>";
+                html += "<td>Year " + r.yearLevel + "</td>";
+                html += "<td><span class='badge badge-info'>" + r.period + "</span></td>";
+                html += "<td class='text-right'>₱" + parseFloat(r.tuitionFee).toFixed(2) + "</td>";
+                html += "<td class='text-right'>₱" + parseFloat(r.registrationFee).toFixed(2) + "</td>";
+                html += "<td class='text-right'>₱" + parseFloat(r.miscFee).toFixed(2) + "</td>";
+                html += "<td class='text-right'>₱" + parseFloat(r.labFee).toFixed(2) + "</td>";
+                html += "<td class='text-right text-success'>₱" + parseFloat(r.discountAmount).toFixed(2) + "</td>";
+                html += "<td class='text-right font-weight-bold'>₱" + parseFloat(r.netAssessment).toFixed(2) + "</td>";
+                html += "<td class='text-right'>₱" + parseFloat(r.amountDue).toFixed(2) + "</td>";
+                html += "<td class='text-right text-success'>₱" + parseFloat(r.totalPaid).toFixed(2) + "</td>";
+                html += "<td class='text-right " + (bal > 0 ? "text-danger" : "text-success") + "'>₱" + bal.toFixed(2) + "</td>";
+                html += "<td><span class='badge badge-" + statusBadge + "'>" + r.status + "</span></td>";
+                html += "</tr>";
+            }
+
+            $("#reportBody").html(html);
+            $("#sumAmountDue").text("₱" + sumDue.toFixed(2));
+            $("#sumTotalPaid").text("₱" + sumPaid.toFixed(2));
+            $("#sumBalance").text("₱" + sumBal.toFixed(2));
+            $("#divReport").show();
+        });
+    }
+
+    function printReport() {
+        var printContents = document.getElementById("divReport").innerHTML;
+        var original = document.body.innerHTML;
+        document.body.innerHTML = "<h2>Assessment Report</h2><hr/>" + printContents;
+        window.print();
+        document.body.innerHTML = original;
+        location.reload();
+    }
+</script>

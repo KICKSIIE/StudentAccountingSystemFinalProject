@@ -20,18 +20,18 @@ namespace StudentAccountingSystem.Controllers
             var list = new List<PaymentViewModel>();
             using (var con = new SqlConnection(_conn))
             using (var cmd = new SqlCommand(@"
-                SELECT p.PaymentID, p.AssessmentID,
-           s.StudentNumber, s.FirstName + ' ' + s.LastName AS StudentName,
-           c.CourseName, a.SchoolYear, a.Semester, a.Period,
-           a.AmountDue, p.AmountPaid, p.PaymentDate,
-           p.PaymentMode, p.ORNumber, p.Remarks, -- Updated these two
-           a.Status
-                FROM Payments p
-                JOIN Assessments a ON a.AssessmentID = p.AssessmentID
-                JOIN Students s    ON s.StudentID    = a.StudentID
-                JOIN CourseFees cf ON cf.CourseFeeID = a.CourseFeeID
-                JOIN Courses c     ON c.CourseID     = cf.CourseID
-                ORDER BY p.PaymentDate DESC", con))
+        SELECT p.PaymentID, p.AssessmentID,
+               s.StudentID AS StudentNumber,
+               s.FirstName + ' ' + s.LastName AS StudentName,
+               c.CourseName, a.SchoolYear, a.Semester, a.Period,
+               a.AmountDue, p.AmountPaid, p.PaymentDate,
+               p.PaymentMode, p.ORNumber, p.Remarks,
+               a.Status
+        FROM Payments p
+        JOIN Assessments a ON a.AssessmentID = p.AssessmentID
+        JOIN Students s    ON s.StudentID    = a.StudentID
+        JOIN Courses c     ON c.CourseID     = s.CourseID
+        ORDER BY p.PaymentDate DESC", con))
             {
                 con.Open();
                 using (var r = cmd.ExecuteReader())
@@ -49,8 +49,8 @@ namespace StudentAccountingSystem.Controllers
                             AmountDue = (decimal)r["AmountDue"],
                             AmountPaid = (decimal)r["AmountPaid"],
                             PaymentDate = (DateTime)r["PaymentDate"],
-                            PaymentMethod = r["PaymentMode"].ToString(), // Map Mode to Method
-                            ReferenceNumber = r["ORNumber"].ToString(),  // Map ORNumber to Reference
+                            PaymentMethod = r["PaymentMode"].ToString(),
+                            ReferenceNumber = r["ORNumber"].ToString(),
                             Remarks = r["Remarks"] == DBNull.Value ? "" : r["Remarks"].ToString(),
                             Status = r["Status"].ToString()
                         });
@@ -66,96 +66,6 @@ namespace StudentAccountingSystem.Controllers
             return View(new PaymentFormModel { PaymentDate = DateTime.Today });
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(PaymentFormModel model)
-        {
-            if (Session["Role"] == null) return RedirectToAction("Login", "Account");
-
-            if (!ModelState.IsValid) { PopulateAssessments(); return View(model); }
-
-            using (var con = new SqlConnection(_conn))
-            {
-                con.Open();
-
-                // Get current assessment info
-                decimal amountDue = 0;
-                decimal totalPaid = 0;
-
-                using (var cmd = new SqlCommand(
-                    "SELECT AmountDue FROM Assessments WHERE AssessmentID = @id", con))
-                {
-                    cmd.Parameters.AddWithValue("@id", model.AssessmentID);
-                    var result = cmd.ExecuteScalar();
-                    if (result == null)
-                    {
-                        ModelState.AddModelError("", "Assessment not found.");
-                        PopulateAssessments();
-                        return View(model);
-                    }
-                    amountDue = (decimal)result;
-                }
-
-                // Get total already paid for this assessment
-                using (var cmd = new SqlCommand(
-                    "SELECT ISNULL(SUM(AmountPaid), 0) FROM Payments WHERE AssessmentID = @id", con))
-                {
-                    cmd.Parameters.AddWithValue("@id", model.AssessmentID);
-                    totalPaid = (decimal)cmd.ExecuteScalar();
-                }
-
-                decimal balance = amountDue - totalPaid;
-
-                if (model.AmountPaid <= 0)
-                {
-                    ModelState.AddModelError("AmountPaid", "Amount paid must be greater than zero.");
-                    PopulateAssessments();
-                    return View(model);
-                }
-
-                if (model.AmountPaid > balance)
-                {
-                    ModelState.AddModelError("AmountPaid",
-                        $"Amount paid (₱{model.AmountPaid:N2}) exceeds remaining balance (₱{balance:N2}).");
-                    PopulateAssessments();
-                    return View(model);
-                }
-
-                // Insert payment
-                using (var cmd = new SqlCommand(@"
-                   INSERT INTO Payments
-                        (AssessmentID, StudentID, AmountPaid, PaymentDate, PaymentMode, ORNumber, Period, SchoolYear, Semester, ReceivedBy, Remarks)
-                    VALUES
-                        (@aid, @sid, @paid, @date, @method, @ref, @period, @sy, @sem, @uid, @remarks)", con))
-                {
-                    cmd.Parameters.AddWithValue("@aid", model.AssessmentID);
-                    cmd.Parameters.AddWithValue("@paid", model.AmountPaid);
-                    cmd.Parameters.AddWithValue("@date", model.PaymentDate);
-                    cmd.Parameters.AddWithValue("@method", model.PaymentMethod);
-                    cmd.Parameters.AddWithValue("@ref", string.IsNullOrWhiteSpace(model.ReferenceNumber)
-                                                            ? (object)DBNull.Value : model.ReferenceNumber.Trim());
-                    cmd.Parameters.AddWithValue("@remarks", string.IsNullOrWhiteSpace(model.Remarks)
-                                                            ? (object)DBNull.Value : model.Remarks.Trim());
-                    cmd.ExecuteNonQuery();
-                }
-
-                // Update assessment status
-                decimal newTotalPaid = totalPaid + model.AmountPaid;
-                string newStatus = newTotalPaid >= amountDue ? "Paid" : "Partial";
-
-                using (var cmd = new SqlCommand(
-                    "UPDATE Assessments SET Status = @status WHERE AssessmentID = @id", con))
-                {
-                    cmd.Parameters.AddWithValue("@status", newStatus);
-                    cmd.Parameters.AddWithValue("@id", model.AssessmentID);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-
-            TempData["Success"] = "Payment recorded successfully.";
-            return RedirectToAction("Index");
-        }
-
         // ── DETAILS ───────────────────────────────────────────────────
         public ActionResult Details(int id)
         {
@@ -164,17 +74,18 @@ namespace StudentAccountingSystem.Controllers
             PaymentViewModel model = null;
             using (var con = new SqlConnection(_conn))
             using (var cmd = new SqlCommand(@"
-                SELECT p.PaymentID, p.AssessmentID,
-                       s.StudentNumber, s.FirstName + ' ' + s.LastName AS StudentName,
-                       c.CourseName, a.SchoolYear, a.Semester, a.Period,
-                       a.AmountDue, p.AmountPaid, p.PaymentDate,
-                       p.PaymentMethod, p.ReferenceNumber, p.Remarks,
-                       a.Status
-                FROM Payments p
-                JOIN Assessments a ON a.AssessmentID = p.AssessmentID
-                JOIN Students s    ON s.StudentID    = a.StudentID
-                JOIN Courses c ON c.CourseID = s.CourseID
-                WHERE p.PaymentID = @id", con))
+        SELECT p.PaymentID, p.AssessmentID,
+               s.StudentID AS StudentNumber,
+               s.FirstName + ' ' + s.LastName AS StudentName,
+               c.CourseName, a.SchoolYear, a.Semester, a.Period,
+               a.AmountDue, p.AmountPaid, p.PaymentDate,
+               p.PaymentMode, p.ORNumber, p.Remarks,
+               a.Status
+        FROM Payments p
+        JOIN Assessments a ON a.AssessmentID = p.AssessmentID
+        JOIN Students s    ON s.StudentID    = a.StudentID
+        JOIN Courses c     ON c.CourseID     = s.CourseID
+        WHERE p.PaymentID = @id", con))
             {
                 cmd.Parameters.AddWithValue("@id", id);
                 con.Open();
@@ -193,8 +104,8 @@ namespace StudentAccountingSystem.Controllers
                             AmountDue = (decimal)r["AmountDue"],
                             AmountPaid = (decimal)r["AmountPaid"],
                             PaymentDate = (DateTime)r["PaymentDate"],
-                            PaymentMethod = r["PaymentMethod"].ToString(),
-                            ReferenceNumber = r["ReferenceNumber"] == DBNull.Value ? "" : r["ReferenceNumber"].ToString(),
+                            PaymentMethod = r["PaymentMode"].ToString(),
+                            ReferenceNumber = r["ORNumber"] == DBNull.Value ? "" : r["ORNumber"].ToString(),
                             Remarks = r["Remarks"] == DBNull.Value ? "" : r["Remarks"].ToString(),
                             Status = r["Status"].ToString()
                         };
@@ -251,14 +162,14 @@ namespace StudentAccountingSystem.Controllers
             var items = new List<SelectListItem>();
             using (var con = new SqlConnection(_conn))
             using (var cmd = new SqlCommand(@"
-                SELECT a.AssessmentID,
-                       s.StudentNumber + ' — ' + s.FirstName + ' ' + s.LastName
-                       + ' [' + a.Period + ' ' + a.SchoolYear + ']' AS Label,
-                       a.Status
-                FROM Assessments a
-                JOIN Students s ON s.StudentID = a.StudentID
-                WHERE a.Status != 'Paid'
-                ORDER BY s.LastName", con))
+        SELECT a.AssessmentID,
+               CAST(s.StudentID AS NVARCHAR) + ' — ' + s.FirstName + ' ' + s.LastName
+               + ' [' + a.Period + ' ' + a.SchoolYear + ']' AS Label,
+               a.Status
+        FROM Assessments a
+        JOIN Students s ON s.StudentID = a.StudentID
+        WHERE a.Status != 'Paid'
+        ORDER BY s.LastName", con))
             {
                 con.Open();
                 using (var r = cmd.ExecuteReader())
