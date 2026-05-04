@@ -1,76 +1,214 @@
-﻿@model IEnumerable<StudentAccountingSystem.Models.PaymentViewModel>
-@{
-    ViewBag.Title = "Payment Records";
+﻿@{
+    ViewBag.Title = "Payment Recording";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Payment Records</h2>
-    <a href="@Url.Action("Create")" class="btn btn-primary">+ Record Payment</a>
-</div>
+<html>
+<head>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">
-        @TempData["Success"]
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .student-row {
+            cursor: pointer;
+        }
+
+            .student-row:hover {
+                background-color: #f0f0ff;
+            }
+
+        .btn-pay {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .status-paid {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .status-unpaid {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .status-locked {
+            background-color: #e2e3e5;
+            color: #383d41;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .status-partial {
+            background-color: #cce5ff;
+            color: #004085;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .payment-panel {
+            margin-top: 30px;
+            border: 1px solid #ccc;
+            padding: 15px;
+            display: none;
+        }
+
+        .search-box {
+            padding: 8px;
+            width: 300px;
+            margin-bottom: 20px;
+        }
+
+        .filter-select {
+            padding: 8px;
+            margin-left: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            width: 400px;
+            border-radius: 5px;
+            margin: 100px auto;
+        }
+
+        .btn-record {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-cancel {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Payment Recording</h2>
+
+    <div>
+        <input type="text" id="searchStudent" class="search-box" placeholder="Search by ID or Name..." />
+        <select id="filterYear" class="filter-select">
+            <option value="">All Years</option>
+            <option value="1">Year 1</option>
+            <option value="2">Year 2</option>
+            <option value="3">Year 3</option>
+            <option value="4">Year 4</option>
+        </select>
+        <button id="btnRefresh" style="padding: 8px 15px;">Refresh</button>
     </div>
-}
 
-<div class="card">
-    <div class="card-body">
-        <input type="text" id="searchPayment" class="form-control mb-3"
-               placeholder="Search by student, period, method..." />
-        <table class="table table-bordered table-hover table-sm" id="paymentTable">
-            <thead class="thead-dark">
+    <!-- Student List Table -->
+    <!-- Student List Table -->
+    <table id="tblStudents" class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Student ID</th>
+                <th>Student Name</th>
+                <th>Course</th>
+                <th>Year Level</th>
+                <th>Semester</th>
+                <th>School Year</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="studentTbody">
+            <tr>
+                <td colspan="7">Loading students...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Payment Panel (shows assessments for selected student) -->
+    <div id="paymentPanel" class="payment-panel">
+        <h3 id="paymentTitle">Record Payment</h3>
+        <button id="btnClosePayment">Close</button>
+        <table id="tblAssessments" class="table table-bordered" style="margin-top: 20px;">
+            <thead>
                 <tr>
-                    <th>#</th>
-                    <th>Student No.</th>
-                    <th>Student Name</th>
+                    <th>Assessment ID</th>
+                    <th>Year</th>
+                    <th>Semester</th>
                     <th>Period</th>
                     <th>School Year</th>
                     <th>Amount Due</th>
-                    <th>Amount Paid</th>
-                    <th>Method</th>
-                    <th>Date</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
                     <th>Status</th>
-                    <th>Actions</th>
+                    <th>Payment ID(s)</th>
+                    <th>Action</th>
                 </tr>
             </thead>
-            <tbody>
-                @{ int i = 1; }
-                @foreach (var p in Model)
-                {
-                    <tr>
-                        <td>@i++</td>
-                        <td>@p.StudentNumber</td>
-                        <td>@p.StudentName</td>
-                        <td><span class="badge badge-info">@p.Period</span></td>
-                        <td>@p.SchoolYear — @p.Semester</td>
-                        <td>&#8369; @String.Format("{0:N2}", p.AmountDue)</td>
-                        <td><strong>&#8369; @String.Format("{0:N2}", p.AmountPaid)</strong></td>
-                        <td>@p.PaymentMethod</td>
-                        <td>@p.PaymentDate.ToString("MMM dd, yyyy")</td>
-                        <td>
-                            <span class="badge badge-@(p.Status == "Paid" ? "success" : "warning")">
-                                @p.Status
-                            </span>
-                        </td>
-                        <td>
-                            <a href="@Url.Action("Details", new { id = p.PaymentID })"
-                               class="btn btn-sm btn-info">View</a>
-                        </td>
-                    </tr>
-                }
-                @if (!Model.GetEnumerator().MoveNext())
-                {
-                    <tr><td colspan="11" class="text-center text-muted">No payments recorded yet.</td></tr>
-                }
+            <tbody id="assessmentTbody">
+                <tr>
+                    <td colspan="11">Select a student to view assessments</td>
+                </tr>
             </tbody>
         </table>
     </div>
-</div>
 
-@section scripts {
-    <script src="~/Scripts/myScripts/payment.js"></script>
-}
+    <!-- Payment Modal -->
+    <div id="payModal" class="modal">
+        <div class="modal-content">
+            <h3>Record Payment</h3>
+            <p id="payDesc"></p>
+            <label>Amount to Pay (PHP):</label>
+            <input type="number" id="payAmount" step="0.01" min="0.01" style="width:100%; padding:8px; margin:10px 0;" />
+            <p><strong>Balance: ₱<span id="payBalance">0.00</span></strong></p>
+            <button id="btnConfirmPay" class="btn-record">Record Payment</button>
+            <button id="btnCancelPay" class="btn-cancel">Cancel</button>
+        </div>
+    </div>
+
+</body>
+</html>
+
+<script src="~/Scripts/jquery-3.7.0.js"></script>
+<script src="~/Scripts/myScripts/payment.js"></script>

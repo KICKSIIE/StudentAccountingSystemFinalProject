@@ -22,10 +22,14 @@ namespace StudentAccountingSystem.Controllers
             using (var db = new SqlConnection(connDB))
             {
                 db.Open();
-                // SQL now counts students from the Students table
+                // MODIFIED: Only count students who are NOT Graduated
                 string sql = @"SELECT c.*, 
-                      (SELECT COUNT(*) FROM Students s WHERE s.CourseID = c.CourseID) as StudentCount 
-                      FROM Courses c";
+              (SELECT COUNT(*) FROM Students s 
+               WHERE s.CourseID = c.CourseID 
+                 AND s.Status != 'Graduated'  -- ADD THIS LINE
+                 AND s.Status != 'Dropped'    -- OPTIONAL: exclude dropped too
+              ) as StudentCount 
+              FROM Courses c";
 
                 using (var cmd = new SqlCommand(sql, db))
                 {
@@ -42,12 +46,12 @@ namespace StudentAccountingSystem.Controllers
                             reg = r["RegistrationFee"],
                             misc = r["MiscFee"],
                             lab = r["LabFee"],
-                            isActive = Convert.ToBoolean(r["IsActive"]),  // make sure this is explicit
+                            isActive = Convert.ToBoolean(r["IsActive"]),
                             enrolled = r["StudentCount"],
                             totalFee = (Convert.ToDecimal(r["TuitionPerUnit"]) * Convert.ToInt32(r["Units"]) +
-                Convert.ToDecimal(r["RegistrationFee"]) +
-                Convert.ToDecimal(r["MiscFee"]) +
-                Convert.ToDecimal(r["LabFee"])).ToString("N2")
+                                Convert.ToDecimal(r["RegistrationFee"]) +
+                                Convert.ToDecimal(r["MiscFee"]) +
+                                Convert.ToDecimal(r["LabFee"])).ToString("N2")
                         });
                     }
                 }
@@ -161,8 +165,11 @@ namespace StudentAccountingSystem.Controllers
                         }
                     }
 
-                    // 2. Check if students are enrolled
-                    using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Students WHERE CourseID=@id", con))
+                    // 2. Check if students are enrolled (excluding Graduated)
+                    using (var cmd = new SqlCommand(@"SELECT COUNT(*) FROM Students 
+                                              WHERE CourseID = @id 
+                                                AND Status != 'Graduated'
+                                                AND Status != 'Dropped'", con))
                     {
                         cmd.Parameters.AddWithValue("@id", id);
                         int count = (int)cmd.ExecuteScalar();
@@ -209,10 +216,13 @@ namespace StudentAccountingSystem.Controllers
                         isActive = Convert.ToBoolean(cmd.ExecuteScalar());
                     }
 
-                    // If trying to DEACTIVATE, check for enrolled students
+                    // If trying to DEACTIVATE, check for enrolled students (excluding Graduated)
                     if (isActive)
                     {
-                        using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Students WHERE CourseID=@id", con))
+                        using (var cmd = new SqlCommand(@"SELECT COUNT(*) FROM Students 
+                                                  WHERE CourseID = @id 
+                                                    AND Status != 'Graduated'
+                                                    AND Status != 'Dropped'", con))
                         {
                             cmd.Parameters.AddWithValue("@id", id);
                             int count = (int)cmd.ExecuteScalar();

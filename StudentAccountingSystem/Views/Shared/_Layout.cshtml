@@ -177,6 +177,16 @@
                 <span class="nav-icon">⚙️</span> User Management
             </a>
 
+            <a href="@Url.Action("Index", "Payment")"
+               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Payment" ? "active" : "")">
+                <span class="nav-icon">💳</span> Payment Recording
+            </a>
+
+            <a href="@Url.Action("History", "Payment")"
+               class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "History" && ViewContext.RouteData.Values["controller"].ToString() == "Payment" ? "active" : "")">
+                <span class="nav-icon">📄</span> Payment History
+            </a>
+
             <a href="@Url.Action("Refunds", "Assessment")"
                class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Refunds" ? "active" : "")">
                 <span class="nav-icon">💰</span> Refund Requests

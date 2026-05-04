@@ -233,7 +233,45 @@ namespace StudentAccountingSystem.Controllers
             }
         }
 
-
+        public ActionResult GetActiveStudents()
+        {
+            var data = new List<object>();
+            using (var con = new SqlConnection(_conn))
+            {
+                con.Open();
+                using (var cmd = new SqlCommand(@"
+            SELECT  s.StudentID,
+                    s.FirstName + ' ' + s.LastName AS StudentName,
+                    c.CourseCode,
+                    s.YearLevel,
+                    s.Semester,
+                    s.SchoolYear,
+                    s.Status
+            FROM    Students s
+            JOIN    Courses c ON c.CourseID = s.CourseID
+            WHERE   s.Status IN ('Enrolled', 'Active')  -- EXCLUDES 'Graduated'
+            ORDER BY s.LastName, s.FirstName", con))
+                {
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        while (r.Read())
+                        {
+                            data.Add(new
+                            {
+                                StudentID = r["StudentID"],
+                                StudentName = r["StudentName"],
+                                CourseCode = r["CourseCode"],
+                                YearLevel = r["YearLevel"],
+                                Semester = r["Semester"],
+                                SchoolYear = r["SchoolYear"],
+                                Status = r["Status"]
+                            });
+                        }
+                    }
+                }
+            }
+            return Json(data, JsonRequestBehavior.AllowGet);
+        }
 
         public ActionResult GetStudent()
         {
@@ -243,12 +281,13 @@ namespace StudentAccountingSystem.Controllers
             using (var con = new SqlConnection(_conn))
             using (var cmd = new SqlCommand(
                 @"SELECT s.StudentID, s.LastName, s.FirstName,
-                     s.MiddleName, s.Gender, s.BirthDate, s.ContactNumber,
-                     s.Address, s.Email, s.CourseID, s.YearLevel,
-                     s.Semester, s.SchoolYear, s.Status,
-                     s.ScholarshipID, s.DiscountID
-                  FROM   Students s
-                  WHERE  s.StudentID = @id", con))
+             s.MiddleName, s.Gender, s.BirthDate, s.ContactNumber,
+             s.Address, s.Email, s.CourseID, s.YearLevel,
+             s.Semester, s.SchoolYear, s.Status,
+             s.ScholarshipID, s.DiscountID
+          FROM   Students s
+          WHERE  s.StudentID = @id
+            AND  s.Status IN ('Enrolled', 'Active')", con))  // ADD THIS LINE to exclude graduated
             {
                 cmd.Parameters.AddWithValue("@id", int.Parse(id));
                 con.Open();
@@ -423,14 +462,14 @@ namespace StudentAccountingSystem.Controllers
         // keep GenerateAssessments and AdvanceSemester exactly as they are
         // (they are used by StudentPortalController — do not remove)
         public static void GenerateAssessments(SqlConnection con, int studentID, int courseID,
-    int yearLevel, string semester, string schoolYear, SqlTransaction trans = null)
+int yearLevel, string semester, string schoolYear, SqlTransaction trans = null)
         {
             decimal tuitionPerUnit = 0, regFee = 0, miscFee = 0, labFee = 0;
             int units = 0;
 
             // IMPORTANT: Every SqlCommand MUST now include 'trans'
             using (var cmd = new SqlCommand(@"SELECT Units, TuitionPerUnit, RegistrationFee, MiscFee, LabFee
-                                      FROM Courses WHERE CourseID = @cid", con, trans))
+                              FROM Courses WHERE CourseID = @cid", con, trans))
             {
                 cmd.Parameters.AddWithValue("@cid", courseID);
                 using (var r = cmd.ExecuteReader())
@@ -449,11 +488,11 @@ namespace StudentAccountingSystem.Controllers
             decimal discountAmount = 0;
 
             using (var cmd = new SqlCommand(@"SELECT sc.Type AS SchType, sc.DiscountPercent AS SchPct, sc.DiscountAmount AS SchAmt,
-                                             d.Type  AS DisType, d.DiscountPercent  AS DisPct, d.DiscountAmount  AS DisAmt
-                                      FROM Students s
-                                      LEFT JOIN Scholarships sc ON sc.ScholarshipID = s.ScholarshipID
-                                      LEFT JOIN Discounts     d ON d.DiscountID     = s.DiscountID
-                                      WHERE s.StudentID = @sid", con, trans))
+                                     d.Type  AS DisType, d.DiscountPercent  AS DisPct, d.DiscountAmount  AS DisAmt
+                              FROM Students s
+                              LEFT JOIN Scholarships sc ON sc.ScholarshipID = s.ScholarshipID
+                              LEFT JOIN Discounts     d ON d.DiscountID     = s.DiscountID
+                              WHERE s.StudentID = @sid", con, trans))
             {
                 cmd.Parameters.AddWithValue("@sid", studentID);
                 using (var r = cmd.ExecuteReader())
@@ -476,19 +515,68 @@ namespace StudentAccountingSystem.Controllers
             if (discountAmount > totalFee) discountAmount = totalFee;
             decimal netAssessment = Math.Max(0, totalFee - discountAmount);
 
+            // Calculate individual period amounts
+            decimal prelimAmount = Math.Round(netAssessment * 53 / 100, 2);
+            decimal midtermAmount = Math.Round(netAssessment * 11 / 100, 2);
+            decimal semiFinalAmount = Math.Round(netAssessment * 11 / 100, 2);
+            decimal finalAmount = Math.Round(netAssessment * 25 / 100, 2);
+
+            // Determine statuses based on whether amounts are zero
+            string prelimStatus = "Unpaid";
+            string midtermStatus = "Locked";
+            string semiFinalStatus = "Locked";
+            string finalStatus = "Locked";
+
+            // If netAssessment is ZERO, handle accordingly
+            if (netAssessment == 0)
+            {
+                // All periods have zero balance - mark them all as Paid
+                prelimStatus = "Paid";
+                midtermStatus = "Paid";
+                semiFinalStatus = "Paid";
+                finalStatus = "Paid";
+            }
+            else
+            {
+                // Check each period individually for zero balance
+                if (prelimAmount == 0)
+                {
+                    prelimStatus = "Paid";
+                    midtermStatus = "Unpaid";  // Unlock next period
+                }
+
+                if (midtermAmount == 0 && midtermStatus == "Unpaid")
+                {
+                    midtermStatus = "Paid";
+                    semiFinalStatus = "Unpaid";
+                }
+
+                if (semiFinalAmount == 0 && semiFinalStatus == "Unpaid")
+                {
+                    semiFinalStatus = "Paid";
+                    finalStatus = "Unpaid";
+                }
+
+                if (finalAmount == 0 && finalStatus == "Unpaid")
+                {
+                    finalStatus = "Paid";
+                }
+            }
+
+            // Array with calculated statuses
             var periods = new[]
             {
-        new { Period = "Prelim",     Pct = 53m, Status = "Unpaid" },
-        new { Period = "Midterm",    Pct = 11m, Status = "Locked" },
-        new { Period = "Semi-Final", Pct = 11m, Status = "Locked" },
-        new { Period = "Final",      Pct = 25m, Status = "Locked" }
+        new { Period = "Prelim",     Amount = prelimAmount,     Status = prelimStatus },
+        new { Period = "Midterm",    Amount = midtermAmount,    Status = midtermStatus },
+        new { Period = "Semi-Final", Amount = semiFinalAmount,  Status = semiFinalStatus },
+        new { Period = "Final",      Amount = finalAmount,      Status = finalStatus }
     };
 
             foreach (var p in periods)
             {
                 int exists = 0;
                 using (var cmd = new SqlCommand(@"SELECT COUNT(*) FROM Assessments
-                                          WHERE StudentID=@sid AND SchoolYear=@sy AND Semester=@sem AND Period=@period", con, trans))
+                                  WHERE StudentID=@sid AND SchoolYear=@sy AND Semester=@sem AND Period=@period", con, trans))
                 {
                     cmd.Parameters.AddWithValue("@sid", studentID);
                     cmd.Parameters.AddWithValue("@sy", schoolYear);
@@ -498,21 +586,26 @@ namespace StudentAccountingSystem.Controllers
                 }
                 if (exists > 0) continue;
 
-                decimal amountDue = Math.Round(netAssessment * p.Pct / 100, 2);
-
                 using (var cmd = new SqlCommand(@"INSERT INTO Assessments 
-                    (StudentID, YearLevel, CourseFeeID, SchoolYear, Semester, Period, 
-                     TotalFee, TuitionFee, RegistrationFee, MiscFee, LabFee, 
-                     DiscountAmount, NetAssessment, PercentRequired, 
-                     AmountDue, Status, AssessedAt) 
-                  VALUES 
-                    (@sid, @yl, NULL, @sy, @sem, @period, 
-                     @totalFee, @tuitionFee, @regFee, @miscFee, @labFee, 
-                     @discount, @net, @pct, 
-                     @amountDue, @status, GETDATE())", con, trans))
+            (StudentID, YearLevel, CourseFeeID, SchoolYear, Semester, Period, 
+             TotalFee, TuitionFee, RegistrationFee, MiscFee, LabFee, 
+             DiscountAmount, NetAssessment, PercentRequired, 
+             AmountDue, Status, AssessedAt) 
+          VALUES 
+            (@sid, @yl, NULL, @sy, @sem, @period, 
+             @totalFee, @tuitionFee, @regFee, @miscFee, @labFee, 
+             @discount, @net, @pct, 
+             @amountDue, @status, GETDATE())", con, trans))
                 {
+                    // Get the percentage for this period (for PercentRequired field)
+                    decimal pct = 0;
+                    if (p.Period == "Prelim") pct = 53;
+                    else if (p.Period == "Midterm") pct = 11;
+                    else if (p.Period == "Semi-Final") pct = 11;
+                    else if (p.Period == "Final") pct = 25;
+
                     cmd.Parameters.AddWithValue("@sid", studentID);
-                    cmd.Parameters.AddWithValue("@yl", yearLevel); // <-- ADD THIS LINE
+                    cmd.Parameters.AddWithValue("@yl", yearLevel);
                     cmd.Parameters.AddWithValue("@sy", schoolYear);
                     cmd.Parameters.AddWithValue("@sem", semester);
                     cmd.Parameters.AddWithValue("@period", p.Period);
@@ -523,8 +616,8 @@ namespace StudentAccountingSystem.Controllers
                     cmd.Parameters.AddWithValue("@labFee", labFee);
                     cmd.Parameters.AddWithValue("@discount", discountAmount);
                     cmd.Parameters.AddWithValue("@net", netAssessment);
-                    cmd.Parameters.AddWithValue("@pct", p.Pct);
-                    cmd.Parameters.AddWithValue("@amountDue", amountDue);
+                    cmd.Parameters.AddWithValue("@pct", pct);
+                    cmd.Parameters.AddWithValue("@amountDue", p.Amount);
                     cmd.Parameters.AddWithValue("@status", p.Status);
                     cmd.ExecuteNonQuery();
                 }

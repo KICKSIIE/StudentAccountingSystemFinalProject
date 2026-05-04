@@ -196,11 +196,10 @@
     <Content Include="Scripts\myScripts\discountListv3.js" />
     <Content Include="Scripts\myScripts\login.js" />
     <Content Include="Scripts\myScripts\payment.js" />
+    <Content Include="Scripts\myScripts\paymentHistory.js" />
     <Content Include="Scripts\myScripts\scholarshipListv3.js" />
-    <Content Include="Scripts\myScripts\studentPortal.js" />
     <Content Include="Scripts\myScripts\studentListv2.js" />
     <Content Include="Scripts\myScripts\courseListv3.js" />
-    <Content Include="Scripts\myScripts\withdrawal.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -236,6 +235,7 @@
     <Content Include="Views\Report\Index.cshtml" />
     <Content Include="Views\Report\StudentLedger.cshtml" />
     <Content Include="Views\Report\AssessmentReport.cshtml" />
+    <Content Include="Views\Payment\History.cshtml" />
     <None Include="Views\StudentPortal\Index.cshtml" />
   </ItemGroup>
   <ItemGroup />

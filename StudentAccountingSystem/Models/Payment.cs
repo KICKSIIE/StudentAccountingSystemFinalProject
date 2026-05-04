@@ -1,43 +1,49 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
 namespace StudentAccountingSystem.Models
 {
+    // Used in Payment Index (cashier recording)
     public class PaymentViewModel
     {
-        public int PaymentID { get; set; }
-        public int AssessmentID { get; set; }
-        public string StudentNumber { get; set; }
+        public int StudentID { get; set; }
         public string StudentName { get; set; }
         public string CourseName { get; set; }
-        public string SchoolYear { get; set; }
+        public int YearLevel { get; set; }
         public string Semester { get; set; }
-        public string Period { get; set; }
-        public decimal AmountDue { get; set; }
-        public decimal AmountPaid { get; set; }
-        public DateTime PaymentDate { get; set; }
-        public string PaymentMethod { get; set; }
-        public string ReferenceNumber { get; set; }
-        public string Remarks { get; set; }
+        public string SchoolYear { get; set; }
         public string Status { get; set; }
+        public List<AssessmentViewModel> Assessments { get; set; } = new List<AssessmentViewModel>();
     }
 
-    public class PaymentFormModel
+    // Used in Payment History
+    public class PaymentHistoryRow
     {
-        [Required]
-        public int AssessmentID { get; set; }
-
-        [Required]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than zero.")]
+        public int PaymentID { get; set; }
+        public int ORNumber { get; set; }
+        public int StudentID { get; set; }
+        public string StudentName { get; set; }
+        public string Period { get; set; }
+        public string SchoolYear { get; set; }
+        public string Semester { get; set; }
+        public int YearLevel { get; set; }
         public decimal AmountPaid { get; set; }
-
-        [Required]
-        public DateTime PaymentDate { get; set; }
-
-        [Required]
-        public string PaymentMethod { get; set; }
-
-        public string ReferenceNumber { get; set; }
+        public string PaymentMode { get; set; }
+        public string TransactionType { get; set; }
         public string Remarks { get; set; }
+        public DateTime PaymentDate { get; set; }
+        public string ReceivedByName { get; set; }
+    }
+
+    // Used for Refund summary per semester
+    public class SemesterRefundSummary
+    {
+        public int StudentID { get; set; }
+        public string StudentName { get; set; }
+        public string SchoolYear { get; set; }
+        public string Semester { get; set; }
+        public int YearLevel { get; set; }
+        public decimal TotalPaid { get; set; }
+        public bool AlreadyRefunded { get; set; }
     }
 }
