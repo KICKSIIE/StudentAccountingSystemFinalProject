@@ -1,46 +1,153 @@
 ﻿@{
     ViewBag.Title = "Add Course";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Add New Course</h2>
-<hr />
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        background-color: #f8f9fa;
+        color: #333;
+    }
 
-<div style="border: 1px solid #ccc; padding: 20px; display: inline-block; background-color: #f9f9f9;">
-    <h3 style="margin-top: 0;">Course Information</h3>
+    .container-fluid {
+        padding: 20px;
+    }
 
-    Course Code: <br />
-    <input id="txtCode" type="text" placeholder="e.g. BSIT" /><br />
+    .form-section {
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
 
-    Course Name: <br />
-    <input id="txtName" type="text" style="width: 300px;" /><br />
+    .form-title {
+        border-bottom: 2px solid #2c3e50;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        color: #2c3e50;
+    }
 
-    <hr />
-    <h3>Fee Structure</h3>
+    .input-row {
+        margin-bottom: 15px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
 
-    No. of Units: <br />
-    <input id="txtUnits" type="number" value="0" /><br />
+    .field {
+        display: flex;
+        flex-direction: column;
+    }
 
-    Tuition Per Unit: <br />
-    <input id="txtTpu" type="number" value="0" /><br />
+    label {
+        font-weight: bold;
+        font-size: 0.8rem;
+        margin-bottom: 5px;
+        color: #555;
+    }
 
-    Registration Fee: <br />
-    <input id="txtReg" type="number" value="0" /><br />
+    input[type="text"], input[type="number"] {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
 
-    Miscellaneous Fee: <br />
-    <input id="txtMisc" type="number" value="0" /><br />
+    .btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        text-decoration: none;
+        display: inline-block;
+    }
 
-    Laboratory Fee: <br />
-    <input id="txtLab" type="number" value="0" /><br /><br />
+    .btn-primary {
+        background: #2c3e50;
+        color: white;
+    }
 
-    <input id="btnSave" type="button" value="Save Course" />
-    <a href="../Course/Index"><input type="button" value="Back to List" /></a>
-</div>
+    .btn-danger {
+        background: #c0392b;
+        color: white;
+    }
+</style>
 
-<br />
-<br />
-<div id="result">
-    <!-- Feedback message will appear here -->
+<div class="container-fluid">
+    <h2 class="form-title">Add New Course</h2>
+
+    <div id="msgBox"></div>
+
+    <div class="form-section">
+        <p><strong>I. Course Information</strong></p>
+        <div class="input-row">
+            <div class="field">
+                <label>Course Code</label>
+                <input type="text" id="txtCode" placeholder="e.g. BSIT" />
+            </div>
+            <div class="field">
+                <label>Course Name</label>
+                <input type="text" id="txtName" style="width: 300px;" />
+            </div>
+        </div>
+
+        <p><strong>II. Fee Structure</strong></p>
+        <div class="input-row">
+            <div class="field">
+                <label>No. of Units</label>
+                <input type="number" id="txtUnits" value="0" />
+            </div>
+            <div class="field">
+                <label>Tuition / Unit</label>
+                <input type="number" id="txtTpu" value="0" />
+            </div>
+            <div class="field">
+                <label>Registration Fee</label>
+                <input type="number" id="txtReg" value="0" />
+            </div>
+            <div class="field">
+                <label>Miscellaneous Fee</label>
+                <input type="number" id="txtMisc" value="0" />
+            </div>
+            <div class="field">
+                <label>Laboratory Fee</label>
+                <input type="number" id="txtLab" value="0" />
+            </div>
+        </div>
+
+        <hr />
+        <button id="btnSave" class="btn btn-primary">Save Course</button>
+        <a href="@Url.Action("Index", "Course")" class="btn btn-danger">← Back to List</a>
+    </div>
 </div>
 
 <script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
-<script src="~/Scripts/myScripts/course.js"></script>
+<script>
+    $("#btnSave").click(function () {
+        var data = {
+            code: $("#txtCode").val().trim(),
+            name: $("#txtName").val().trim(),
+            units: $("#txtUnits").val(),
+            tpu: $("#txtTpu").val(),
+            reg: $("#txtReg").val(),
+            misc: $("#txtMisc").val(),
+            lab: $("#txtLab").val()
+        };
+
+        if (!data.code || !data.name) {
+            $("#msgBox").html("<span style='color:red;'>Course Code and Name are required.</span>");
+            return;
+        }
+
+        $.post("/Course/SaveCourse", data, function (res) {
+            $("#msgBox").html("<span style='color:green;'>" + res.message + "</span>");
+            setTimeout(function () {
+                window.location.href = "/Course/Index";
+            }, 1000);
+        }).fail(function () {
+            $("#msgBox").html("<span style='color:red;'>Error saving course. Please try again.</span>");
+        });
+    });
+</script>

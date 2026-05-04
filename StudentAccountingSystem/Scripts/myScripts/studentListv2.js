@@ -196,33 +196,6 @@ $("#btnRegister").click(function () {
     });
 });
 
-function showEdit(studentID) {
-    $.post("../Student/GetStudent", { studentID: studentID }, function (res) {
-        if (res.length == 0) return;
-        var s = res[0];
-        $("#editStudentID").val(s.studentID);
-        $("#editStudentNumber").text(s.studentNumber);
-        $("#editLastName").val(s.lastName);
-        $("#editFirstName").val(s.firstName);
-        $("#editMiddleName").val(s.middleName);
-        $("#editGender").val(s.gender);
-        $("#editBirthDate").val(s.birthDate);
-        $("#editContact").val(s.contact);
-        $("#editAddress").val(s.address);
-        $("#editEmail").val(s.email);
-        $("#editCourse").val(s.courseID);
-        $("#editYear").val(s.yearLevel);
-        $("#editSemester").val(s.semester);
-        $("#editSchoolYear").val(s.schoolYear);
-        $("#editStatus").val(s.status);
-        $("#editScholarship").val(s.scholarshipID);
-        $("#editDiscount").val(s.discountID);
-        $("#divList").hide();
-        $("#divRegister").hide();
-        $("#divEdit").show();
-    });
-}
-
 $("#btnUpdate").click(function () {
     $.post("../Student/UpdateStudent", {
         studentID: $("#editStudentID").val(),
@@ -267,4 +240,8 @@ function deleteStudent(studentID) {
 
 function viewStudent(studentID) {
     window.location.href = "/Student/Details/" + studentID;
+}
+
+function showEdit(studentID) {
+    window.location.href = "/Student/Edit/" + studentID;
 }

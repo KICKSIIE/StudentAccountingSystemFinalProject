@@ -99,21 +99,27 @@ namespace StudentAccountingSystem.Controllers
             return Json(data, JsonRequestBehavior.AllowGet);
         }
 
-
         public ActionResult SaveScholarship()
         {
-            using (var db = new SqlConnection(connDB))
+            try
             {
-                db.Open();
-                string sql = "INSERT INTO Scholarships (ScholarshipName, Type, DiscountPercent, DiscountAmount, IsActive) VALUES (@n, @t, @p, @a, 1)";
-                SqlCommand cmd = new SqlCommand(sql, db);
-                cmd.Parameters.AddWithValue("@n", Request["name"]);
-                cmd.Parameters.AddWithValue("@t", Request["type"]);
-                cmd.Parameters.AddWithValue("@p", string.IsNullOrEmpty(Request["percent"]) ? (object)DBNull.Value : Request["percent"]);
-                cmd.Parameters.AddWithValue("@a", string.IsNullOrEmpty(Request["amount"]) ? (object)DBNull.Value : Request["amount"]);
-                cmd.ExecuteNonQuery();
+                using (var db = new SqlConnection(connDB))
+                {
+                    db.Open();
+                    string sql = "INSERT INTO Scholarships (ScholarshipName, Type, DiscountPercent, DiscountAmount, IsActive) VALUES (@n, @t, @p, @a, 1)";
+                    SqlCommand cmd = new SqlCommand(sql, db);
+                    cmd.Parameters.AddWithValue("@n", Request["name"]);
+                    cmd.Parameters.AddWithValue("@t", Request["type"]);
+                    cmd.Parameters.AddWithValue("@p", string.IsNullOrEmpty(Request["percent"]) ? (object)DBNull.Value : Request["percent"]);
+                    cmd.Parameters.AddWithValue("@a", string.IsNullOrEmpty(Request["amount"]) ? (object)DBNull.Value : Request["amount"]);
+                    cmd.ExecuteNonQuery();
+                }
+                return Json(new[] { new { mess = 1, message = "Saved Successfully!" } });
             }
-            return Json(new[] { new { mess = 1, message = "Saved Successfully!" } });
+            catch (Exception ex)
+            {
+                return Json(new[] { new { mess = 0, message = "Error: " + ex.Message } });
+            }
         }
 
         public ActionResult GetScholarshipByID(int id)
@@ -208,6 +214,20 @@ namespace StudentAccountingSystem.Controllers
             }
 
             return Json(data, JsonRequestBehavior.AllowGet);
+        }
+
+        public ActionResult Create()
+        {
+            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
+                return RedirectToAction("Login", "Account");
+            return View();
+        }
+
+        public ActionResult Edit(int id)
+        {
+            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
+                return RedirectToAction("Login", "Account");
+            return View();
         }
     }
 }

@@ -121,7 +121,6 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AccountController.cs" />
-    <Compile Include="Controllers\backup.cs" />
     <Compile Include="Controllers\CourseController.cs" />
     <Compile Include="Controllers\DashboardController.cs" />
     <Compile Include="Controllers\DiscountController.cs" />
@@ -179,7 +178,6 @@
     <Content Include="Scripts\bootstrap.esm.min.js" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
-    <Compile Include="Controllers\CourseFee.Controller.cs" />
     <None Include="Scripts\jquery-3.7.0.intellisense.js" />
     <Content Include="Scripts\jquery-3.7.0.js" />
     <Content Include="Scripts\jquery-3.7.0.min.js" />
@@ -195,13 +193,13 @@
     <Content Include="Scripts\myScripts\account.js" />
     <Content Include="Scripts\myScripts\assessment.js" />
     <Content Include="Scripts\myScripts\dashboard.js" />
-    <Content Include="Scripts\myScripts\discount.js" />
-    <Content Include="Scripts\myScripts\discountListv2.js" />
+    <Content Include="Scripts\myScripts\discountListv3.js" />
+    <Content Include="Scripts\myScripts\login.js" />
     <Content Include="Scripts\myScripts\payment.js" />
-    <Content Include="Scripts\myScripts\scholarshipListv2.js" />
+    <Content Include="Scripts\myScripts\scholarshipListv3.js" />
     <Content Include="Scripts\myScripts\studentPortal.js" />
-    <Content Include="Scripts\myScripts\studentList.js" />
-    <Content Include="Scripts\myScripts\courseListv2.js" />
+    <Content Include="Scripts\myScripts\studentListv2.js" />
+    <Content Include="Scripts\myScripts\courseListv3.js" />
     <Content Include="Scripts\myScripts\withdrawal.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
@@ -235,6 +233,9 @@
     <Content Include="Views\Payment\Details.cshtml" />
     <Content Include="Views\Shared\_StudentLayout.cshtml" />
     <Content Include="Views\Assessment\Refunds.cshtml" />
+    <Content Include="Views\Report\Index.cshtml" />
+    <Content Include="Views\Report\StudentLedger.cshtml" />
+    <Content Include="Views\Report\AssessmentReport.cshtml" />
     <None Include="Views\StudentPortal\Index.cshtml" />
   </ItemGroup>
   <ItemGroup />

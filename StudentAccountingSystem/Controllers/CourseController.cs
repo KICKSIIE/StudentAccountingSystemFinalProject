@@ -248,6 +248,46 @@ namespace StudentAccountingSystem.Controllers
 
             return Json(data, JsonRequestBehavior.AllowGet);
         }
+
+        public ActionResult Create()
+        {
+            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
+                return RedirectToAction("Login", "Account");
+
+            return View();
+        }
+
+        public ActionResult Edit(int id)
+        {
+            Models.Course course = null;
+            using (var db = new SqlConnection(connDB))
+            {
+                db.Open();
+                string sql = "SELECT * FROM Courses WHERE CourseID = @id";
+                using (var cmd = new SqlCommand(sql, db))
+                {
+                    cmd.Parameters.AddWithValue("@id", id);
+                    SqlDataReader r = cmd.ExecuteReader();
+                    if (r.Read())
+                    {
+                        course = new Models.Course
+                        {
+                            CourseID = Convert.ToInt32(r["CourseID"]),
+                            CourseCode = r["CourseCode"].ToString(),
+                            CourseName = r["CourseName"].ToString(),
+                            Units = Convert.ToInt32(r["Units"]),
+                            TuitionPerUnit = Convert.ToDecimal(r["TuitionPerUnit"]),
+                            RegistrationFee = Convert.ToDecimal(r["RegistrationFee"]),
+                            MiscFee = Convert.ToDecimal(r["MiscFee"]),
+                            LabFee = Convert.ToDecimal(r["LabFee"])
+                        };
+                    }
+                }
+            }
+
+            if (course == null) return HttpNotFound();
+            return View(course);
+        }
     }
 }
 

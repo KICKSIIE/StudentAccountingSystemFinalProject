@@ -4,100 +4,80 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Student Details</h2>
-<hr />
+<div class="container-fluid" style="padding: 20px;">
+    <h2 style="border-bottom: 2px solid #2c3e50; padding-bottom: 10px; color: #2c3e50;">
+        Student Details
+    </h2>
 
-<div class="row">
-    @* --- Left Column: Personal Info --- *@
-    <div class="col-md-6">
-        <h4>Personal Information</h4>
-        <table class="table table-bordered">
+    <div class="card" style="background:white; padding:25px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:15px;">
+
+        <h4 style="color:#2c3e50; margin-bottom:15px;">I. Personal Information</h4>
+        <table class="table table-bordered table-sm">
             <tr>
-                <th style="width:150px">Student ID</th>
-                <td>@Model.StudentID</td>
+                <th style="width:200px; background:#f4f4f4;">Student Number</th>
+                <td><strong>@Model.StudentID</strong></td>
             </tr>
             <tr>
-                <th>Last Name</th>
-                <td>@Model.LastName</td>
+                <th style="background:#f4f4f4;">Full Name</th>
+                <td>@Model.LastName, @Model.FirstName @Model.MiddleName</td>
             </tr>
             <tr>
-                <th>First Name</th>
-                <td>@Model.FirstName</td>
-            </tr>
-            <tr>
-                <th>Middle Name</th>
-                <td>@(string.IsNullOrEmpty(Model.MiddleName) ? "N/A" : Model.MiddleName)</td>
-            </tr>
-            <tr>
-                <th>Gender</th>
+                <th style="background:#f4f4f4;">Gender</th>
                 <td>@Model.Gender</td>
             </tr>
             <tr>
-                <th>Birth Date</th>
+                <th style="background:#f4f4f4;">Birth Date</th>
                 <td>@Model.BirthDate.ToString("MMMM dd, yyyy")</td>
             </tr>
             <tr>
-                <th>Contact No.</th>
-                <td>@(string.IsNullOrEmpty(Model.ContactNumber) ? "N/A" : Model.ContactNumber)</td>
+                <th style="background:#f4f4f4;">Contact Number</th>
+                <td>@(string.IsNullOrEmpty(Model.ContactNumber) ? "—" : Model.ContactNumber)</td>
             </tr>
             <tr>
-                <th>Address</th>
-                <td>@(string.IsNullOrEmpty(Model.Address) ? "N/A" : Model.Address)</td>
+                <th style="background:#f4f4f4;">Address</th>
+                <td>@(string.IsNullOrEmpty(Model.Address) ? "—" : Model.Address)</td>
             </tr>
             <tr>
-                <th>Email</th>
-                <td>@(string.IsNullOrEmpty(Model.Email) ? "N/A" : Model.Email)</td>
+                <th style="background:#f4f4f4;">Email</th>
+                <td>@(string.IsNullOrEmpty(Model.Email) ? "—" : Model.Email)</td>
             </tr>
         </table>
-    </div>
 
-    @* --- Right Column: Enrollment & Scholarships --- *@
-    <div class="col-md-6">
-        <h4>Enrollment Information</h4>
-        <table class="table table-bordered">
+        <h4 style="color:#2c3e50; margin-top:25px; margin-bottom:15px;">II. Enrollment Information</h4>
+        <table class="table table-bordered table-sm">
             <tr>
-                <th style="width:150px">Course</th>
-                <td>@ViewBag.CourseCode - @ViewBag.CourseName</td>
+                <th style="background:#f4f4f4;">Course</th>
+                <td>@ViewBag.CourseDisplay</td>
             </tr>
             <tr>
-                <th>Year Level</th>
-                <td>Year @Model.YearLevel</td>
+                <th style="background:#f4f4f4;">Year Level</th>
+                <td>@Model.YearLevel</td>
             </tr>
             <tr>
-                <th>Semester</th>
-                <td>@Model.Semester Semester</td>
+                <th style="background:#f4f4f4;">Semester</th>
+                <td>@Model.Semester</td>
             </tr>
             <tr>
-                <th>School Year</th>
+                <th style="background:#f4f4f4;">School Year</th>
                 <td>@Model.SchoolYear</td>
             </tr>
             <tr>
-                <th>Status</th>
+                <th style="background:#f4f4f4;">Status</th>
                 <td>@Model.Status</td>
             </tr>
             <tr>
-                <th>Enrolled At</th>
-                <td>@Model.EnrolledAt.ToString("MMMM dd, yyyy")</td>
+                <th style="background:#f4f4f4;">Scholarship</th>
+                <td>@ViewBag.ScholarshipDisplay</td>
+            </tr>
+            <tr>
+                <th style="background:#f4f4f4;">Discount</th>
+                <td>@ViewBag.DiscountDisplay</td>
             </tr>
         </table>
 
-        <h4 class="mt-4">Scholarships & Discounts</h4>
-        <table class="table table-bordered">
-            <tr>
-                <th style="width:150px">Scholarship</th>
-                <td>@ViewBag.ScholarshipName</td>
-            </tr>
-            <tr>
-                <th>Discount</th>
-                <td>@ViewBag.DiscountName</td>
-            </tr>
-        </table>
-    </div>
-</div>
-
-<div class="row mt-3">
-    <div class="col-md-12">
-        <a href="@Url.Action("Index", "Student")" class="btn btn-secondary">Back to List</a>
-        <a href="@Url.Action("Edit", "Student", new { id = Model.StudentID })" class="btn btn-primary">Edit</a>
+        <div style="margin-top:20px;">
+            <a href="@Url.Action("Edit", new { id = Model.StudentID })" class="btn btn-warning">Edit</a>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">← Back to List</a>
+        </div>
     </div>
 </div>

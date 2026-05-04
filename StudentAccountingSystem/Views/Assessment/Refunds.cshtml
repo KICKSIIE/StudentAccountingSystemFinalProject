@@ -5,7 +5,9 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<!-- ... existing alert code ... -->
+<h2>Refund Requests</h2>
+<hr />
+<div id="msgBox"></div>
 
 <table class="table table-bordered">
     <thead>
@@ -29,18 +31,18 @@
                 <td>@row["StudentNumber"]</td>
                 <td>@row["StudentName"]</td>
                 <td class="text-success font-weight-bold">
-                    ₱@Convert.ToDecimal(row["Amount"]).ToString("N2")
+                    &#8369; @Convert.ToDecimal(row["Amount"]).ToString("N2")
                 </td>
                 <td>
-                    @using (Html.BeginForm("ProcessRefund", "Assessment", FormMethod.Post))
-                    {
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="requestId" value="@row["RequestID"]" />
-                        <button type="submit" name="action" value="Approve" class="btn btn-success btn-sm">Approve</button>
-                        <button type="submit" name="action" value="Reject" class="btn btn-danger btn-sm">Reject</button>
-                    }
+                    <input type="button" value="Approve" class="btn btn-sm btn-success"
+                           onclick="processRefund(@row["RequestID"], 'Approve')" />
+                    <input type="button" value="Reject" class="btn btn-sm btn-danger"
+                           onclick="processRefund(@row["RequestID"], 'Reject')" />
                 </td>
             </tr>
         }
     </tbody>
 </table>
+
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
+<script src="~/Scripts/myScripts/assessment.js"></script>

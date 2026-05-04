@@ -1,102 +1,287 @@
 ﻿@model StudentAccountingSystem.Models.Student
 @{
     ViewBag.Title = "Edit Student";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<html>
-<body>
-    <h2>Edit Student</h2><br /><br />
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        background-color: #f8f9fa;
+        color: #333;
+    }
 
-    <input type="hidden" id="hdnStudentID" value="@Model.StudentID" />
+    .container-fluid {
+        padding: 20px;
+    }
 
-    Student Number: <input type="text" id="txtStudentNumber" value="@Model.StudentID" disabled /><br />
-    Lastname: <input id="txtLname" type="text" value="@Model.LastName" /><br />
-    Firstname: <input id="txtFname" type="text" value="@Model.FirstName" /><br />
-    Middlename: <input id="txtMname" type="text" value="@Model.MiddleName" /><br />
-    Gender:
-    <select id="selGender">
-        <option value="">-- Select Gender --</option>
-        <option value="Male" @(Model.Gender == "Male" ? "selected" : "")>Male</option>
-        <option value="Female" @(Model.Gender == "Female" ? "selected" : "")>Female</option>
-    </select><br />
-    Birth Date: <input id="txtBirthDate" type="date" value="@Model.BirthDate.ToString("yyyy-MM-dd")" /><br />
-    Contact Number: <input id="txtContact" type="text" value="@Model.ContactNumber" /><br />
-    Address: <input id="txtAddress" type="text" value="@Model.Address" /><br />
-    Email: <input id="txtEmail" type="email" value="@Model.Email" /><br />
-    Course:
-    <select id="selCourse">
-        @foreach (var course in ViewBag.Courses)
-        {
-            <option value="@course.Value" @(Model.CourseID.ToString() == course.Value ? "selected" : "")>@course.Text</option>
+    .form-section {
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 25px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .form-title {
+        border-bottom: 2px solid #2c3e50;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        color: #2c3e50;
+    }
+
+    .section-label {
+        color: #2c3e50;
+        font-weight: bold;
+        margin: 20px 0 10px 0;
+        font-size: 0.95rem;
+    }
+
+    .input-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        min-width: 180px;
+    }
+
+        .field.wide {
+            flex: 2;
+            min-width: 300px;
         }
-    </select><br />
-    Year Level:
-    <select id="selYearLevel">
-        <option value="1" @(Model.YearLevel == 1 ? "selected" : "")>1st Year</option>
-        <option value="2" @(Model.YearLevel == 2 ? "selected" : "")>2nd Year</option>
-        <option value="3" @(Model.YearLevel == 3 ? "selected" : "")>3rd Year</option>
-        <option value="4" @(Model.YearLevel == 4 ? "selected" : "")>4th Year</option>
-    </select><br />
-    Semester:
-    <select id="selSemester">
-        <option value="1st" @(Model.Semester == "1st" ? "selected" : "")>1st Semester</option>
-        <option value="2nd" @(Model.Semester == "2nd" ? "selected" : "")>2nd Semester</option>
-        <option value="Summer" @(Model.Semester == "Summer" ? "selected" : "")>Summer</option>
-    </select><br />
-    School Year:
-    <select id="selSchoolYear">
-        @foreach (var sy in ViewBag.SchoolYears)
-        {
-            <option value="@sy.Text" @(Model.SchoolYear == sy.Text ? "selected" : "")>@sy.Text</option>
-        }
-    </select><br />
-    Status:
-    <select id="selStatus">
-        <option value="Enrolled" @(Model.Status == "Enrolled" ? "selected" : "")>Enrolled</option>
-        <option value="Dropped" @(Model.Status == "Dropped" ? "selected" : "")>Dropped</option>
-        <option value="Graduated" @(Model.Status == "Graduated" ? "selected" : "")>Graduated</option>
-        <option value="LOA" @(Model.Status == "LOA" ? "selected" : "")>LOA</option>
-    </select><br />
-    Scholarship:
-    <select id="selScholarship">
-        <option value="">-- None --</option>
-        @foreach (var sch in ViewBag.Scholarships)
-        {
-            @* Use ?.ToString() to avoid errors if ScholarshipID is null *@
-            <option value="@sch.Value" @(Model.ScholarshipID?.ToString() == sch.Value ? "selected" : "")>
-                @sch.Text
-            </option>
-        }
-    </select>
-    Discount:
-    <select id="selDiscount">
-        <option value="">-- None --</option>
-        @foreach (var dis in ViewBag.Discounts)
-        {
-            <option value="@dis.Value" @(Model.DiscountID?.ToString() == dis.Value ? "selected" : "")>
-                @dis.Text
-            </option>
-        }
-    </select>
 
-    <input id="btnUpdate" type="button" value="Update Student" />
-    <a href="/Student/Index">Back to List</a>
-    <br /><br />
+    label {
+        font-weight: bold;
+        font-size: 0.8rem;
+        margin-bottom: 5px;
+        color: #555;
+    }
 
-    <div id="result"></div>
-</body>
-</html>
+    input[type="text"],
+    input[type="date"],
+    input[type="email"],
+    select {
+        padding: 8px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        background: #fff;
+    }
 
-<script src="~/Scripts/jquery-3.4.1.js"></script>
+    input[disabled] {
+        background: #e9ecef;
+        color: #666;
+        cursor: not-allowed;
+    }
+
+    .btn {
+        padding: 9px 20px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 0.875rem;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background: #2c3e50;
+        color: white;
+    }
+
+    .btn-danger {
+        background: #c0392b;
+        color: white;
+    }
+
+    .btn-secondary {
+        background: #95a5a6;
+        color: white;
+    }
+
+    .btn:hover {
+        opacity: 0.88;
+    }
+
+    #result {
+        margin-top: 15px;
+        font-size: 0.95rem;
+    }
+</style>
+
+<div class="container-fluid">
+    <h2 class="form-title">Edit Student</h2>
+
+    <div id="msgBox"></div>
+
+    <div class="form-section">
+
+        <input type="hidden" id="hdnStudentID" value="@Model.StudentID" />
+
+        <p class="section-label">I. Personal Information</p>
+
+        <div class="input-row">
+            <div class="field">
+                <label>Student Number</label>
+                <input type="text" value="@Model.StudentID" disabled />
+            </div>
+        </div>
+
+        <div class="input-row">
+            <div class="field">
+                <label>Last Name</label>
+                <input type="text" id="txtLname" value="@Model.LastName" />
+            </div>
+            <div class="field">
+                <label>First Name</label>
+                <input type="text" id="txtFname" value="@Model.FirstName" />
+            </div>
+            <div class="field">
+                <label>Middle Name</label>
+                <input type="text" id="txtMname" value="@Model.MiddleName" />
+            </div>
+        </div>
+
+        <div class="input-row">
+            <div class="field">
+                <label>Gender</label>
+                <select id="selGender">
+                    <option value="">-- Select Gender --</option>
+                    <option value="Male" @(Model.Gender == "Male" ? "selected" : "")>Male</option>
+                    <option value="Female" @(Model.Gender == "Female" ? "selected" : "")>Female</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Birth Date</label>
+                <input type="date" id="txtBirthDate" value="@Model.BirthDate.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="field">
+                <label>Contact Number</label>
+                <input type="text" id="txtContact" value="@Model.ContactNumber" />
+            </div>
+        </div>
+
+        <div class="input-row">
+            <div class="field wide">
+                <label>Address</label>
+                <input type="text" id="txtAddress" value="@Model.Address" />
+            </div>
+            <div class="field wide">
+                <label>Email Address</label>
+                <input type="email" id="txtEmail" value="@Model.Email" />
+            </div>
+        </div>
+
+        <p class="section-label">II. Enrollment Information</p>
+
+        <div class="input-row">
+            <div class="field wide">
+                <label>Course</label>
+                <select id="selCourse">
+                    @foreach (var course in ViewBag.Courses)
+                    {
+                        <option value="@course.Value"
+                                @(Model.CourseID.ToString() == course.Value ? "selected" : "")>
+                            @course.Text
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label>Year Level</label>
+                <select id="selYearLevel">
+                    <option value="1" @(Model.YearLevel == 1 ? "selected" : "")>1st Year</option>
+                    <option value="2" @(Model.YearLevel == 2 ? "selected" : "")>2nd Year</option>
+                    <option value="3" @(Model.YearLevel == 3 ? "selected" : "")>3rd Year</option>
+                    <option value="4" @(Model.YearLevel == 4 ? "selected" : "")>4th Year</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Semester</label>
+                <select id="selSemester">
+                    <option value="1st" @(Model.Semester == "1st" ? "selected" : "")>1st Semester</option>
+                    <option value="2nd" @(Model.Semester == "2nd" ? "selected" : "")>2nd Semester</option>
+                    <option value="Summer" @(Model.Semester == "Summer" ? "selected" : "")>Summer</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>School Year</label>
+                <select id="selSchoolYear">
+                    @foreach (var sy in ViewBag.SchoolYears)
+                    {
+                        <option value="@sy.Text"
+                                @(Model.SchoolYear == sy.Text ? "selected" : "")>
+                            @sy.Text
+                        </option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="input-row">
+            <div class="field">
+                <label>Status</label>
+                <select id="selStatus">
+                    <option value="Enrolled" @(Model.Status == "Enrolled" ? "selected" : "")>Enrolled</option>
+                    <option value="Dropped" @(Model.Status == "Dropped" ? "selected" : "")>Dropped</option>
+                    <option value="Graduated" @(Model.Status == "Graduated" ? "selected" : "")>Graduated</option>
+                    <option value="LOA" @(Model.Status == "LOA" ? "selected" : "")>LOA</option>
+                </select>
+            </div>
+            <div class="field wide">
+                <label>Scholarship</label>
+                <select id="selScholarship">
+                    <option value="">-- None --</option>
+                    @foreach (var sch in ViewBag.Scholarships)
+                    {
+                        <option value="@sch.Value"
+                                @(Model.ScholarshipID?.ToString() == sch.Value ? "selected" : "")>
+                            @sch.Text
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="field wide">
+                <label>Discount</label>
+                <select id="selDiscount">
+                    <option value="">-- None --</option>
+                    @foreach (var dis in ViewBag.Discounts)
+                    {
+                        <option value="@dis.Value"
+                                @(Model.DiscountID?.ToString() == dis.Value ? "selected" : "")>
+                            @dis.Text
+                        </option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <hr style="margin: 20px 0;" />
+
+        <input type="button" id="btnUpdate" class="btn btn-primary" value="Save Changes" />
+        <a href="/Student/Index" class="btn btn-secondary">← Back to List</a>
+
+        <div id="result"></div>
+    </div>
+</div>
+
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
 <script>
     $("#btnUpdate").click(function () {
-        var formData = {
+        $.post("/Student/UpdateStudent", {
             studentID: $("#hdnStudentID").val(),
-            lastname: $("#txtLname").val(),
-            firstname: $("#txtFname").val(),
-            middlename: $("#txtMname").val(),
+            lastName: $("#txtLname").val(),
+            firstName: $("#txtFname").val(),
+            middleName: $("#txtMname").val(),
             gender: $("#selGender").val(),
-            birthdate: $("#txtBirthDate").val(),
+            birthDate: $("#txtBirthDate").val(),
             contact: $("#txtContact").val(),
             address: $("#txtAddress").val(),
             email: $("#txtEmail").val(),
@@ -107,17 +292,17 @@
             status: $("#selStatus").val(),
             scholarshipID: $("#selScholarship").val(),
             discountID: $("#selDiscount").val()
-        };
-
-        $.post("/Student/UpdateStudent", formData, function (res) {
+        }, function (res) {
             if (res[0].mess == 1) {
-                $("#result").html("<h3 style='color:green'>" + res[0].message + "</h3>");
+                $("#result").html("<p style='color:green; font-weight:bold;'>✔ " + res[0].message + " Redirecting...</p>");
                 setTimeout(function () {
                     window.location.href = "/Student/Index";
                 }, 2000);
             } else {
-                $("#result").html("<h3 style='color:red'>" + res[0].message + "</h3>");
+                $("#result").html("<p style='color:red; font-weight:bold;'>✖ " + res[0].message + "</p>");
             }
+        }).fail(function () {
+            $("#result").html("<p style='color:red;'>Request failed. Please try again.</p>");
         });
     });
 </script>

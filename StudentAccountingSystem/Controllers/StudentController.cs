@@ -242,11 +242,11 @@ namespace StudentAccountingSystem.Controllers
 
             using (var con = new SqlConnection(_conn))
             using (var cmd = new SqlCommand(
-                @"SELECT s.StudentID, s.StudentNumber, s.LastName, s.FirstName,
-                         s.MiddleName, s.Gender, s.BirthDate, s.ContactNumber,
-                         s.Address, s.Email, s.CourseID, s.YearLevel,
-                         s.Semester, s.SchoolYear, s.Status,
-                         s.ScholarshipID, s.DiscountID
+                @"SELECT s.StudentID, s.LastName, s.FirstName,
+                     s.MiddleName, s.Gender, s.BirthDate, s.ContactNumber,
+                     s.Address, s.Email, s.CourseID, s.YearLevel,
+                     s.Semester, s.SchoolYear, s.Status,
+                     s.ScholarshipID, s.DiscountID
                   FROM   Students s
                   WHERE  s.StudentID = @id", con))
             {
@@ -257,7 +257,6 @@ namespace StudentAccountingSystem.Controllers
                         data.Add(new
                         {
                             studentID = r["StudentID"],
-                            studentNumber = r["StudentNumber"],
                             lastName = r["LastName"],
                             firstName = r["FirstName"],
                             middleName = r["MiddleName"] == DBNull.Value ? "" : r["MiddleName"],
@@ -276,6 +275,60 @@ namespace StudentAccountingSystem.Controllers
                         });
             }
             return Json(data, JsonRequestBehavior.AllowGet);
+        }
+
+        public ActionResult Details(int id)
+        {
+            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
+                return RedirectToAction("Login", "Account");
+
+            Student student = null;
+            using (var con = new SqlConnection(_conn))
+            using (var cmd = new SqlCommand(
+                @"SELECT s.*, 
+                 c.CourseCode + ' - ' + c.CourseName AS CourseDisplay,
+                 sc.ScholarshipName, 
+                 d.DiscountName
+          FROM Students s
+          LEFT JOIN Courses      c  ON s.CourseID      = c.CourseID
+          LEFT JOIN Scholarships sc ON s.ScholarshipID = sc.ScholarshipID
+          LEFT JOIN Discounts    d  ON s.DiscountID    = d.DiscountID
+          WHERE s.StudentID = @id", con))
+            {
+                cmd.Parameters.AddWithValue("@id", id);
+                con.Open();
+                using (var r = cmd.ExecuteReader())
+                    if (r.Read())
+                    {
+                        student = new Student
+                        {
+                            StudentID = (int)r["StudentID"],
+                            LastName = r["LastName"].ToString(),
+                            FirstName = r["FirstName"].ToString(),
+                            MiddleName = r["MiddleName"] == DBNull.Value ? null : r["MiddleName"].ToString(),
+                            Gender = r["Gender"].ToString(),
+                            BirthDate = (DateTime)r["BirthDate"],
+                            ContactNumber = r["ContactNumber"] == DBNull.Value ? null : r["ContactNumber"].ToString(),
+                            Address = r["Address"] == DBNull.Value ? null : r["Address"].ToString(),
+                            Email = r["Email"] == DBNull.Value ? null : r["Email"].ToString(),
+                            CourseID = (int)r["CourseID"],
+                            YearLevel = (int)r["YearLevel"],
+                            Semester = r["Semester"].ToString(),
+                            SchoolYear = r["SchoolYear"].ToString(),
+                            Status = r["Status"].ToString(),
+                            ScholarshipID = r["ScholarshipID"] == DBNull.Value ? (int?)null : (int)r["ScholarshipID"],
+                            DiscountID = r["DiscountID"] == DBNull.Value ? (int?)null : (int)r["DiscountID"]
+                        };
+
+                        // Store the display names in ViewBag
+                        ViewBag.CourseDisplay = r["CourseDisplay"].ToString();
+                        ViewBag.ScholarshipDisplay = r["ScholarshipName"] == DBNull.Value ? "None" : r["ScholarshipName"].ToString();
+                        ViewBag.DiscountDisplay = r["DiscountName"] == DBNull.Value ? "None" : r["DiscountName"].ToString();
+                    }
+            }
+
+            if (student == null) return HttpNotFound();
+            return View(student);
         }
 
         public ActionResult UpdateStudent()
@@ -543,42 +596,24 @@ namespace StudentAccountingSystem.Controllers
             GenerateAssessments(con, studentID, courseID, nextYear, nextSem, nextSY);
         }
 
-        public ActionResult Details(int id)
+        public ActionResult Edit(int id)
         {
             if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
                 return RedirectToAction("Login", "Account");
 
             Student student = null;
-
             using (var con = new SqlConnection(_conn))
             {
                 con.Open();
                 using (var cmd = new SqlCommand(
-                    @"SELECT s.*, 
-                     c.CourseCode, 
-                     c.CourseName,
-                     sc.ScholarshipName,
-                     sc.Type as ScholarshipType,
-                     sc.DiscountPercent as ScholarshipPercent,
-                     sc.DiscountAmount as ScholarshipAmount,
-                     d.DiscountName,
-                     d.Type as DiscountType,
-                     d.DiscountPercent as DiscountPercent,
-                     d.DiscountAmount as DiscountAmount
-              FROM Students s
-              LEFT JOIN Courses c ON s.CourseID = c.CourseID
-              LEFT JOIN Scholarships sc ON s.ScholarshipID = sc.ScholarshipID
-              LEFT JOIN Discounts d ON s.DiscountID = d.DiscountID
-              WHERE s.StudentID = @id", con))
+                    @"SELECT * FROM Students WHERE StudentID = @id", con))
                 {
                     cmd.Parameters.AddWithValue("@id", id);
                     using (var r = cmd.ExecuteReader())
-                    {
                         if (r.Read())
-                        {
                             student = new Student
                             {
-                                StudentID = (int)r["StudentID"],  // no more StudentNumber
+                                StudentID = (int)r["StudentID"],
                                 LastName = r["LastName"].ToString(),
                                 FirstName = r["FirstName"].ToString(),
                                 MiddleName = r["MiddleName"] == DBNull.Value ? null : r["MiddleName"].ToString(),
@@ -592,57 +627,78 @@ namespace StudentAccountingSystem.Controllers
                                 Semester = r["Semester"].ToString(),
                                 SchoolYear = r["SchoolYear"].ToString(),
                                 Status = r["Status"].ToString(),
-                                EnrolledAt = (DateTime)r["EnrolledAt"],
                                 ScholarshipID = r["ScholarshipID"] == DBNull.Value ? (int?)null : (int)r["ScholarshipID"],
                                 DiscountID = r["DiscountID"] == DBNull.Value ? (int?)null : (int)r["DiscountID"]
                             };
-
-                            // Set ViewBag values for display
-                            ViewBag.CourseName = r["CourseName"] == DBNull.Value ? "Not Assigned" : r["CourseName"].ToString();
-                            ViewBag.CourseCode = r["CourseCode"] == DBNull.Value ? "" : r["CourseCode"].ToString();
-
-                            // Format scholarship display
-                            if (r["ScholarshipName"] != DBNull.Value)
-                            {
-                                string scholarshipValue = "";
-                                if (r["ScholarshipType"].ToString() == "Percent")
-                                    scholarshipValue = r["ScholarshipPercent"].ToString() + "%";
-                                else
-                                    scholarshipValue = "₱" + Convert.ToDecimal(r["ScholarshipAmount"]).ToString("N2");
-
-                                ViewBag.ScholarshipName = r["ScholarshipName"].ToString() + " (" + scholarshipValue + ")";
-                            }
-                            else
-                            {
-                                ViewBag.ScholarshipName = "None";
-                            }
-
-                            // Format discount display
-                            if (r["DiscountName"] != DBNull.Value)
-                            {
-                                string discountValue = "";
-                                if (r["DiscountType"].ToString() == "Percent")
-                                    discountValue = r["DiscountPercent"].ToString() + "%";
-                                else
-                                    discountValue = "₱" + Convert.ToDecimal(r["DiscountAmount"]).ToString("N2");
-
-                                ViewBag.DiscountName = r["DiscountName"].ToString() + " (" + discountValue + ")";
-                            }
-                            else
-                            {
-                                ViewBag.DiscountName = "None";
-                            }
-                        }
-                    }
                 }
             }
 
-            if (student == null)
-                return HttpNotFound();
+            if (student == null) return HttpNotFound();
+
+            // Populate courses dropdown
+            var courses = new List<SelectListItem>();
+            using (var con = new SqlConnection(_conn))
+            using (var cmd = new SqlCommand(
+                "SELECT CourseID, CourseCode + ' - ' + CourseName AS Label FROM Courses WHERE IsActive=1", con))
+            {
+                con.Open();
+                using (var r = cmd.ExecuteReader())
+                    while (r.Read())
+                        courses.Add(new SelectListItem
+                        {
+                            Value = r["CourseID"].ToString(),
+                            Text = r["Label"].ToString()
+                        });
+            }
+            ViewBag.Courses = courses;
+
+            // Populate school years dropdown
+            var schoolYears = new List<SelectListItem>();
+            int currYear = DateTime.Now.Year;
+            for (int y = currYear - 2; y <= currYear + 3; y++)
+            {
+                string sy = y + "-" + (y + 1);
+                schoolYears.Add(new SelectListItem { Value = sy, Text = sy });
+            }
+            ViewBag.SchoolYears = schoolYears;
+
+            // Populate scholarships dropdown
+            var scholarships = new List<SelectListItem>();
+            using (var con = new SqlConnection(_conn))
+            using (var cmd = new SqlCommand(
+                "SELECT ScholarshipID, ScholarshipName FROM Scholarships WHERE IsActive=1", con))
+            {
+                con.Open();
+                using (var r = cmd.ExecuteReader())
+                    while (r.Read())
+                        scholarships.Add(new SelectListItem
+                        {
+                            Value = r["ScholarshipID"].ToString(),
+                            Text = r["ScholarshipName"].ToString()
+                        });
+            }
+            ViewBag.Scholarships = scholarships;
+
+            // Populate discounts dropdown
+            var discounts = new List<SelectListItem>();
+            using (var con = new SqlConnection(_conn))
+            using (var cmd = new SqlCommand(
+                "SELECT DiscountID, DiscountName FROM Discounts WHERE IsActive=1", con))
+            {
+                con.Open();
+                using (var r = cmd.ExecuteReader())
+                    while (r.Read())
+                        discounts.Add(new SelectListItem
+                        {
+                            Value = r["DiscountID"].ToString(),
+                            Text = r["DiscountName"].ToString()
+                        });
+            }
+            ViewBag.Discounts = discounts;
 
             return View(student);
         }
 
-     
+
     }
 }

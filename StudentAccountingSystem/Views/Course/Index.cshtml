@@ -3,82 +3,161 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Course Management</h2>
-<hr />
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        background-color: #f8f9fa;
+        color: #333;
+    }
 
-<div id="msgBox"></div>
+    .container-fluid {
+        padding: 20px;
+    }
 
-<input type="button" id="btnShowCreate" value="+ Add New Course" />
-<input type="text" id="txtSearchCourse" placeholder="Search course..." />
-<input type="button" id="btnSearchCourse" value="Search" />
-<br />
-<br />
+    .data-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
 
-<!-- COURSE LIST TABLE -->
-<div id="divList">
-    <table border="1" width="100%" style="border-collapse: collapse;">
-        <thead>
-            <tr style="background-color: #eee;">
-                <th>#</th>
-                <th>Code</th>
-                <th>Course Name</th>
-                <th>Enrolled</th>
-                <th>Units</th>
-                <th>Tuition/Unit</th>
-                <th>Reg. Fee</th>
-                <th>Misc. Fee</th>
-                <th>Lab Fee</th>
-                <th>Total Fee</th>
-                <th>Status</th>      <!-- ADD THIS -->
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="tblBody">
-            <tr><td colspan="12">Loading courses...</td></tr>
-        </tbody>
-    </table>
-</div>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background: white;
+    }
 
-<!-- CREATE COURSE FORM -->
-<div id="divRegister" style="display:none;">
-    <h3>Add New Course</h3>
-    <hr />
+        table th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
 
-    Course Code: <input type="text" id="txtCode" placeholder="e.g. BSIT" /><br /><br />
-    Course Name: <input type="text" id="txtName" size="40" /><br /><br />
+        table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+        }
 
-    <b>Fee Structure</b><br /><br />
-    No. of Units: <input type="number" id="txtUnits" value="0" />&nbsp;
-    Tuition/Unit: <input type="number" id="txtTpu" value="0" /><br /><br />
+    tr:hover {
+        background-color: #f1f1f1;
+    }
 
-    Reg. Fee: <input type="number" id="txtReg" value="0" />&nbsp;
-    Misc. Fee: <input type="number" id="txtMisc" value="0" />&nbsp;
-    Lab Fee: <input id="txtLab" type="number" value="0" /><br /><br />
+    .form-section {
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
 
-    <input type="button" id="btnSave" value="Save Course" />
-    <input type="button" id="btnCancelRegister" value="Cancel" />
-</div>
+    .form-title {
+        border-bottom: 2px solid #2c3e50;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        color: #2c3e50;
+    }
 
-<!-- EDIT COURSE FORM -->
-<div id="divEdit" style="display:none;">
-    <h3>Edit Course</h3>
-    <hr />
-    <input type="hidden" id="editCourseID" />
+    .input-row {
+        margin-bottom: 15px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
 
-    Course Code: <input type="text" id="editCode" /><br /><br />
-    Course Name: <input type="text" id="editName" size="40" /><br /><br />
+    .field {
+        display: flex;
+        flex-direction: column;
+    }
 
-    <b>Fee Structure</b><br /><br />
-    No. of Units: <input type="number" id="editUnits" />&nbsp;
-    Tuition/Unit: <input type="number" id="editTpu" /><br /><br />
+    label {
+        font-weight: bold;
+        font-size: 0.8rem;
+        margin-bottom: 5px;
+        color: #555;
+    }
 
-    Reg. Fee: <input type="number" id="editReg" />&nbsp;
-    Misc. Fee: <input type="number" id="editMisc" />&nbsp;
-    Lab Fee: <input type="number" id="editLab" /><br /><br />
+    input[type="text"], input[type="number"] {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
 
-    <input type="button" id="btnUpdate" value="Update Course" />
-    <input type="button" id="btnCancelEdit" value="Cancel" />
+    .btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .btn-primary {
+        background: #2c3e50;
+        color: white;
+    }
+
+    .btn-success {
+        background: #27ae60;
+        color: white;
+    }
+
+    .btn-danger {
+        background: #c0392b;
+        color: white;
+    }
+
+    .btn-search {
+        background: #34495e;
+        color: white;
+    }
+    A
+    .btn:hover {
+        opacity: 0.88;
+    }
+</style>
+
+<div class="container-fluid">
+    <h2 class="form-title">Course Management</h2>
+
+    <div id="msgBox"></div>
+
+    <!-- ACTION BAR -->
+    <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <a href="@Url.Action("Create", "Course")" class="btn btn-success">+ Add New Course</a>
+        <div>
+            <input type="text" id="txtSearchCourse" placeholder="Search course..." style="width: 250px; padding: 8px;" />
+            <button id="btnSearchCourse" class="btn btn-search">Search</button>
+        </div>
+    </div>
+
+    <!-- COURSE LIST TABLE -->
+    <div id="divList" class="data-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>No #</th>
+                    <th>Code</th>
+                    <th>Course Name</th>
+                    <th>Enrolled</th>
+                    <th>Units</th>
+                    <th>Tuition/Unit</th>
+                    <th>Reg. Fee</th>
+                    <th>Misc. Fee</th>
+                    <th>Lab Fee</th>
+                    <th>Total Fee</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tblBody">
+                <tr><td colspan="12" style="text-align:center;">Loading courses...</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
-<script src="~/Scripts/myScripts/courseListv2.js"></script>
+<script src="~/Scripts/myScripts/courseListv3.js"></script>

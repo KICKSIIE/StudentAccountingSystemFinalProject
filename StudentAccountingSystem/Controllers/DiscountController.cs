@@ -210,5 +210,18 @@ namespace StudentAccountingSystem.Controllers
 
             return Json(data, JsonRequestBehavior.AllowGet);
         }
+        public ActionResult Create()
+        {
+            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
+                return RedirectToAction("Login", "Account");
+            return View();
+        }
+
+        public ActionResult Edit(int id)
+        {
+            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
+                return RedirectToAction("Login", "Account");
+            return View();
+        }
     }
 }

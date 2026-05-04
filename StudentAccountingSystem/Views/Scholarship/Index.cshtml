@@ -3,63 +3,124 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Scholarship Management</h2>
-<hr />
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        background-color: #f8f9fa;
+        color: #333;
+    }
 
-<div id="msgBox"></div>
+    .container-fluid {
+        padding: 20px;
+    }
 
-<input type="button" id="btnShowCreate" value="+ Add New Scholarship" />
-<input type="text" id="txtSearch" placeholder="Search scholarships..." />
-<br />
-<br />
+    .data-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
 
-<!-- LIST TABLE -->
-<div id="divList">
-    <table border="1" width="100%" style="border-collapse: collapse;">
-        <thead>
-            <tr style="background-color: #eee;">
-                <th>#</th>
-                <th>Scholarship Name</th>
-                <th>Type</th>
-                <th>Discount Value</th>
-                <th>Enrolled</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="tblBody">
-            <tr><td colspan="6">Loading scholarships...</td></tr>
-        </tbody>
-    </table>
-</div>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background: white;
+    }
 
-<!-- CREATE/EDIT FORM -->
-<div id="divForm" style="display:none;">
-    <h3 id="formTitle">Add New Scholarship</h3>
-    <hr />
-    <input type="hidden" id="hdnID" />
+        table th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
 
-    Name: <input type="text" id="txtName" style="width:300px" /><br /><br />
+        table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+        }
 
-    Type:
-    <select id="selType">
-        <option value="">-- Select Type --</option>
-        <option value="Percent">Percent</option>
-        <option value="Fixed">Fixed Amount</option>
-    </select><br /><br />
+    tr:hover {
+        background-color: #f1f1f1;
+    }
 
-    <div id="groupPercent" style="display:none">
-        Percentage (%): <input type="number" id="txtPercent" step="0.01" />
+    .form-title {
+        border-bottom: 2px solid #2c3e50;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        color: #2c3e50;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background: #2c3e50;
+        color: white;
+    }
+
+    .btn-success {
+        background: #27ae60;
+        color: white;
+    }
+
+    .btn-danger {
+        background: #c0392b;
+        color: white;
+    }
+
+    .btn-search {
+        background: #34495e;
+        color: white;
+    }
+
+    .btn:hover {
+        opacity: 0.88;
+    }
+</style>
+
+<div class="container-fluid">
+    <h2 class="form-title">Scholarship Management</h2>
+    <div id="msgBox"></div>
+
+    <!-- ACTION BAR -->
+    <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <a href="@Url.Action("Create", "Scholarship")" class="btn btn-success">+ Add New Scholarship</a>
+        <div>
+            <input type="text" id="txtSearch" placeholder="Search scholarship..." style="width: 250px; padding: 8px;" />
+            <button id="btnSearch" class="btn btn-search">Search</button>
+        </div>
     </div>
 
-    <div id="groupAmount" style="display:none">
-        Amount (₱): <input type="number" id="txtAmount" step="0.01" />
+    <!-- TABLE -->
+    <div id="divList" class="data-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>No #</th>
+                    <th>Scholarship Name</th>
+                    <th>Type</th>
+                    <th>Discount Value</th>
+                    <th>Enrolled</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tblBody">
+                <tr><td colspan="7" style="text-align:center;">Loading scholarships...</td></tr>
+            </tbody>
+        </table>
     </div>
-    <br />
-
-    <input type="button" id="btnSave" value="Save Scholarship" />
-    <input type="button" id="btnCancel" value="Cancel" />
 </div>
 
 <script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
-<script src="~/Scripts/myScripts/scholarshipListv2.js"></script>
+<script src="~/Scripts/myScripts/scholarshipListv3.js"></script>

@@ -1,6 +1,5 @@
 ﻿using StudentAccountingSystem.Controllers;
 using StudentAccountingSystem.Models;
-using StudentAccountingSystem.Models.StudentAccountingSystem.Models;
 using System;
 using System.Collections.Generic;
 using System.Configuration;

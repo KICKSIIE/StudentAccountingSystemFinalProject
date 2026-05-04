@@ -1,215 +1,117 @@
-﻿@{
+﻿@model StudentAccountingSystem.Models.Student
+@{
     ViewBag.Title = "Student Entry";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<html>
-<body>
-    <h2>Student Entry</h2><br /><br />
-
-    Lastname: <input id="txtLname" type="text" /><br />
-    Firstname: <input id="txtFname" type="text" /><br />
-    Middlename: <input id="txtMname" type="text" /><br />
-    Gender:
-    <select id="selGender">
-        <option value="">-- Select Gender --</option>
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
-    </select><br />
-    Birth Date: <input id="txtBirthDate" type="date" /><br />
-    Contact Number: <input id="txtContact" type="text" /><br />
-    Address: <input id="txtAddress" type="text" /><br />
-    Email: <input id="txtEmail" type="email" /><br />
-    Course:
-    <select id="selCourse">
-        <option value="">-- Select Course --</option>
-        @foreach (var course in ViewBag.Courses)
-        {
-            <option value="@course.Value">@course.Text</option>
-        }
-    </select><br />
-    Year Level:
-    <select id="selYearLevel">
-        <option value="">-- Select Year --</option>
-        <option value="1">1st Year</option>
-        <option value="2">2nd Year</option>
-        <option value="3">3rd Year</option>
-        <option value="4">4th Year</option>
-    </select><br />
-    Semester:
-    <select id="selSemester">
-        <option value="">-- Select Semester --</option>
-        <option value="1st">1st Semester</option>
-        <option value="2nd">2nd Semester</option>
-        <option value="Summer">Summer</option>
-    </select><br />
-    School Year:
-    <select id="selSchoolYear">
-        <option value="">-- Select School Year --</option>
-        @foreach (var sy in ViewBag.SchoolYears)
-        {
-            <option value="@sy.Text">@sy.Text</option>
-        }
-    </select><br />
-    Scholarship:
-    <select id="selScholarship">
-        <option value="">-- None --</option>
-        @foreach (var sch in ViewBag.Scholarships)
-        {
-            <option value="@sch.Value">@sch.Text</option>
-        }
-    </select><br />
-    Discount:
-    <select id="selDiscount">
-        <option value="">-- None --</option>
-        @foreach (var dis in ViewBag.Discounts)
-        {
-            <option value="@dis.Value">@dis.Text</option>
-        }
-    </select><br /><br />
-
-    <input id="btnSubmit" type="button" value="Register Student" />
-    <input id="btnView" type="button" value="View All Students" />
-    <br /><br />
-
-    <div id="result"></div>
-
-    <h3>Student List</h3>
-    <table id="tblStudent" border="1">
-        <thead>
-            <tr>
-                <th>Student No.</th>
-                <th>Last Name</th>
-                <th>First Name</th>
-                <th>Course</th>
-                <th>Year</th>
-                <th>Semester</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="viewStudents">
-            <tr><td colspan="8">Loading...</td></tr>
-        </tbody>
-    </table>
-</body>
-</html>
-
-<script src="~/Scripts/jquery-3.4.1.js"></script>
-<script>
-    $(document).ready(function () {
-        loadAllStudents();
-    });
-
-    $("#btnSubmit").click(function () {
-        var lastname = $("#txtLname").val();
-        var firstname = $("#txtFname").val();
-        var middlename = $("#txtMname").val();
-        var gender = $("#selGender").val();
-        var birthdate = $("#txtBirthDate").val();
-        var contact = $("#txtContact").val();
-        var address = $("#txtAddress").val();
-        var email = $("#txtEmail").val();
-        var courseID = $("#selCourse").val();
-        var yearLevel = $("#selYearLevel").val();
-        var semester = $("#selSemester").val();
-        var schoolYear = $("#selSchoolYear").val();
-        var scholarshipID = $("#selScholarship").val();
-        var discountID = $("#selDiscount").val();
-
-        if (!lastname || !firstname || !courseID || !yearLevel || !semester || !schoolYear) {
-            $("#result").html("<h3 style='color:red'>Please fill in all required fields!</h3>");
-            return;
-        }
-
-        $.post("/Student/StudentEntry", {
-            lastname: lastname,
-            firstname: firstname,
-            middlename: middlename,
-            gender: gender,
-            birthdate: birthdate,
-            contact: contact,
-            address: address,
-            email: email,
-            courseID: courseID,
-            yearLevel: yearLevel,
-            semester: semester,
-            schoolYear: schoolYear,
-            scholarshipID: scholarshipID,
-            discountID: discountID
-        }, function (res) {
-            if (res[0].mess == 0) {
-                $("#result").html("<h3 style='color:red'>" + res[0].message + "</h3>");
-            } else {
-                $("#result").html(
-                    "<h3 style='color:green'>" + res[0].message + "</h3>" +
-                    "<strong>Student Name:</strong> " + res[0].newName + "<br/>" +
-                    "<strong>Student Number:</strong> " + res[0].studNum + "<br/>" +
-                    "<strong>Assessment Code:</strong> " + res[0].assessCode + "<br/>" +
-                    "<strong>Tuition Fee:</strong> ₱" + res[0].tuitionFee + "<br/>" +
-                    "<strong>Registration Fee:</strong> ₱" + res[0].regFee + "<br/>" +
-                    "<strong>Misc Fee:</strong> ₱" + res[0].miscFee + "<br/>" +
-                    "<strong>Lab Fee:</strong> ₱" + res[0].labFee + "<br/>" +
-                    "<strong style='color:blue'>Total Fee:</strong> ₱" + res[0].totalFee
-                );
-
-                // Clear form
-                $("#txtLname, #txtFname, #txtMname, #txtContact, #txtAddress, #txtEmail").val("");
-                $("#selGender, #selCourse, #selYearLevel, #selSemester, #selSchoolYear, #selScholarship, #selDiscount").val("");
-                $("#txtBirthDate").val("");
-
-                // Refresh student list
-                loadAllStudents();
-
-                // Clear result after 5 seconds
-                setTimeout(function () { $("#result").html(""); }, 5000);
-            }
-        });
-    });
-
-    $("#btnView").click(function () {
-        loadAllStudents();
-    });
-
-    function loadAllStudents() {
-        $.post("/Student/ViewAllStudents", {}, function (res) {
-            var html = "";
-            if (res.length == 0) {
-                html = "<tr><td colspan='8'>No students found.</td></tr>";
-            } else {
-                for (var i = 0; i < res.length; i++) {
-                    html += "<tr>";
-                    html += "<td>" + res[i].idno + "</td>";
-                    html += "<td>" + res[i].lastname + "</td>";
-                    html += "<td>" + res[i].firstname + "</td>";
-                    html += "<td>" + res[i].course + "</td>";
-                    html += "<td>" + res[i].year + "</td>";
-                    html += "<td>" + res[i].semester + "</td>";
-                    html += "<td>" + res[i].status + "</td>";
-                    html += "<td>" +
-                        "<button onclick='editStudent(" + res[i].tid + ")'>Edit</button> " +
-                        "<button onclick='deleteStudent(" + res[i].tid + ")'>Delete</button>" +
-                        "</td>";
-                    html += "</tr>";
-                }
-            }
-            $("#viewStudents").html(html);
-        });
+<style>
+    .entry-card {
+        background: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        border: 1px solid #dcdde1;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
 
-    function deleteStudent(id) {
-        if (confirm("Are you sure you want to delete this student?")) {
-            $.post("/Student/DeleteStudent", { studentID: id }, function (res) {
-                if (res[0].mess == 1) {
-                    alert(res[0].message);
-                    loadAllStudents();
-                } else {
-                    alert("Error: " + res[0].message);
-                }
-            });
-        }
+    .form-label {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #2f3640;
     }
 
-    function editStudent(id) {
-        window.location.href = "/Student/Edit/" + id;
+    .section-head {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #2c3e50;
+        margin: 20px 0 10px 0;
+        border-bottom: 1px solid #f1f2f6;
+        padding-bottom: 5px;
     }
-</script>
+
+    .assessment-summary {
+        background: #f8f9fa;
+        border-left: 5px solid #27ae60;
+        padding: 15px;
+        margin-top: 20px;
+        display: none;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="entry-card">
+        <h2 class="text-secondary">New Student Registration</h2>
+        <p class="text-muted small">Fill out the fields below to enroll a new student into the system.</p>
+        <hr />
+
+        <div id="result"></div>
+
+        <!-- Section 1: Personal -->
+        <div class="section-head text-uppercase">I. Personal Information</div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Last Name</label>
+                <input id="txtLname" type="text" class="form-control" placeholder="e.g. Dela Cruz" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">First Name</label>
+                <input id="txtFname" type="text" class="form-control" placeholder="e.g. Juan" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Middle Name</label>
+                <input id="txtMname" type="text" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Gender</label>
+                <select id="selGender" class="form-select">
+                    <option value="">-- Select --</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Birth Date</label>
+                <input id="txtBirthDate" type="date" class="form-control" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Email Address</label>
+                <input id="txtEmail" type="email" class="form-control" placeholder="juan@example.com" />
+            </div>
+        </div>
+
+        <!-- Section 2: Academic -->
+        <div class="section-head text-uppercase">II. Enrollment Details</div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Course</label>
+                <select id="selCourse" class="form-select">
+                    <option value="">-- Select Course --</option>
+                    @foreach (var course in ViewBag.Courses)
+                    {
+                        <option value="@course.Value">@course.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Year Level</label>
+                <select id="selYearLevel" class="form-select">
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Semester</label>
+                <select id="selSemester" class="form-select">
+                    <option value="1st">1st Semester</option>
+                    <option value="2nd">2nd Semester</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mt-4 border-top pt-3">
+            <button id="btnSubmit" class="btn btn-primary px-4">Register Student</button>
+            <button id="btnView" class="btn btn-outline-secondary">Go to Student List</button>
+        </div>
+    </div>
+</div>
