@@ -127,14 +127,11 @@
     <Compile Include="Controllers\DiscountController.cs" />
     <Compile Include="Controllers\AssessmentController.cs" />
     <Compile Include="Controllers\PaymentController.cs" />
-    <Compile Include="Controllers\ReactivationController.cs" />
     <Compile Include="Controllers\ReportController.cs" />
     <Compile Include="Controllers\ScholarshipController.cs" />
     <Compile Include="Controllers\StudentController.cs" />
     <Compile Include="Controllers\StudentPortalController.cs" />
-    <Compile Include="Controllers\test.cs" />
     <Compile Include="Controllers\UserController.cs" />
-    <Compile Include="Controllers\WithdrawalController.cs" />
     <Compile Include="CustomRoleProvider.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -199,12 +196,12 @@
     <Content Include="Scripts\myScripts\assessment.js" />
     <Content Include="Scripts\myScripts\dashboard.js" />
     <Content Include="Scripts\myScripts\discount.js" />
-    <Content Include="Scripts\myScripts\discountList.js" />
+    <Content Include="Scripts\myScripts\discountListv2.js" />
     <Content Include="Scripts\myScripts\payment.js" />
-    <Content Include="Scripts\myScripts\scholarshipList.js" />
+    <Content Include="Scripts\myScripts\scholarshipListv2.js" />
     <Content Include="Scripts\myScripts\studentPortal.js" />
     <Content Include="Scripts\myScripts\studentList.js" />
-    <Content Include="Scripts\myScripts\courseList.js" />
+    <Content Include="Scripts\myScripts\courseListv2.js" />
     <Content Include="Scripts\myScripts\withdrawal.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
@@ -237,10 +234,8 @@
     <Content Include="Views\Payment\Create.cshtml" />
     <Content Include="Views\Payment\Details.cshtml" />
     <Content Include="Views\Shared\_StudentLayout.cshtml" />
-    <Content Include="Views\Reactivation\Index.cshtml" />
     <Content Include="Views\Assessment\Refunds.cshtml" />
     <None Include="Views\StudentPortal\Index.cshtml" />
-    <Content Include="Views\Withdrawal\Index.cshtml" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

@@ -18,10 +18,9 @@ namespace StudentAccountingSystem.Controllers
             using (var db = new SqlConnection(connDB))
             {
                 db.Open();
-                // SQL query includes count of students currently assigned this discount
                 string sql = @"SELECT d.*, 
-                              (SELECT COUNT(*) FROM Students s WHERE s.DiscountID = d.DiscountID) as StudentCount 
-                              FROM Discounts d ORDER BY d.DiscountName";
+                      (SELECT COUNT(*) FROM Students s WHERE s.DiscountID = d.DiscountID) as StudentCount 
+                      FROM Discounts d ORDER BY d.DiscountName";
                 SqlCommand cmd = new SqlCommand(sql, db);
                 SqlDataReader r = cmd.ExecuteReader();
                 while (r.Read())
@@ -33,12 +32,74 @@ namespace StudentAccountingSystem.Controllers
                         type = r["Type"],
                         percent = r["DiscountPercent"],
                         amount = r["DiscountAmount"],
-                        enrolled = r["StudentCount"]
+                        enrolled = r["StudentCount"],
+                        isActive = Convert.ToBoolean(r["IsActive"]) // ADD THIS
                     });
                 }
             }
             return Json(list, JsonRequestBehavior.AllowGet);
         }
+
+        // ADD ToggleDiscountActive()
+        public ActionResult ToggleDiscountActive()
+        {
+            string id = Request["id"];
+            var data = new List<object>();
+
+            try
+            {
+                using (var con = new SqlConnection(connDB))
+                {
+                    con.Open();
+
+                    // Get current status
+                    bool isActive;
+                    using (var cmd = new SqlCommand("SELECT IsActive FROM Discounts WHERE DiscountID=@id", con))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        isActive = Convert.ToBoolean(cmd.ExecuteScalar());
+                    }
+
+                    // If trying to deactivate, check for students
+                    if (isActive)
+                    {
+                        using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Students WHERE DiscountID=@id", con))
+                        {
+                            cmd.Parameters.AddWithValue("@id", id);
+                            int count = (int)cmd.ExecuteScalar();
+                            if (count > 0)
+                            {
+                                data.Add(new { mess = 0, message = "Cannot deactivate: " + count + " student(s) are using this discount." });
+                                return Json(data, JsonRequestBehavior.AllowGet);
+                            }
+                        }
+                    }
+
+                    // Safe to toggle
+                    using (var cmd = new SqlCommand(
+                        "UPDATE Discounts SET IsActive = CASE WHEN IsActive=1 THEN 0 ELSE 1 END WHERE DiscountID=@id", con))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    // Return new status
+                    using (var cmd = new SqlCommand("SELECT IsActive FROM Discounts WHERE DiscountID=@id", con))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        bool newStatus = Convert.ToBoolean(cmd.ExecuteScalar());
+                        data.Add(new { mess = 1, isActive = newStatus, message = newStatus ? "Discount activated." : "Discount deactivated." });
+                    }
+                }
+            }
+            catch
+            {
+                data.Add(new { mess = 0, message = "Could not update discount status." });
+            }
+
+            return Json(data, JsonRequestBehavior.AllowGet);
+        }
+
 
         public ActionResult SaveDiscount()
         {
@@ -101,26 +162,52 @@ namespace StudentAccountingSystem.Controllers
         {
             string id = Request["id"];
             var data = new List<object>();
-            using (var db = new SqlConnection(connDB))
-            {
-                db.Open();
-                // Check if students are enrolled using this discount
-                SqlCommand check = new SqlCommand("SELECT COUNT(*) FROM Students WHERE DiscountID = @id", db);
-                check.Parameters.AddWithValue("@id", id);
-                int count = (int)check.ExecuteScalar();
 
-                if (count > 0)
+            try
+            {
+                using (var db = new SqlConnection(connDB))
                 {
-                    data.Add(new { mess = 0, message = "Cannot delete: " + count + " student(s) are currently using this discount." });
-                }
-                else
-                {
-                    SqlCommand cmd = new SqlCommand("DELETE FROM Discounts WHERE DiscountID = @id", db);
-                    cmd.Parameters.AddWithValue("@id", id);
-                    cmd.ExecuteNonQuery();
+                    db.Open();
+
+                    // 1. Check if active
+                    using (var cmd = new SqlCommand("SELECT IsActive FROM Discounts WHERE DiscountID=@id", db))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        bool isActive = Convert.ToBoolean(cmd.ExecuteScalar());
+                        if (isActive)
+                        {
+                            data.Add(new { mess = 0, message = "Cannot delete: discount is still active. Deactivate it first." });
+                            return Json(data, JsonRequestBehavior.AllowGet);
+                        }
+                    }
+
+                    // 2. Check if students are using it
+                    using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Students WHERE DiscountID=@id", db))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        int count = (int)cmd.ExecuteScalar();
+                        if (count > 0)
+                        {
+                            data.Add(new { mess = 0, message = "Cannot delete: " + count + " student(s) are using this discount." });
+                            return Json(data, JsonRequestBehavior.AllowGet);
+                        }
+                    }
+
+                    // 3. Safe to delete
+                    using (var cmd = new SqlCommand("DELETE FROM Discounts WHERE DiscountID=@id", db))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        cmd.ExecuteNonQuery();
+                    }
+
                     data.Add(new { mess = 1, message = "Discount deleted successfully." });
                 }
             }
+            catch
+            {
+                data.Add(new { mess = 0, message = "Could not delete discount." });
+            }
+
             return Json(data, JsonRequestBehavior.AllowGet);
         }
     }

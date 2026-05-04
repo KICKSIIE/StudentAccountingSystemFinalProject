@@ -21,8 +21,7 @@ namespace StudentAccountingSystem.Controllers
             using (var con = new SqlConnection(_conn))
             using (var cmd = new SqlCommand(
                 @"SELECT a.AssessmentID,
-                 s.StudentID,
-                 s.StudentNumber,
+                 s.StudentID, 
                  s.FirstName + ' ' + s.LastName AS StudentName,
                  c.CourseName,
                  a.YearLevel, -- 1. ADDED YEAR LEVEL
@@ -48,7 +47,7 @@ namespace StudentAccountingSystem.Controllers
           LEFT JOIN Payments p ON p.AssessmentID = a.AssessmentID
                                AND p.TransactionType = 'Payment'
           GROUP BY
-                 a.AssessmentID, s.StudentID, s.StudentNumber,
+                 a.AssessmentID, s.StudentID,
                  s.FirstName, s.LastName, c.CourseName,
                  a.YearLevel, -- 2. ADDED TO GROUP BY
                  a.SchoolYear, a.Semester, a.Period,
@@ -56,7 +55,7 @@ namespace StudentAccountingSystem.Controllers
                  a.MiscFee, a.LabFee, a.DiscountAmount,
                  a.NetAssessment, a.PercentRequired, a.AmountDue,
                  a.OverpaidAmount, a.Status, a.AssessedAt
-          ORDER BY s.StudentNumber, a.YearLevel, a.SchoolYear, a.Semester, -- 3. SORT BY YEAR LEVEL
+          ORDER BY s.StudentID, a.YearLevel, a.SchoolYear, a.Semester, 
                  CASE a.Period
                       WHEN 'Prelim'     THEN 1
                       WHEN 'Midterm'    THEN 2
@@ -72,8 +71,7 @@ namespace StudentAccountingSystem.Controllers
                         list.Add(new AssessmentViewModel
                         {
                             AssessmentID = (int)r["AssessmentID"],
-                            StudentID = (int)r["StudentID"],
-                            StudentNumber = r["StudentNumber"].ToString(),
+                            StudentNumber = r["StudentID"].ToString(),
                             StudentName = r["StudentName"].ToString(),
                             CourseName = r["CourseName"].ToString(),
                             YearLevel = (int)r["YearLevel"], // 4. ASSIGN TO VIEWMODEL
@@ -111,7 +109,7 @@ namespace StudentAccountingSystem.Controllers
             using (var cmd = new SqlCommand(
                 @"SELECT a.*,
                          s.FirstName + ' ' + s.LastName AS StudentName,
-                         s.StudentNumber,
+                         s.StudentID,
                          c.CourseName
                   FROM   Assessments a
                   JOIN   Students s ON s.StudentID = a.StudentID
@@ -125,9 +123,8 @@ namespace StudentAccountingSystem.Controllers
                         model = new AssessmentViewModel
                         {
                             AssessmentID = (int)r["AssessmentID"],
-                            StudentID = (int)r["StudentID"],
+                            StudentNumber = r["StudentID"].ToString(),
                             StudentName = r["StudentName"].ToString(),
-                            StudentNumber = r["StudentNumber"].ToString(),
                             CourseName = r["CourseName"].ToString(),
                             SchoolYear = r["SchoolYear"].ToString(),
                             Semester = r["Semester"].ToString(),
@@ -181,11 +178,11 @@ namespace StudentAccountingSystem.Controllers
             {
                 con.Open();
                 string sql = @"SELECT r.RequestID, r.Amount, r.RequestDate, r.Status, 
-                              s.FirstName + ' ' + s.LastName AS StudentName, s.StudentNumber
-                       FROM RefundRequests r
-                       JOIN Students s ON r.StudentID = s.StudentID
-                       WHERE r.Status = 'Pending'
-                       ORDER BY r.RequestDate DESC";
+                          s.FirstName + ' ' + s.LastName AS StudentName, s.StudentID AS StudentNumber
+                   FROM RefundRequests r
+                   JOIN Students s ON r.StudentID = s.StudentID
+                   WHERE r.Status = 'Pending'
+                   ORDER BY r.RequestDate DESC";
 
                 using (var cmd = new SqlCommand(sql, con))
                 {

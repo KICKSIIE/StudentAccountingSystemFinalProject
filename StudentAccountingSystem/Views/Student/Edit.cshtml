@@ -9,7 +9,7 @@
 
     <input type="hidden" id="hdnStudentID" value="@Model.StudentID" />
 
-    Student Number: <input type="text" id="txtStudentNumber" value="@Model.StudentNumber" disabled /><br />
+    Student Number: <input type="text" id="txtStudentNumber" value="@Model.StudentID" disabled /><br />
     Lastname: <input id="txtLname" type="text" value="@Model.LastName" /><br />
     Firstname: <input id="txtFname" type="text" value="@Model.FirstName" /><br />
     Middlename: <input id="txtMname" type="text" value="@Model.MiddleName" /><br />
@@ -58,26 +58,26 @@
         <option value="LOA" @(Model.Status == "LOA" ? "selected" : "")>LOA</option>
     </select><br />
     Scholarship:
-             <select id="selScholarship">
-                 <option value="">-- None --</option>
-                 @foreach (var sch in ViewBag.Scholarships)
-                 {
-                     @* Use ?.ToString() to avoid errors if ScholarshipID is null *@
-                     <option value="@sch.Value" @(Model.ScholarshipID?.ToString() == sch.Value ? "selected" : "")>
-                         @sch.Text
-                     </option>
-                 }
-             </select>
+    <select id="selScholarship">
+        <option value="">-- None --</option>
+        @foreach (var sch in ViewBag.Scholarships)
+        {
+            @* Use ?.ToString() to avoid errors if ScholarshipID is null *@
+            <option value="@sch.Value" @(Model.ScholarshipID?.ToString() == sch.Value ? "selected" : "")>
+                @sch.Text
+            </option>
+        }
+    </select>
     Discount:
-             <select id="selDiscount">
-                 <option value="">-- None --</option>
-                 @foreach (var dis in ViewBag.Discounts)
-                 {
-                     <option value="@dis.Value" @(Model.DiscountID?.ToString() == dis.Value ? "selected" : "")>
-                         @dis.Text
-                     </option>
-                 }
-             </select>
+    <select id="selDiscount">
+        <option value="">-- None --</option>
+        @foreach (var dis in ViewBag.Discounts)
+        {
+            <option value="@dis.Value" @(Model.DiscountID?.ToString() == dis.Value ? "selected" : "")>
+                @dis.Text
+            </option>
+        }
+    </select>
 
     <input id="btnUpdate" type="button" value="Update Student" />
     <a href="/Student/Index">Back to List</a>

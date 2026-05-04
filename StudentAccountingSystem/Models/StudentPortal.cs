@@ -14,9 +14,6 @@ namespace StudentAccountingSystem.Models
         public string SchoolYear { get; set; } = "";
         public string Status { get; set; } = "";
 
-        public bool HasPendingWithdrawal { get; set; }
-        public bool HasPendingReactivation { get; set; }
-        public bool IsWithdrawn { get; set; }
         public decimal OverpaidBalance { get; set; }
         public bool CanRequestRefund { get; set; }
         // Lists

@@ -46,22 +46,22 @@ namespace StudentAccountingSystem.Controllers
 
                 // Student info
                 using (var cmd = new SqlCommand(@"
-                    SELECT s.StudentNumber, 
+                    SELECT s.StudentID,          -- was s.StudentNumber
                            s.FirstName + ' ' + s.LastName AS FullName,
-                           ISNULL(c.CourseName, 'No Course Assigned') AS CourseName, -- Added safety
+                           ISNULL(c.CourseName, 'No Course Assigned') AS CourseName,
                            s.YearLevel, 
                            s.Semester, 
                            s.SchoolYear, 
                            s.Status
                     FROM Students s
-                    LEFT JOIN Courses c ON c.CourseID = s.CourseID -- Use LEFT JOIN
+                            LEFT JOIN Courses c ON c.CourseID = s.CourseID
                     WHERE s.StudentID = @sid", con))
                 {
                     cmd.Parameters.AddWithValue("@sid", sid);
                     using (var r = cmd.ExecuteReader())
                         if (r.Read())
                         {
-                            model.StudentNumber = r["StudentNumber"].ToString();
+                            model.StudentNumber = r["StudentID"].ToString();
                             model.FullName = r["FullName"].ToString();
                             model.CourseName = r["CourseName"].ToString();
                             model.YearLevel = (int)r["YearLevel"];
@@ -118,25 +118,6 @@ namespace StudentAccountingSystem.Controllers
                                 AssessedAt = (DateTime)r["AssessedAt"]
                             });
                 }
-
-                // Check withdrawal/reactivation status
-                using (var cmd = new SqlCommand(
-                    @"SELECT COUNT(*) FROM WithdrawalRequests 
-      WHERE StudentID = @sid AND Status = 'Pending'", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    model.HasPendingWithdrawal = (int)cmd.ExecuteScalar() > 0;
-                }
-
-                using (var cmd = new SqlCommand(
-                    @"SELECT COUNT(*) FROM ReactivationRequests 
-      WHERE StudentID = @sid AND Status = 'Pending'", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    model.HasPendingReactivation = (int)cmd.ExecuteScalar() > 0;
-                }
-
-                model.IsWithdrawn = model.Status == "Withdrawn";
 
                 // Check overpaid balance — sum of all payments minus sum of all AmountDue
                 // for fully paid semesters
@@ -538,225 +519,7 @@ namespace StudentAccountingSystem.Controllers
             }
         }
 
-        // POST: /StudentPortal/RequestWithdrawal
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult RequestWithdrawal()
-        {
-            if (Session["Role"]?.ToString() != "Student")
-                return RedirectToAction("Login", "Account");
-
-            int? sid = GetStudentID();
-            if (sid == null) return RedirectToAction("Login", "Account");
-
-            using (var con = new SqlConnection(_conn))
-            {
-                con.Open();
-
-                // Check if already has pending request
-                using (var cmd = new SqlCommand(
-                    @"SELECT COUNT(*) FROM WithdrawalRequests 
-              WHERE StudentID = @sid AND Status = 'Pending'", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    if ((int)cmd.ExecuteScalar() > 0)
-                    {
-                        TempData["Error"] = "You already have a pending withdrawal request.";
-                        return RedirectToAction("Index");
-                    }
-                }
-
-                // Get student's current semester info
-                string schoolYear = "", semester = "", status = "";
-                using (var cmd = new SqlCommand(
-                    "SELECT SchoolYear, Semester, Status FROM Students WHERE StudentID = @sid", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    using (var r = cmd.ExecuteReader())
-                    {
-                        if (!r.Read())
-                            return RedirectToAction("Index");
-                        schoolYear = r["SchoolYear"].ToString();
-                        semester = r["Semester"].ToString();
-                        status = r["Status"].ToString();
-                    }
-                }
-
-                if (status == "Withdrawn")
-                {
-                    TempData["Error"] = "Your account is already withdrawn.";
-                    return RedirectToAction("Index");
-                }
-
-                // Determine highest paid period this semester
-                string highestPaidPeriod = "";
-                using (var cmd = new SqlCommand(
-                    @"SELECT TOP 1 Period FROM Assessments
-              WHERE StudentID = @sid 
-                AND SchoolYear = @sy 
-                AND Semester = @sem
-                AND Status IN ('Paid','Partial')
-              ORDER BY CASE Period
-                WHEN 'Final'      THEN 4
-                WHEN 'Semi-Final' THEN 3
-                WHEN 'Midterm'    THEN 2
-                WHEN 'Prelim'     THEN 1
-              END DESC", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    cmd.Parameters.AddWithValue("@sy", schoolYear);
-                    cmd.Parameters.AddWithValue("@sem", semester);
-                    using (var r = cmd.ExecuteReader())
-                        if (r.Read())
-                            highestPaidPeriod = r["Period"].ToString();
-                }
-
-                // Block if Semi-Final or Final is paid
-                if (highestPaidPeriod == "Semi-Final" || highestPaidPeriod == "Final")
-                {
-                    TempData["Error"] = "Withdrawal is not allowed after Semi-Final or Final has been paid.";
-                    return RedirectToAction("Index");
-                }
-
-                // Calculate total paid this semester
-                decimal totalPaid = 0;
-                using (var cmd = new SqlCommand(
-                    @"SELECT ISNULL(SUM(p.AmountPaid), 0)
-              FROM   Payments p
-              JOIN   Assessments a ON a.AssessmentID = p.AssessmentID
-              WHERE  a.StudentID  = @sid
-                AND  a.SchoolYear = @sy
-                AND  a.Semester   = @sem
-                AND  p.TransactionType = 'Payment'", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    cmd.Parameters.AddWithValue("@sy", schoolYear);
-                    cmd.Parameters.AddWithValue("@sem", semester);
-                    totalPaid = (decimal)cmd.ExecuteScalar();
-                }
-
-                // Determine penalty
-                decimal penaltyPercent = 0;
-                if (highestPaidPeriod == "Prelim") penaltyPercent = 25;
-                else if (highestPaidPeriod == "Midterm") penaltyPercent = 50;
-
-                decimal penaltyAmount = Math.Round(totalPaid * penaltyPercent / 100, 2);
-                decimal refundableAmount = Math.Max(0, totalPaid - penaltyAmount);
-
-                // Insert withdrawal request
-                using (var cmd = new SqlCommand(
-                    @"INSERT INTO WithdrawalRequests
-                (StudentID, RequestDate, Status, PenaltyPercent,
-                 TotalPaid, PenaltyAmount, RefundableAmount, Remarks)
-              VALUES
-                (@sid, GETDATE(), 'Pending', @pct,
-                 @total, @penalty, @refund, @remarks)", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    cmd.Parameters.AddWithValue("@pct", penaltyPercent);
-                    cmd.Parameters.AddWithValue("@total", totalPaid);
-                    cmd.Parameters.AddWithValue("@penalty", penaltyAmount);
-                    cmd.Parameters.AddWithValue("@refund", refundableAmount);
-                    cmd.Parameters.AddWithValue("@remarks",
-                        string.IsNullOrEmpty(highestPaidPeriod)
-                        ? "No payment made — full refund"
-                        : "Withdrew after " + highestPaidPeriod);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-
-            TempData["Success"] = "Withdrawal request submitted. Waiting for admin approval.";
-            return RedirectToAction("Index");
-        }
-
-        // POST: Request Reactivation
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult RequestReactivation()
-        {
-            if (Session["Role"]?.ToString() != "Student")
-                return RedirectToAction("Login", "Account");
-
-            int? sid = GetStudentID();
-            if (sid == null) return RedirectToAction("Login", "Account");
-
-            using (var con = new SqlConnection(_conn))
-            {
-                con.Open();
-
-                // Check already has pending request
-                int existing = 0;
-                using (var cmd = new SqlCommand(
-                    @"SELECT COUNT(*) FROM ReactivationRequests
-              WHERE StudentID = @sid AND Status = 'Pending'", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    existing = (int)cmd.ExecuteScalar();
-                }
-                if (existing > 0)
-                {
-                    TempData["Error"] = "You already have a pending reactivation request.";
-                    return RedirectToAction("Index");
-                }
-
-                // Must be Withdrawn
-                string status = "", schoolYear = "", semester = "";
-                int yearLevel = 0;
-                using (var cmd = new SqlCommand(
-                    @"SELECT Status, SchoolYear, Semester, YearLevel
-              FROM   Students WHERE StudentID = @sid", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    using (var r = cmd.ExecuteReader())
-                    {
-                        if (!r.Read()) return RedirectToAction("Index");
-                        status = r["Status"].ToString();
-                        schoolYear = r["SchoolYear"].ToString();
-                        semester = r["Semester"].ToString();
-                        yearLevel = (int)r["YearLevel"];
-                    }
-                }
-
-                if (status != "Withdrawn")
-                {
-                    TempData["Error"] = "Only withdrawn students can request reactivation.";
-                    return RedirectToAction("Index");
-                }
-
-                // Auto-calculate next school year — same format YYYY-YYYY
-                string nextSchoolYear = schoolYear;
-                var parts = schoolYear.Split('-');
-                if (parts.Length == 2 &&
-                    int.TryParse(parts[0], out int syStart) &&
-                    int.TryParse(parts[1], out int syEnd))
-                {
-                    nextSchoolYear = (syStart + 1) + "-" + (syEnd + 1);
-                }
-
-                // Same semester, same year level — student repeats
-                // the semester they withdrew from in the next school year
-                using (var cmd = new SqlCommand(
-                    @"INSERT INTO ReactivationRequests
-                (StudentID, RequestDate, Status,
-                 TargetSchoolYear, TargetSemester, TargetYearLevel,
-                 Remarks)
-              VALUES
-                (@sid, GETDATE(), 'Pending',
-                 @sy, @sem, @year,
-                 'Auto-calculated reactivation request')", con))
-                {
-                    cmd.Parameters.AddWithValue("@sid", sid);
-                    cmd.Parameters.AddWithValue("@sy", nextSchoolYear);
-                    cmd.Parameters.AddWithValue("@sem", semester);
-                    cmd.Parameters.AddWithValue("@year", yearLevel);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-
-            TempData["Success"] = "Reactivation request submitted. Waiting for admin approval.";
-            return RedirectToAction("Index");
-        }
-
+        
         // POST: Request Overpayment Refund
         [HttpPost]
         [ValidateAntiForgeryToken]

@@ -26,7 +26,7 @@ namespace StudentAccountingSystem.Controllers
                 var data = new List<object>();
                 using (var con = new SqlConnection(_conn))
                 using (var cmd = new SqlCommand(
-                    @"SELECT s.StudentID, s.StudentNumber, s.LastName, s.FirstName,
+                    @"SELECT s.StudentID, s.LastName, s.FirstName,
                      s.YearLevel, s.Semester, s.SchoolYear, s.Status,
                      CASE 
                          WHEN c.CourseCode IS NOT NULL THEN c.CourseCode
@@ -42,7 +42,7 @@ namespace StudentAccountingSystem.Controllers
                             data.Add(new
                             {
                                 tid = r["StudentID"],
-                                idno = r["StudentNumber"],
+                                idno = r["StudentID"],  // StudentID is now the student number
                                 lastname = r["LastName"],
                                 firstname = r["FirstName"],
                                 course = r["CourseCode"],
@@ -125,6 +125,21 @@ namespace StudentAccountingSystem.Controllers
             return Json(data, JsonRequestBehavior.AllowGet);
         }
 
+        // 1. REPLACE GenerateNumericStudentNumber() — query StudentID now, not StudentNumber
+        private int GenerateStudentID()
+        {
+            using (var con = new SqlConnection(_conn))
+            {
+                con.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT ISNULL(MAX(StudentID), 999999999) FROM Students", con))
+                {
+                    return Convert.ToInt32(cmd.ExecuteScalar()) + 1;
+                }
+            }
+        }
+
+        // 2. REPLACE RegisterStudent() — no more StudentNumber column, StudentID is inserted manually
         public ActionResult RegisterStudent()
         {
             var data = new List<object>();
@@ -146,7 +161,6 @@ namespace StudentAccountingSystem.Controllers
                 string scholarshipID = Request["scholarshipID"];
                 string discountID = Request["discountID"];
 
-                // Validate required fields
                 if (string.IsNullOrWhiteSpace(lastName) || string.IsNullOrWhiteSpace(firstName)
                     || string.IsNullOrWhiteSpace(courseID) || string.IsNullOrWhiteSpace(yearLevel)
                     || string.IsNullOrWhiteSpace(semester) || string.IsNullOrWhiteSpace(schoolYear))
@@ -155,29 +169,26 @@ namespace StudentAccountingSystem.Controllers
                     return Json(data, JsonRequestBehavior.AllowGet);
                 }
 
-                // Generate numeric student number (LONG for 10 digits)
-                long studentNumber = GenerateNumericStudentNumber();
-                int newStudentID = 0;
+                int newStudentID = GenerateStudentID(); // StudentID IS the student number now
 
                 using (var con = new SqlConnection(_conn))
                 {
                     con.Open();
 
+                    // INSERT — StudentID is explicitly provided, no SCOPE_IDENTITY needed
                     using (var cmd = new SqlCommand(
                         @"INSERT INTO Students
-                    (StudentNumber, LastName, FirstName, MiddleName, Gender,
+                    (StudentID, LastName, FirstName, MiddleName, Gender,
                      BirthDate, ContactNumber, Address, Email, CourseID,
                      YearLevel, Semester, SchoolYear, Status, EnrolledAt,
                      ScholarshipID, DiscountID)
                   VALUES
-                    (@snum, @lname, @fname, @mname, @gender,
+                    (@sid, @lname, @fname, @mname, @gender,
                      @bdate, @contact, @address, @email, @courseID,
                      @year, @sem, @sy, 'Enrolled', GETDATE(),
-                     @schid, @did);
-                  SELECT SCOPE_IDENTITY();", con))
+                     @schid, @did)", con))
                     {
-                        // StudentNumber is now LONG
-                        cmd.Parameters.AddWithValue("@snum", studentNumber);
+                        cmd.Parameters.AddWithValue("@sid", newStudentID);
                         cmd.Parameters.AddWithValue("@lname", lastName.Trim().ToUpper());
                         cmd.Parameters.AddWithValue("@fname", firstName.Trim().ToUpper());
                         cmd.Parameters.AddWithValue("@mname", string.IsNullOrEmpty(middleName) ? (object)DBNull.Value : middleName.Trim().ToUpper());
@@ -192,28 +203,26 @@ namespace StudentAccountingSystem.Controllers
                         cmd.Parameters.AddWithValue("@sy", schoolYear.Trim());
                         cmd.Parameters.AddWithValue("@schid", string.IsNullOrEmpty(scholarshipID) ? (object)DBNull.Value : int.Parse(scholarshipID));
                         cmd.Parameters.AddWithValue("@did", string.IsNullOrEmpty(discountID) ? (object)DBNull.Value : int.Parse(discountID));
-
-                        newStudentID = Convert.ToInt32(cmd.ExecuteScalar());
+                        cmd.ExecuteNonQuery();
                     }
 
-                    // Generate assessments
+                    // GenerateAssessments — pass newStudentID as long
                     GenerateAssessments(con, newStudentID, int.Parse(courseID),
                         int.Parse(yearLevel), semester, schoolYear.Trim());
 
-                    // Create user account - Username is the student number as string
+                    // Create user account — username and password = StudentID
                     using (var cmd = new SqlCommand(
                         @"INSERT INTO Users (Username, PasswordHash, Role, StudentID, IsActive, CreatedAt)
                   VALUES (@user, @pass, 'Student', @sid, 1, GETDATE())", con))
                     {
-                        cmd.Parameters.AddWithValue("@user", studentNumber.ToString()); // Convert LONG to string
-                        cmd.Parameters.AddWithValue("@pass", studentNumber.ToString()); // Default password
+                        cmd.Parameters.AddWithValue("@user", newStudentID.ToString());
+                        cmd.Parameters.AddWithValue("@pass", newStudentID.ToString());
                         cmd.Parameters.AddWithValue("@sid", newStudentID);
                         cmd.ExecuteNonQuery();
                     }
                 }
 
-                // Return the student number as string for display
-                data.Add(new { mess = 1, studentNumber = studentNumber.ToString(), message = "Student registered successfully." });
+                data.Add(new { mess = 1, studentNumber = newStudentID.ToString(), message = "Student registered successfully." });
                 return Json(data, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
@@ -224,19 +233,8 @@ namespace StudentAccountingSystem.Controllers
             }
         }
 
-        // Generate numeric student numbers starting from 1000000000 (10 digits)
-        private long GenerateNumericStudentNumber()
-        {
-            using (var con = new SqlConnection(_conn))
-            {
-                con.Open();
-                using (var cmd = new SqlCommand("SELECT ISNULL(MAX(StudentNumber), 999999999) FROM Students", con))
-                {
-                    long maxNumber = Convert.ToInt64(cmd.ExecuteScalar());
-                    return maxNumber + 1; // Returns 1000000000, 1000000001, 1000000002, etc.
-                }
-            }
-        }
+
+
         public ActionResult GetStudent()
         {
             string id = Request["studentID"];
@@ -304,14 +302,14 @@ namespace StudentAccountingSystem.Controllers
             using (var con = new SqlConnection(_conn))
             using (var cmd = new SqlCommand(
                 @"UPDATE Students SET
-                    LastName=@lname, FirstName=@fname, MiddleName=@mname,
-                    Gender=@gender, BirthDate=@bdate, ContactNumber=@contact,
-                    Address=@address, Email=@email, CourseID=@courseID,
-                    YearLevel=@year, Semester=@sem, SchoolYear=@sy,
-                    Status=@status, ScholarshipID=@schid, DiscountID=@did
-                  WHERE StudentID=@id", con))
+            LastName=@lname, FirstName=@fname, MiddleName=@mname,
+            Gender=@gender, BirthDate=@bdate, ContactNumber=@contact,
+            Address=@address, Email=@email, CourseID=@courseID,
+            YearLevel=@year, Semester=@sem, SchoolYear=@sy,
+            Status=@status, ScholarshipID=@schid, DiscountID=@did
+          WHERE StudentID=@id", con))
             {
-                cmd.Parameters.AddWithValue("@id", int.Parse(studentID));
+                cmd.Parameters.AddWithValue("@id", int.Parse(studentID)); 
                 cmd.Parameters.AddWithValue("@lname", lastName.Trim().ToUpper());
                 cmd.Parameters.AddWithValue("@fname", firstName.Trim().ToUpper());
                 cmd.Parameters.AddWithValue("@mname", string.IsNullOrEmpty(middleName) ? (object)DBNull.Value : middleName.Trim().ToUpper());
@@ -346,15 +344,15 @@ namespace StudentAccountingSystem.Controllers
                 {
                     con.Open();
                     foreach (var sql in new[] {
-                        "DELETE FROM Payments    WHERE StudentID=@id",
-                        "DELETE FROM Assessments WHERE StudentID=@id",
-                        "DELETE FROM Users       WHERE StudentID=@id",
-                        "DELETE FROM Students    WHERE StudentID=@id"
-                    })
+                "DELETE FROM Payments    WHERE StudentID=@id",
+                "DELETE FROM Assessments WHERE StudentID=@id",
+                "DELETE FROM Users       WHERE StudentID=@id",
+                "DELETE FROM Students    WHERE StudentID=@id"
+            })
                     {
                         using (var cmd = new SqlCommand(sql, con))
                         {
-                            cmd.Parameters.AddWithValue("@id", int.Parse(id));
+                            cmd.Parameters.AddWithValue("@id", int.Parse(id)); 
                             cmd.ExecuteNonQuery();
                         }
                     }
@@ -372,7 +370,7 @@ namespace StudentAccountingSystem.Controllers
         // keep GenerateAssessments and AdvanceSemester exactly as they are
         // (they are used by StudentPortalController — do not remove)
         public static void GenerateAssessments(SqlConnection con, int studentID, int courseID,
-    int yearLevel, string semester, string schoolYear, SqlTransaction trans =null) // <-- Add trans here
+    int yearLevel, string semester, string schoolYear, SqlTransaction trans = null)
         {
             decimal tuitionPerUnit = 0, regFee = 0, miscFee = 0, labFee = 0;
             int units = 0;
@@ -580,8 +578,7 @@ namespace StudentAccountingSystem.Controllers
                         {
                             student = new Student
                             {
-                                StudentID = (int)r["StudentID"],
-                                StudentNumber = Convert.ToInt64(r["StudentNumber"]),
+                                StudentID = (int)r["StudentID"],  // no more StudentNumber
                                 LastName = r["LastName"].ToString(),
                                 FirstName = r["FirstName"].ToString(),
                                 MiddleName = r["MiddleName"] == DBNull.Value ? null : r["MiddleName"].ToString(),

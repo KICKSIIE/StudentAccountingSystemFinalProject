@@ -42,11 +42,12 @@ namespace StudentAccountingSystem.Controllers
                             reg = r["RegistrationFee"],
                             misc = r["MiscFee"],
                             lab = r["LabFee"],
-                            enrolled = r["StudentCount"], // The count from SQL
+                            isActive = Convert.ToBoolean(r["IsActive"]),  // make sure this is explicit
+                            enrolled = r["StudentCount"],
                             totalFee = (Convert.ToDecimal(r["TuitionPerUnit"]) * Convert.ToInt32(r["Units"]) +
-                                        Convert.ToDecimal(r["RegistrationFee"]) +
-                                        Convert.ToDecimal(r["MiscFee"]) +
-                                        Convert.ToDecimal(r["LabFee"])).ToString("N2")
+                Convert.ToDecimal(r["RegistrationFee"]) +
+                Convert.ToDecimal(r["MiscFee"]) +
+                Convert.ToDecimal(r["LabFee"])).ToString("N2")
                         });
                     }
                 }
@@ -147,21 +148,33 @@ namespace StudentAccountingSystem.Controllers
                 using (var con = new SqlConnection(connDB))
                 {
                     con.Open();
-                    // 1. Check if students are enrolled before trying to delete
-                    string checkSql = "SELECT COUNT(*) FROM Students WHERE CourseID = @id";
-                    using (var cmdCheck = new SqlCommand(checkSql, con))
+
+                    // 1. Check if active first
+                    using (var cmd = new SqlCommand("SELECT IsActive FROM Courses WHERE CourseID=@id", con))
                     {
-                        cmdCheck.Parameters.AddWithValue("@id", id);
-                        int count = (int)cmdCheck.ExecuteScalar();
-                        if (count > 0)
+                        cmd.Parameters.AddWithValue("@id", id);
+                        bool isActive = Convert.ToBoolean(cmd.ExecuteScalar());
+                        if (isActive)
                         {
-                            data.Add(new { mess = 0, message = "Cannot delete: " + count + " student(s) currently enrolled." });
+                            data.Add(new { mess = 0, message = "Cannot delete: course is still active. Deactivate it first." });
                             return Json(data, JsonRequestBehavior.AllowGet);
                         }
                     }
 
-                    // 2. If count is 0, proceed with delete
-                    using (var cmd = new SqlCommand("DELETE FROM Courses WHERE CourseID = @id", con))
+                    // 2. Check if students are enrolled
+                    using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Students WHERE CourseID=@id", con))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        int count = (int)cmd.ExecuteScalar();
+                        if (count > 0)
+                        {
+                            data.Add(new { mess = 0, message = "Cannot delete: " + count + " student(s) still enrolled in this course." });
+                            return Json(data, JsonRequestBehavior.AllowGet);
+                        }
+                    }
+
+                    // 3. Safe to delete
+                    using (var cmd = new SqlCommand("DELETE FROM Courses WHERE CourseID=@id", con))
                     {
                         cmd.Parameters.AddWithValue("@id", id);
                         cmd.ExecuteNonQuery();
@@ -173,6 +186,66 @@ namespace StudentAccountingSystem.Controllers
             {
                 data.Add(new { mess = 0, message = "Could not delete course due to a database error." });
             }
+
+            return Json(data, JsonRequestBehavior.AllowGet);
+        }
+
+        public ActionResult ToggleCourseActive()
+        {
+            string id = Request["id"];
+            var data = new List<object>();
+
+            try
+            {
+                using (var con = new SqlConnection(connDB))
+                {
+                    con.Open();
+
+                    // Get current status first
+                    bool isActive;
+                    using (var cmd = new SqlCommand("SELECT IsActive FROM Courses WHERE CourseID=@id", con))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        isActive = Convert.ToBoolean(cmd.ExecuteScalar());
+                    }
+
+                    // If trying to DEACTIVATE, check for enrolled students
+                    if (isActive)
+                    {
+                        using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Students WHERE CourseID=@id", con))
+                        {
+                            cmd.Parameters.AddWithValue("@id", id);
+                            int count = (int)cmd.ExecuteScalar();
+                            if (count > 0)
+                            {
+                                data.Add(new { mess = 0, message = "Cannot deactivate: " + count + " student(s) still enrolled in this course." });
+                                return Json(data, JsonRequestBehavior.AllowGet);
+                            }
+                        }
+                    }
+
+                    // Safe to toggle
+                    using (var cmd = new SqlCommand(
+                        "UPDATE Courses SET IsActive = CASE WHEN IsActive=1 THEN 0 ELSE 1 END WHERE CourseID=@id", con))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    // Return new status
+                    using (var cmd = new SqlCommand("SELECT IsActive FROM Courses WHERE CourseID=@id", con))
+                    {
+                        cmd.Parameters.AddWithValue("@id", id);
+                        bool newStatus = Convert.ToBoolean(cmd.ExecuteScalar());
+                        data.Add(new { mess = 1, isActive = newStatus, message = newStatus ? "Course activated." : "Course deactivated." });
+                    }
+                }
+            }
+            catch
+            {
+                data.Add(new { mess = 0, message = "Could not update course status." });
+            }
+
             return Json(data, JsonRequestBehavior.AllowGet);
         }
     }
