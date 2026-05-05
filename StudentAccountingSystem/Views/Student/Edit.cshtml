@@ -5,39 +5,57 @@
 }
 
 <style>
-    body {
-        font-family: 'Segoe UI', Tahoma, sans-serif;
-        background-color: #f8f9fa;
-        color: #333;
+    /* Theme Variables — shared with Student Management Index */
+    :root {
+        --primary-blue: #1a4b6e;
+        --accent-yellow: #f1c40f;
+        --accent-red: #d32f2f;
+        --surface: #f5f6f9;
+        --border-color: #e2e8f0;
     }
 
     .container-fluid {
         padding: 20px;
     }
 
-    .form-section {
-        background: #fff;
-        border: 1px solid #ddd;
-        padding: 25px;
-        border-radius: 8px;
+    /* Page Title */
+    .page-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary-blue);
         margin-bottom: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-
-    .form-title {
-        border-bottom: 2px solid #2c3e50;
         padding-bottom: 10px;
+        border-bottom: 2px solid var(--primary-blue);
+        display: inline-block;
+    }
+
+    /* Form Card */
+    .form-card {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 25px;
         margin-bottom: 20px;
-        color: #2c3e50;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
+    /* Section Label */
     .section-label {
-        color: #2c3e50;
-        font-weight: bold;
-        margin: 20px 0 10px 0;
-        font-size: 0.95rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--primary-blue);
+        margin: 20px 0 12px 0;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border-color);
     }
 
+        .section-label:first-of-type {
+            margin-top: 0;
+        }
+
+    /* Input Row Layout */
     .input-row {
         display: flex;
         flex-wrap: wrap;
@@ -49,86 +67,136 @@
         display: flex;
         flex-direction: column;
         min-width: 180px;
+        flex: 1;
     }
 
         .field.wide {
             flex: 2;
-            min-width: 300px;
+            min-width: 280px;
         }
 
+        .field.fixed {
+            flex: 0 0 auto;
+            min-width: 160px;
+        }
+
+    /* Labels */
     label {
-        font-weight: bold;
-        font-size: 0.8rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
         margin-bottom: 5px;
-        color: #555;
     }
 
+    /* Inputs & Selects */
     input[type="text"],
     input[type="date"],
     input[type="email"],
     select {
-        padding: 8px 10px;
-        border: 1px solid #ccc;
+        padding: 9px 12px;
+        border: 1px solid var(--border-color);
         border-radius: 4px;
-        font-size: 0.875rem;
-        background: #fff;
+        font-size: 0.85rem;
+        color: #334155;
+        background: white;
+        transition: border-color 0.2s;
     }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="email"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
 
     input[disabled] {
-        background: #e9ecef;
-        color: #666;
+        background: var(--surface);
+        color: #94a3b8;
         cursor: not-allowed;
+        border-color: var(--border-color);
     }
 
+    /* Divider */
+    .form-divider {
+        border: none;
+        border-top: 1px solid var(--border-color);
+        margin: 20px 0;
+    }
+
+    /* Buttons */
     .btn {
-        padding: 9px 20px;
+        padding: 10px 18px;
         border-radius: 4px;
         border: none;
         cursor: pointer;
-        font-weight: bold;
-        font-size: 0.875rem;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: background 0.2s;
         text-decoration: none;
         display: inline-block;
     }
 
-    .btn-primary {
-        background: #2c3e50;
+    .btn-save {
+        background: var(--primary-blue);
         color: white;
     }
 
-    .btn-danger {
-        background: #c0392b;
+        .btn-save:hover {
+            background: #133852;
+        }
+
+    .btn-back {
+        background: #64748b;
         color: white;
     }
 
-    .btn-secondary {
-        background: #95a5a6;
-        color: white;
+        .btn-back:hover {
+            background: #475569;
+            color: white;
+        }
+
+    /* Button Row */
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 5px;
     }
 
-    .btn:hover {
-        opacity: 0.88;
-    }
-
+    /* Result / Message Box */
     #result {
-        margin-top: 15px;
-        font-size: 0.95rem;
+        margin-top: 14px;
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    .msg-success {
+        color: #15803d;
+    }
+
+    .msg-error {
+        color: var(--accent-red);
     }
 </style>
 
 <div class="container-fluid">
-    <h2 class="form-title">Edit Student</h2>
+    <h2 class="page-header">Edit Student</h2>
 
     <div id="msgBox"></div>
 
-    <div class="form-section">
+    <div class="form-card">
 
         <input type="hidden" id="hdnStudentID" value="@Model.StudentID" />
 
         <p class="section-label">I. Personal Information</p>
 
         <div class="input-row">
-            <div class="field">
+            <div class="field fixed">
                 <label>Student Number</label>
                 <input type="text" value="@Model.StudentID" disabled />
             </div>
@@ -150,7 +218,7 @@
         </div>
 
         <div class="input-row">
-            <div class="field">
+            <div class="field fixed">
                 <label>Gender</label>
                 <select id="selGender">
                     <option value="">-- Select Gender --</option>
@@ -158,11 +226,11 @@
                     <option value="Female" @(Model.Gender == "Female" ? "selected" : "")>Female</option>
                 </select>
             </div>
-            <div class="field">
+            <div class="field fixed">
                 <label>Birth Date</label>
                 <input type="date" id="txtBirthDate" value="@Model.BirthDate.ToString("yyyy-MM-dd")" />
             </div>
-            <div class="field">
+            <div class="field fixed">
                 <label>Contact Number</label>
                 <input type="text" id="txtContact" value="@Model.ContactNumber" />
             </div>
@@ -194,7 +262,7 @@
                     }
                 </select>
             </div>
-            <div class="field">
+            <div class="field fixed">
                 <label>Year Level</label>
                 <select id="selYearLevel">
                     <option value="1" @(Model.YearLevel == 1 ? "selected" : "")>1st Year</option>
@@ -203,7 +271,7 @@
                     <option value="4" @(Model.YearLevel == 4 ? "selected" : "")>4th Year</option>
                 </select>
             </div>
-            <div class="field">
+            <div class="field fixed">
                 <label>Semester</label>
                 <select id="selSemester">
                     <option value="1st" @(Model.Semester == "1st" ? "selected" : "")>1st Semester</option>
@@ -211,7 +279,7 @@
                     <option value="Summer" @(Model.Semester == "Summer" ? "selected" : "")>Summer</option>
                 </select>
             </div>
-            <div class="field">
+            <div class="field fixed">
                 <label>School Year</label>
                 <select id="selSchoolYear">
                     @foreach (var sy in ViewBag.SchoolYears)
@@ -226,7 +294,7 @@
         </div>
 
         <div class="input-row">
-            <div class="field">
+            <div class="field fixed">
                 <label>Status</label>
                 <select id="selStatus">
                     <option value="Enrolled" @(Model.Status == "Enrolled" ? "selected" : "")>Enrolled</option>
@@ -263,46 +331,17 @@
             </div>
         </div>
 
-        <hr style="margin: 20px 0;" />
+        <hr class="form-divider" />
 
-        <input type="button" id="btnUpdate" class="btn btn-primary" value="Save Changes" />
-        <a href="/Student/Index" class="btn btn-secondary">← Back to List</a>
+        <div class="form-actions">
+            <input type="button" id="btnUpdate" class="btn btn-save" value="Save Changes" />
+            <a href="/Student/Index" class="btn btn-back">Back to List</a>
+        </div>
 
         <div id="result"></div>
+
     </div>
 </div>
 
 <script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
-<script>
-    $("#btnUpdate").click(function () {
-        $.post("/Student/UpdateStudent", {
-            studentID: $("#hdnStudentID").val(),
-            lastName: $("#txtLname").val(),
-            firstName: $("#txtFname").val(),
-            middleName: $("#txtMname").val(),
-            gender: $("#selGender").val(),
-            birthDate: $("#txtBirthDate").val(),
-            contact: $("#txtContact").val(),
-            address: $("#txtAddress").val(),
-            email: $("#txtEmail").val(),
-            courseID: $("#selCourse").val(),
-            yearLevel: $("#selYearLevel").val(),
-            semester: $("#selSemester").val(),
-            schoolYear: $("#selSchoolYear").val(),
-            status: $("#selStatus").val(),
-            scholarshipID: $("#selScholarship").val(),
-            discountID: $("#selDiscount").val()
-        }, function (res) {
-            if (res[0].mess == 1) {
-                $("#result").html("<p style='color:green; font-weight:bold;'>✔ " + res[0].message + " Redirecting...</p>");
-                setTimeout(function () {
-                    window.location.href = "/Student/Index";
-                }, 2000);
-            } else {
-                $("#result").html("<p style='color:red; font-weight:bold;'>✖ " + res[0].message + "</p>");
-            }
-        }).fail(function () {
-            $("#result").html("<p style='color:red;'>Request failed. Please try again.</p>");
-        });
-    });
-</script>
+<script src="~/Scripts/myScripts/Student/studentEdit.js"></script>

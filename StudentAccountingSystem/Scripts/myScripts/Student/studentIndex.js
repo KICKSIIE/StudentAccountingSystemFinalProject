@@ -45,11 +45,17 @@ function loadStudents() {
                 tr += "<td>" + (res[rec].semester || '') + "</td>";
                 tr += "<td>" + (res[rec].schoolYear || '') + "</td>";
                 tr += "<td>" + (res[rec].status || '') + "</td>";
+
+                // --- UPDATED BUTTONS SECTION ---
                 tr += "<td>";
-                tr += "<input type='button' value='View' onclick='viewStudent(" + res[rec].tid + ")' /> ";
-                tr += "<input type='button' value='Edit' onclick='showEdit(" + res[rec].tid + ")' /> ";
-                tr += "<input type='button' value='Delete' onclick='deleteStudent(" + res[rec].tid + ")' />";
+                tr += "<div class='action-container'>";
+                tr += "<button class='btn-mini btn-view' onclick='viewStudent(" + res[rec].tid + ")'>View</button>";
+                tr += "<button class='btn-mini btn-edit' onclick='showEdit(" + res[rec].tid + ")'>Edit</button>";
+                tr += "<button class='btn-mini btn-delete' onclick='deleteStudent(" + res[rec].tid + ")'>Delete</button>";
+                tr += "</div>";
                 tr += "</td>";
+                // -------------------------------
+
                 tr += "</tr>";
             }
         }
@@ -105,16 +111,6 @@ function loadDiscounts() {
     });
 }
 
-$("#btnShowRegister").click(function () {
-    $("#divRegister").show();
-    $("#divEdit").hide();
-    $("#divList").hide();
-});
-
-$("#btnCancelRegister").click(function () {
-    $("#divRegister").hide();
-    $("#divList").show();
-});
 
 $("#btnCancelEdit").click(function () {
     $("#divEdit").hide();
@@ -128,73 +124,6 @@ $("#btnSearch").click(function () {
     });
 });
 
-$("#btnRegister").click(function () {
-    // Validate required fields
-    if (!$("#txtLastName").val()) {
-        alert("Please enter Last Name");
-        return;
-    }
-    if (!$("#txtFirstName").val()) {
-        alert("Please enter First Name");
-        return;
-    }
-    if (!$("#selCourse").val()) {
-        alert("Please select a Course");
-        return;
-    }
-    if (!$("#selYear").val()) {
-        alert("Please select Year Level");
-        return;
-    }
-    if (!$("#selSemester").val()) {
-        alert("Please select Semester");
-        return;
-    }
-    if (!$("#selSchoolYear").val()) {
-        alert("Please select School Year");
-        return;
-    }
-
-    console.log("Register button clicked - sending data");
-
-    $.post("../Student/RegisterStudent", {
-        lastName: $("#txtLastName").val(),
-        firstName: $("#txtFirstName").val(),
-        middleName: $("#txtMiddleName").val(),
-        gender: $("#selGender").val(),
-        birthDate: $("#txtBirthDate").val(),
-        contact: $("#txtContact").val(),
-        address: $("#txtAddress").val(),
-        email: $("#txtEmail").val(),
-        courseID: $("#selCourse").val(),
-        yearLevel: $("#selYear").val(),
-        semester: $("#selSemester").val(),
-        schoolYear: $("#selSchoolYear").val(),
-        scholarshipID: $("#selScholarship").val(),
-        discountID: $("#selDiscount").val()
-    }, function (res) {
-        console.log("Response received:", res);
-        if (res[0].mess == 0) {
-            $("#msgBox").html("<b style='color:red;'>" + res[0].message + "</b>");
-            alert("Error: " + res[0].message);
-        } else {
-            $("#msgBox").html("<b style='color:green;'>Registered! Student No: " + res[0].studentNumber + "</b>");
-            alert("Student registered successfully!");
-            $("#divRegister").hide();
-            $("#divList").show();
-            loadStudents();
-            // Clear form
-            $("#txtLastName, #txtFirstName, #txtMiddleName, #txtBirthDate, #txtContact, #txtAddress, #txtEmail").val("");
-            $("#selGender, #selCourse, #selYear, #selSemester, #selScholarship, #selDiscount").val("");
-        }
-    }).fail(function (xhr, status, error) {
-        console.log("AJAX Error:", error);
-        console.log("Status:", status);
-        console.log("Response:", xhr.responseText);
-        alert("Error registering student: " + error + "\nCheck console for details");
-        $("#msgBox").html("<b style='color:red;'>Error: " + xhr.responseText + "</b>");
-    });
-});
 
 $("#btnUpdate").click(function () {
     $.post("../Student/UpdateStudent", {

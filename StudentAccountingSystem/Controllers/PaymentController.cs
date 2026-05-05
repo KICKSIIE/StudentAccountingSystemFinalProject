@@ -38,7 +38,7 @@ namespace StudentAccountingSystem.Controllers
                 con.Open();
                 using (var cmd = new SqlCommand(@"
                     SELECT  s.StudentID,
-                            s.FirstName + ' ' + s.LastName AS StudentName,
+                            s.LastName + ', ' + s.FirstName + ' ' + ISNULL(s.MiddleName, '') AS StudentName,
                             c.CourseCode,
                             s.YearLevel,
                             s.Semester,
@@ -89,7 +89,7 @@ namespace StudentAccountingSystem.Controllers
             STUFF((SELECT ', ' + CAST(p2.ORNumber AS VARCHAR)
                    FROM Payments p2
                    WHERE p2.AssessmentID = a.AssessmentID
-                     AND p2.TransactionType = 'Payment'
+                     AND p2.TransactionType IN ('Payment', 'Discount Adjustment')
                    ORDER BY p2.PaymentDate
                    FOR XML PATH('')), 1, 2, '') AS PaymentIDs
     FROM    Assessments a
@@ -177,7 +177,7 @@ namespace StudentAccountingSystem.Controllers
 
                         using (var cmd = new SqlCommand(
                             @"SELECT AmountDue, Period, SchoolYear, Semester, Status, YearLevel
-                              FROM Assessments WHERE AssessmentID = @aid", con, trans))
+                      FROM Assessments WHERE AssessmentID = @aid", con, trans))
                         {
                             cmd.Parameters.AddWithValue("@aid", assessmentID);
                             using (var r = cmd.ExecuteReader())
@@ -204,7 +204,7 @@ namespace StudentAccountingSystem.Controllers
                         decimal alreadyPaid = 0;
                         using (var cmd = new SqlCommand(
                             @"SELECT ISNULL(SUM(AmountPaid), 0) FROM Payments
-                              WHERE AssessmentID = @aid AND TransactionType = 'Payment'", con, trans))
+                      WHERE AssessmentID = @aid AND TransactionType = 'Payment'", con, trans))
                         {
                             cmd.Parameters.AddWithValue("@aid", assessmentID);
                             alreadyPaid = (decimal)cmd.ExecuteScalar();
@@ -222,14 +222,14 @@ namespace StudentAccountingSystem.Controllers
 
                         // Insert payment record (PaymentMode fixed to "Cash")
                         using (var cmd = new SqlCommand(@"
-                            INSERT INTO Payments
-                                (StudentID, AssessmentID, AmountPaid, PaymentMode,
-                                 Period, SchoolYear, Semester, YearLevel,
-                                 Remarks, PaymentDate, ReceivedBy, TransactionType)
-                            VALUES
-                                (@sid, @aid, @paid, 'Cash',
-                                 @period, @sy, @sem, @yl,
-                                 @remarks, GETDATE(), @recby, 'Payment')", con, trans))
+                    INSERT INTO Payments
+                        (StudentID, AssessmentID, AmountPaid, PaymentMode,
+                         Period, SchoolYear, Semester, YearLevel,
+                         Remarks, PaymentDate, ReceivedBy, TransactionType)
+                    VALUES
+                        (@sid, @aid, @paid, 'Cash',
+                         @period, @sy, @sem, @yl,
+                         @remarks, GETDATE(), @recby, 'Payment')", con, trans))
                         {
                             cmd.Parameters.AddWithValue("@sid", studentID);
                             cmd.Parameters.AddWithValue("@aid", assessmentID);
@@ -250,7 +250,7 @@ namespace StudentAccountingSystem.Controllers
                         // Update assessment status
                         using (var cmd = new SqlCommand(
                             @"UPDATE Assessments SET Status = @status
-                              WHERE AssessmentID = @aid", con, trans))
+                      WHERE AssessmentID = @aid", con, trans))
                         {
                             cmd.Parameters.AddWithValue("@status", newStatus);
                             cmd.Parameters.AddWithValue("@aid", assessmentID);
@@ -265,8 +265,8 @@ namespace StudentAccountingSystem.Controllers
                                                                     : "Final";
                             using (var cmd = new SqlCommand(
                                 @"UPDATE Assessments SET Status = 'Unpaid'
-                                  WHERE StudentID = @sid AND SchoolYear = @sy
-                                    AND Semester = @sem AND Period = @next AND Status = 'Locked'", con, trans))
+                          WHERE StudentID = @sid AND SchoolYear = @sy
+                            AND Semester = @sem AND Period = @next AND Status = 'Locked'", con, trans))
                             {
                                 cmd.Parameters.AddWithValue("@sid", studentID);
                                 cmd.Parameters.AddWithValue("@sy", schoolYear);
@@ -276,6 +276,8 @@ namespace StudentAccountingSystem.Controllers
                             }
                         }
 
+                        // Check if student becomes Graduated
+                        bool isGraduated = false;
                         if (isNowPaid && period == "Final" && yearLevel == 4 && semester == "2nd")
                         {
                             using (var cmd = new SqlCommand(
@@ -284,19 +286,39 @@ namespace StudentAccountingSystem.Controllers
                                 cmd.Parameters.AddWithValue("@sid", studentID);
                                 cmd.ExecuteNonQuery();
                             }
+                            isGraduated = true;
                         }
 
                         trans.Commit();
 
-                        string msg = isNowPaid
-                            ? period + " fully paid." + (period == "Final" ? " You may now generate the next semester." : "")
-                            : "Partial payment recorded. Remaining balance: ₱" + (remaining - toApply).ToString("N2");
+                        // Build the appropriate message
+                        string msg = "";
+                        if (isNowPaid)
+                        {
+                            if (isGraduated)
+                            {
+                                msg = "✅ Final period fully paid. The student has been marked as GRADUATED. No further payments needed.";
+                            }
+                            else if (period == "Final")
+                            {
+                                msg = period + " fully paid. Go to Assessment Management to generate the next semester.";
+                            }
+                            else
+                            {
+                                msg = period + " fully paid.";
+                            }
+                        }
+                        else
+                        {
+                            msg = "Partial payment recorded. Remaining balance: ₱" + (remaining - toApply).ToString("N2");
+                        }
 
                         return Json(new
                         {
                             mess = 1,
                             message = msg,
-                            finalPaid = (isNowPaid && period == "Final")
+                            finalPaid = (isNowPaid && period == "Final"),
+                            isGraduated = isGraduated
                         });
                     }
                     catch (Exception ex)
@@ -343,7 +365,7 @@ namespace StudentAccountingSystem.Controllers
                 using (var cmd = new SqlCommand(@"
             SELECT  p.PaymentID, p.ORNumber,
                     p.StudentID,
-                    s.FirstName + ' ' + s.LastName AS StudentName,
+                    s.LastName + ', ' + s.FirstName + ' ' + ISNULL(s.MiddleName, '') AS StudentName,
                     p.Period, p.SchoolYear, p.Semester, p.YearLevel,
                     p.AmountPaid, p.PaymentMode, p.TransactionType,
                     p.Remarks, p.PaymentDate,
@@ -868,6 +890,145 @@ namespace StudentAccountingSystem.Controllers
             catch (Exception ex)
             {
                 return Json(new { mess = 0, message = "Error: " + ex.Message });
+            }
+        }
+
+        public ActionResult GenerateZeroReceipt(int assessmentID)
+        {
+            if (!IsAdmin())
+                return Json(new { mess = 0, message = "Unauthorized." });
+
+            try
+            {
+                using (var con = new SqlConnection(_conn))
+                {
+                    con.Open();
+
+                    // Check if a Discount Adjustment receipt already exists
+                    int existing = 0;
+                    using (var cmd = new SqlCommand(@"
+                SELECT COUNT(*) FROM Payments 
+                WHERE AssessmentID = @aid 
+                  AND TransactionType = 'Discount Adjustment'", con))
+                    {
+                        cmd.Parameters.AddWithValue("@aid", assessmentID);
+                        existing = (int)cmd.ExecuteScalar();
+                    }
+
+                    if (existing > 0)
+                    {
+                        // Return the existing OR number instead of creating a new one
+                        int existingOR = 0;
+                        using (var cmd = new SqlCommand(@"
+                    SELECT TOP 1 ORNumber FROM Payments 
+                    WHERE AssessmentID = @aid 
+                      AND TransactionType = 'Discount Adjustment'
+                    ORDER BY PaymentDate DESC", con))
+                        {
+                            cmd.Parameters.AddWithValue("@aid", assessmentID);
+                            existingOR = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+                        return Json(new { mess = 1, orNumber = existingOR, alreadyExisted = true });
+                    }
+
+                    // Get StudentID from assessment
+                    int studentID = 0;
+                    using (var cmd = new SqlCommand(
+                        "SELECT StudentID FROM Assessments WHERE AssessmentID = @aid", con))
+                    {
+                        cmd.Parameters.AddWithValue("@aid", assessmentID);
+                        studentID = (int)cmd.ExecuteScalar();
+                    }
+
+                    // ← ADD HERE: Get Period, SchoolYear, Semester, YearLevel
+                    string period = ""; string schoolYear = ""; string semester = ""; int yearLevel = 0;
+                    using (var cmd = new SqlCommand(@"
+                        SELECT Period, SchoolYear, Semester, YearLevel 
+                        FROM Assessments WHERE AssessmentID = @aid", con))
+                    {
+                        cmd.Parameters.AddWithValue("@aid", assessmentID);
+                        using (var r = cmd.ExecuteReader())
+                        {
+                            if (r.Read())
+                            {
+                                period = r["Period"].ToString();
+                                schoolYear = r["SchoolYear"].ToString();
+                                semester = r["Semester"].ToString();
+                                yearLevel = Convert.ToInt32(r["YearLevel"]);
+                            }
+                        }
+                    }
+
+                    // Insert and get new ID in one shot
+                    int newPaymentID = 0;
+                    using (var cmd = new SqlCommand(@"
+                            INSERT INTO Payments 
+                                (AssessmentID, StudentID, AmountPaid, PaymentDate, 
+                                 PaymentMode, Remarks, TransactionType,
+                                 Period, SchoolYear, Semester, YearLevel)
+                            VALUES 
+                                (@aid, @sid, 0, GETDATE(), 
+                                 'Discount', 'Full discount applied - no cash collected', 'Discount Adjustment',
+                                 @period, @sy, @sem, @yl);
+                            SELECT SCOPE_IDENTITY();", con))
+                    {
+                        cmd.Parameters.AddWithValue("@aid", assessmentID);
+                        cmd.Parameters.AddWithValue("@sid", studentID);
+                        cmd.Parameters.AddWithValue("@period", period);
+                        cmd.Parameters.AddWithValue("@sy", schoolYear);
+                        cmd.Parameters.AddWithValue("@sem", semester);
+                        cmd.Parameters.AddWithValue("@yl", yearLevel);
+                        newPaymentID = Convert.ToInt32(cmd.ExecuteScalar());
+                    }
+
+                    // Now fetch the OR number that was auto-generated
+                    int orNumber = 0;
+                    using (var cmd = new SqlCommand(
+                        "SELECT ORNumber FROM Payments WHERE PaymentID = @pid", con))
+                    {
+                        cmd.Parameters.AddWithValue("@pid", newPaymentID);
+                        orNumber = Convert.ToInt32(cmd.ExecuteScalar());
+                    }
+
+                    return Json(new { mess = 1, orNumber = orNumber, paymentID = newPaymentID, alreadyExisted = false });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { mess = 0, message = ex.Message });
+            }
+        }
+
+        public ActionResult CanRefundSemester(int studentID, string schoolYear, string semester, int yearLevel)
+        {
+            using (var con = new SqlConnection(_conn))
+            {
+                con.Open();
+
+                // Check if this is the latest refundable semester
+                bool canRefund = false;
+                string message = "";
+
+                // Check if any later semester exists that is NOT refunded
+                using (var cmd = new SqlCommand(@"
+            SELECT COUNT(*) FROM Assessments a
+            WHERE a.StudentID = @sid
+              AND a.Status != 'Refunded'
+              AND (
+                  (a.YearLevel > @yl) OR
+                  (a.YearLevel = @yl AND a.Semester = '2nd' AND @sem = '1st')
+              )", con))
+                {
+                    cmd.Parameters.AddWithValue("@sid", studentID);
+                    cmd.Parameters.AddWithValue("@yl", yearLevel);
+                    cmd.Parameters.AddWithValue("@sem", semester);
+                    int laterActiveCount = (int)cmd.ExecuteScalar();
+
+                    canRefund = (laterActiveCount == 0);
+                    message = canRefund ? "OK" : "Cannot refund this semester. You can only refund the LATEST semester/period first.";
+                }
+
+                return Json(new { canRefund = canRefund, message = message }, JsonRequestBehavior.AllowGet);
             }
         }
     }

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlClient;
 using System.Web.Mvc;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace StudentAccountingSystem.Controllers
 {
@@ -42,7 +44,7 @@ namespace StudentAccountingSystem.Controllers
             AND  IsActive     = 1", con))
             {
                 cmd.Parameters.AddWithValue("@u", username.Trim());
-                cmd.Parameters.AddWithValue("@p", password.Trim());
+                cmd.Parameters.AddWithValue("@p", HashPassword(password.Trim()));
                 con.Open();
 
                 using (var r = cmd.ExecuteReader())
@@ -84,6 +86,18 @@ namespace StudentAccountingSystem.Controllers
 
             // 4. Return the list (data) just like in ViewAllStudents
             return Json(data, JsonRequestBehavior.AllowGet);
+        }
+
+        private string HashPassword(string password)
+        {
+            using (var sha = SHA256.Create())
+            {
+                var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(password));
+                var sb = new StringBuilder();
+                foreach (var b in bytes)
+                    sb.Append(b.ToString("x2"));
+                return sb.ToString();
+            }
         }
 
         public ActionResult Logout()

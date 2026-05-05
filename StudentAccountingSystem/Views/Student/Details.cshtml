@@ -4,80 +4,220 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container-fluid" style="padding: 20px;">
-    <h2 style="border-bottom: 2px solid #2c3e50; padding-bottom: 10px; color: #2c3e50;">
-        Student Details
-    </h2>
+<style>
+    /* Theme Variables — shared with Student Management */
+    :root {
+        --primary-blue: #1a4b6e;
+        --accent-red: #d32f2f;
+        --surface: #f5f6f9;
+        --border-color: #e2e8f0;
+    }
 
-    <div class="card" style="background:white; padding:25px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.05); margin-top:15px;">
+    .container-fluid {
+        padding: 20px;
+    }
 
-        <h4 style="color:#2c3e50; margin-bottom:15px;">I. Personal Information</h4>
-        <table class="table table-bordered table-sm">
+    /* Page Title */
+    .page-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary-blue);
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--primary-blue);
+        display: inline-block;
+    }
+
+    /* Detail Card */
+    .detail-card {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Section Label */
+    .section-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--primary-blue);
+        margin: 20px 0 12px 0;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+        .section-label:first-of-type {
+            margin-top: 0;
+        }
+
+    /* Detail Table */
+    .detail-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 0;
+    }
+
+        .detail-table th {
+            width: 200px;
+            padding: 10px 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        .detail-table td {
+            padding: 10px 12px;
+            font-size: 0.85rem;
+            color: #334155;
+            border: 1px solid var(--border-color);
+        }
+
+        .detail-table tr:hover td,
+        .detail-table tr:hover th {
+            background-color: #f8fafc;
+        }
+
+        .detail-table .value-strong {
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+
+    /* Divider */
+    .form-divider {
+        border: none;
+        border-top: 1px solid var(--border-color);
+        margin: 20px 0;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 10px 18px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: background 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-edit {
+        background: var(--primary-blue);
+        color: white;
+    }
+
+        .btn-edit:hover {
+            background: #133852;
+            color: white;
+        }
+
+    .btn-back {
+        background: #64748b;
+        color: white;
+    }
+
+        .btn-back:hover {
+            background: #475569;
+            color: white;
+        }
+
+    /* Action Row */
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+</style>
+
+<div class="container-fluid">
+    <h2 class="page-header">Student Details</h2>
+
+    <div class="detail-card">
+
+        <p class="section-label">I. Personal Information</p>
+
+        <table class="detail-table">
             <tr>
-                <th style="width:200px; background:#f4f4f4;">Student Number</th>
-                <td><strong>@Model.StudentID</strong></td>
+                <th>Student Number</th>
+                <td class="value-strong">@Model.StudentID</td>
             </tr>
             <tr>
-                <th style="background:#f4f4f4;">Full Name</th>
+                <th>Full Name</th>
                 <td>@Model.LastName, @Model.FirstName @Model.MiddleName</td>
             </tr>
             <tr>
-                <th style="background:#f4f4f4;">Gender</th>
+                <th>Gender</th>
                 <td>@Model.Gender</td>
             </tr>
             <tr>
-                <th style="background:#f4f4f4;">Birth Date</th>
+                <th>Birth Date</th>
                 <td>@Model.BirthDate.ToString("MMMM dd, yyyy")</td>
             </tr>
             <tr>
-                <th style="background:#f4f4f4;">Contact Number</th>
+                <th>Contact Number</th>
                 <td>@(string.IsNullOrEmpty(Model.ContactNumber) ? "—" : Model.ContactNumber)</td>
             </tr>
             <tr>
-                <th style="background:#f4f4f4;">Address</th>
+                <th>Address</th>
                 <td>@(string.IsNullOrEmpty(Model.Address) ? "—" : Model.Address)</td>
             </tr>
             <tr>
-                <th style="background:#f4f4f4;">Email</th>
+                <th>Email</th>
                 <td>@(string.IsNullOrEmpty(Model.Email) ? "—" : Model.Email)</td>
             </tr>
         </table>
 
-        <h4 style="color:#2c3e50; margin-top:25px; margin-bottom:15px;">II. Enrollment Information</h4>
-        <table class="table table-bordered table-sm">
+        <p class="section-label">II. Enrollment Information</p>
+
+        <table class="detail-table">
             <tr>
-                <th style="background:#f4f4f4;">Course</th>
+                <th>Course</th>
                 <td>@ViewBag.CourseDisplay</td>
             </tr>
             <tr>
-                <th style="background:#f4f4f4;">Year Level</th>
+                <th>Year Level</th>
                 <td>@Model.YearLevel</td>
             </tr>
             <tr>
-                <th style="background:#f4f4f4;">Semester</th>
+                <th>Semester</th>
                 <td>@Model.Semester</td>
             </tr>
             <tr>
-                <th style="background:#f4f4f4;">School Year</th>
+                <th>School Year</th>
                 <td>@Model.SchoolYear</td>
             </tr>
             <tr>
-                <th style="background:#f4f4f4;">Status</th>
+                <th>Status</th>
                 <td>@Model.Status</td>
             </tr>
             <tr>
-                <th style="background:#f4f4f4;">Scholarship</th>
+                <th>Scholarship</th>
                 <td>@ViewBag.ScholarshipDisplay</td>
             </tr>
             <tr>
-                <th style="background:#f4f4f4;">Discount</th>
+                <th>Discount</th>
                 <td>@ViewBag.DiscountDisplay</td>
             </tr>
         </table>
 
-        <div style="margin-top:20px;">
-            <a href="@Url.Action("Edit", new { id = Model.StudentID })" class="btn btn-warning">Edit</a>
-            <a href="@Url.Action("Index")" class="btn btn-secondary">← Back to List</a>
+        <hr class="form-divider" />
+
+        <div class="form-actions">
+            <a href="@Url.Action("Edit", new { id = Model.StudentID })" class="btn btn-edit">Edit</a>
+            <a href="@Url.Action("Index")" class="btn btn-back">Back to List</a>
         </div>
+
     </div>
 </div>

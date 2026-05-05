@@ -3,17 +3,460 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Student Ledger Report</h2>
-<hr />
-<div id="msgBox"></div>
+<style>
+    :root {
+        --primary-blue: #1a4b6e;
+        --accent-red: #d32f2f;
+        --surface: #f5f6f9;
+        --border-color: #e2e8f0;
+    }
 
-<!-- FILTER -->
-<div class="card shadow mb-4">
-    <div class="card-body">
-        <div class="form-row align-items-end">
-            <div class="col-md-5">
-                <label>Select Student</label>
-                <select id="selStudent" class="form-control">
+    .container-fluid {
+        padding: 20px;
+    }
+
+    .page-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary-blue);
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--primary-blue);
+        display: inline-block;
+    }
+
+    /* Filter Panel */
+    .filter-panel {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .filter-panel-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--primary-blue);
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+    }
+
+    .filter-field {
+        display: flex;
+        flex-direction: column;
+    }
+
+        .filter-field label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .filter-field select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            background: white;
+            color: #334155;
+            min-width: 280px;
+        }
+
+            .filter-field select:focus {
+                outline: none;
+                border-color: var(--primary-blue);
+            }
+
+    /* Data Card */
+    .data-card {
+        background: white;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    /* Section Title Bar */
+    .section-title {
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 12px 16px;
+        color: white;
+        background: var(--primary-blue);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* Student Info Card */
+    .info-card {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .info-card-body {
+        padding: 16px 20px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px 40px;
+    }
+
+    .info-row {
+        display: flex;
+        gap: 8px;
+        font-size: 0.85rem;
+        color: #334155;
+        padding: 4px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+    .info-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        min-width: 100px;
+        padding-top: 2px;
+    }
+
+    .info-value {
+        font-size: 0.85rem;
+        color: #334155;
+        font-weight: 700;
+    }
+
+    /* Ledger Table */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+    }
+
+        table th {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+        }
+
+        table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.82rem;
+            color: #334155;
+        }
+
+    .th-right {
+        text-align: right;
+    }
+
+    .td-right {
+        text-align: right;
+    }
+
+    .td-empty {
+        text-align: center;
+        color: #94a3b8;
+        padding: 40px;
+    }
+
+    /* Charge row */
+    .row-charge {
+        cursor: pointer;
+        background: #fffbeb;
+    }
+
+        .row-charge:hover td {
+            background: #fef3c7;
+        }
+
+    /* Payment row */
+    .row-payment td {
+        background: #f0fdf4;
+    }
+
+    /* Refund info row */
+    .row-refund td {
+        background: #eff6ff;
+        color: #1e40af;
+    }
+
+    /* Expand hint */
+    .expand-hint {
+        font-size: 0.7rem;
+        color: #94a3b8;
+        margin-left: 6px;
+    }
+
+    /* Detail Row */
+    .row-detail td {
+        background: #f8fafc;
+        padding: 0;
+    }
+
+    .detail-inner {
+        padding: 16px 20px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .detail-section-title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--primary-blue);
+        margin-bottom: 8px;
+    }
+
+    .detail-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+    }
+
+        .detail-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border-color);
+            color: #334155;
+        }
+
+        .detail-table .detail-total td {
+            font-weight: 700;
+            background: #f1f5f9;
+        }
+
+        .detail-table .detail-net td {
+            font-weight: 700;
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .detail-table .detail-due td {
+            font-weight: 700;
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .detail-table .detail-paid td {
+            font-weight: 700;
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .detail-table .detail-discount td {
+            color: #15803d;
+        }
+
+    /* Totals footer */
+    .tfoot-row td {
+        background: var(--primary-blue);
+        color: white;
+        font-weight: 700;
+        font-size: 0.8rem;
+        padding: 12px;
+        border-bottom: none;
+    }
+
+    .tfoot-label {
+        text-align: right;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.7rem;
+    }
+
+    /* Amount colors */
+    .amt-debit {
+        color: var(--accent-red);
+        font-weight: 700;
+    }
+
+    .amt-credit {
+        color: #15803d;
+        font-weight: 700;
+    }
+
+    .amt-negative {
+        color: var(--accent-red);
+        font-weight: 700;
+    }
+
+    .amt-positive {
+        color: #15803d;
+        font-weight: 700;
+    }
+
+    /* Status Badges */
+    .badge {
+        padding: 3px 9px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        display: inline-block;
+    }
+
+    .badge-paid {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .badge-unpaid {
+        background: #fef9c3;
+        color: #854d0e;
+    }
+
+    .badge-partial {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .badge-locked {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .badge-refunded {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 10px 18px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: background 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background: var(--primary-blue);
+        color: white;
+    }
+
+        .btn-primary:hover {
+            background: #133852;
+            color: white;
+        }
+
+    .btn-secondary {
+        background: #64748b;
+        color: white;
+        transition: background 0.2s ease, transform 0.1s ease;
+    }
+
+        .btn-secondary:hover {
+            background: #475569;
+            color: white;
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.98);
+        }
+
+    .btn-print {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        color: white;
+        padding: 5px 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: background 0.2s;
+    }
+
+        .btn-print:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+    /* Messages */
+    .msg-success {
+        color: #15803d;
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    .msg-error {
+        color: var(--accent-red);
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    .msg-warning {
+        color: #854d0e;
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    @@media print {
+        .filter-panel,
+        .btn-print,
+        .btn-secondary {
+            display: none !important;
+        }
+
+        .data-card,
+        .info-card {
+            box-shadow: none;
+            border: 1px solid #ccc;
+        }
+    }
+</style>
+
+<div class="container-fluid">
+    <h2 class="page-header">Student Ledger Report</h2>
+
+    <div id="msgBox"></div>
+
+    <!-- Filter Panel -->
+    <div class="filter-panel">
+        <span class="filter-panel-label">Select Student</span>
+        <div class="filter-row">
+            <div class="filter-field">
+                <label for="selStudent">Student</label>
+                <select id="selStudent">
                     <option value="">-- Select Student --</option>
                     @foreach (SelectListItem s in ViewBag.Students)
                     {
@@ -21,240 +464,77 @@
                     }
                 </select>
             </div>
-            <div class="col-md-3">
-                <button class="btn btn-primary" onclick="loadLedger()">
-                    Generate Ledger
-                </button>
+            <div>
+                <button type="button" class="btn btn-primary" onclick="loadLedger()">Generate Ledger</button>
             </div>
-            <div class="col-md-3">
-                <button class="btn btn-secondary" onclick="printLedger()">
-                    🖨 Print
-                </button>
+        </div>
+    </div>
+
+    <!-- Ledger Output -->
+    <div id="divLedger" style="display: none;">
+
+        <!-- Student Info -->
+        <div class="info-card">
+            <div class="section-title">
+                <span>Student Information</span>
+                <button type="button" class="btn-print" onclick="printLedger()">Print</button>
+            </div>
+            <div class="info-card-body">
+                <div>
+                    <div class="info-row"><span class="info-label">Full Name</span><span class="info-value" id="lblName"></span></div>
+                    <div class="info-row"><span class="info-label">Student ID</span><span class="info-value" id="lblID"></span></div>
+                    <div class="info-row"><span class="info-label">Course</span><span class="info-value" id="lblCourse"></span></div>
+                    <div class="info-row"><span class="info-label">Status</span><span class="info-value" id="lblStatus"></span></div>
+                </div>
+                <div>
+                    <div class="info-row"><span class="info-label">Year Level</span><span class="info-value" id="lblYear"></span></div>
+                    <div class="info-row"><span class="info-label">Semester</span><span class="info-value" id="lblSem"></span></div>
+                    <div class="info-row"><span class="info-label">School Year</span><span class="info-value" id="lblSY"></span></div>
+                    <div class="info-row"><span class="info-label">Scholarship</span><span class="info-value" id="lblScholarship"></span></div>
+                    <div class="info-row"><span class="info-label">Discount</span><span class="info-value" id="lblDiscount"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statement of Account -->
+        <div class="data-card">
+            <div class="section-title">
+                <span>Statement of Account</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table id="ledgerTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>School Year</th>
+                            <th>Sem</th>
+                            <th>Year</th>
+                            <th>Description</th>
+                            <th class="th-right">Charges (Debit)</th>
+                            <th class="th-right">Payments (Credit)</th>
+                            <th class="th-right">Running Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerBody">
+                    </tbody>
+                    <tfoot>
+                        <tr class="tfoot-row">
+                            <td colspan="5" class="tfoot-label">Totals</td>
+                            <td class="td-right" id="totalDebits"></td>
+                            <td class="td-right" id="totalCredits"></td>
+                            <td class="td-right" id="finalBalance"></td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
-<!-- LEDGER OUTPUT -->
-<div id="divLedger" style="display:none;">
-
-    <!-- Student Info Header -->
-    <div class="card shadow mb-3" id="studentHeader">
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5 id="lblName"></h5>
-                    <p class="mb-1"><b>Student ID:</b> <span id="lblID"></span></p>
-                    <p class="mb-1"><b>Course:</b> <span id="lblCourse"></span></p>
-                    <p class="mb-1"><b>Status:</b> <span id="lblStatus"></span></p>
-                </div>
-                <div class="col-md-6">
-                    <p class="mb-1"><b>Year Level:</b> <span id="lblYear"></span></p>
-                    <p class="mb-1"><b>Semester:</b> <span id="lblSem"></span></p>
-                    <p class="mb-1"><b>School Year:</b> <span id="lblSY"></span></p>
-                    <p class="mb-1"><b>Scholarship:</b> <span id="lblScholarship"></span></p>
-                    <p class="mb-1"><b>Discount:</b> <span id="lblDiscount"></span></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Ledger Table -->
-    <div class="card shadow mb-4">
-        <div class="card-header bg-dark text-white">
-            <h6 class="mb-0">Statement of Account</h6>
-        </div>
-        <div class="card-body p-0">
-            <table class="table table-bordered table-sm mb-0" id="ledgerTable">
-                <thead class="thead-light">
-                    <tr>
-                        <th>Date</th>
-                        <th>School Year</th>
-                        <th>Sem</th>
-                        <th>Year</th>
-                        <th>Description</th>
-                        <th class="text-right">Charges (Debit)</th>
-                        <th class="text-right">Payments (Credit)</th>
-                        <th class="text-right">Running Balance</th>
-                    </tr>
-                </thead>
-                <tbody id="ledgerBody">
-                </tbody>
-                <tfoot>
-                    <tr class="bg-dark text-white">
-                        <td colspan="5" class="text-right font-weight-bold">TOTALS</td>
-                        <td class="text-right font-weight-bold" id="totalDebits"></td>
-                        <td class="text-right font-weight-bold" id="totalCredits"></td>
-                        <td class="text-right font-weight-bold" id="finalBalance"></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-    </div>
-</div>
-
-<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
 <script>
-    function loadLedger() {
-        var sid = $("#selStudent").val();
-        if (!sid) { alert("Please select a student."); return; }
-
-        $.post("/Report/GetStudentLedger", { studentID: sid }, function (res) {
-            if (res[0].mess == 0) {
-                $("#msgBox").html("<div class='alert alert-danger'>" + res[0].message + "</div>");
-                return;
-            }
-
-            var d = res[0];
-            var info = d.studentInfo;
-
-            // Fill header
-            $("#lblName").text(info.fullName);
-            $("#lblID").text(info.studentID);
-            $("#lblCourse").text(info.course);
-            $("#lblStatus").text(info.status);
-            $("#lblYear").text("Year " + info.yearLevel);
-            $("#lblSem").text(info.semester);
-            $("#lblSY").text(info.schoolYear);
-            $("#lblScholarship").text(info.scholarship);
-            $("#lblDiscount").text(info.discount);
-
-            // Build ledger rows
-            var html = "";
-            var runningBalance = 0;
-            var totalDebits = 0;
-            var totalCredits = 0;
-
-            // Sort assessments and payments together by date
-            // First add all assessment rows, then payments under each
-            for (var i = 0; i < d.assessments.length; i++) {
-                var a = d.assessments[i];
-                runningBalance += parseFloat(a.amountDue);
-                totalDebits += parseFloat(a.amountDue);
-
-                html += "<tr class='table-warning' style='cursor:pointer' onclick='toggleDetail(" + a.assessmentID + ")'>";
-                html += "<td>" + a.assessedAt + "</td>";
-                html += "<td>" + a.schoolYear + "</td>";
-                html += "<td>" + a.semester + "</td>";
-                html += "<td>Year " + a.yearLevel + "</td>";
-                html += "<td><b>Charge:</b> " + a.period + " Assessment <small class='text-muted'>[Assessmet ID: " + a.assessmentID + "]</small>";
-                if (parseFloat(a.discountAmount) > 0)
-                    html += " <small class='text-success'>(Discount: ₱" + parseFloat(a.discountAmount).toFixed(2) + ")</small>";
-                html += " <small class='text-muted'>🔽 click for breakdown</small></td>";
-                html += "<td class='text-right text-danger'>₱" + parseFloat(a.amountDue).toFixed(2) + "</td>";
-                html += "<td class='text-right'>—</td>";
-                html += "<td class='text-right font-weight-bold'>₱" + runningBalance.toFixed(2) + "</td>";
-                html += "</tr>";
-
-                // Add hidden detail row right after
-                html += "<tr id='detail_" + a.assessmentID + "' style='display:none' class='table-light'>";
-                html += "<td colspan='8'>";
-                html += "<div class='p-3'>";
-                html += "<div class='row'>";
-
-                // LEFT: Fee Breakdown
-                html += "<div class='col-md-6'>";
-                html += "<h6 class='font-weight-bold'>Fee Breakdown</h6>";
-                html += "<table class='table table-sm table-bordered mb-0'>";
-                html += "<tr><td>Tuition Fee</td><td class='text-right'>₱" + parseFloat(a.tuitionFee).toFixed(2) + "</td></tr>";
-                html += "<tr><td>Registration Fee</td><td class='text-right'>₱" + parseFloat(a.registrationFee).toFixed(2) + "</td></tr>";
-                html += "<tr><td>Miscellaneous Fee</td><td class='text-right'>₱" + parseFloat(a.miscFee).toFixed(2) + "</td></tr>";
-                html += "<tr><td>Laboratory Fee</td><td class='text-right'>₱" + parseFloat(a.labFee).toFixed(2) + "</td></tr>";
-                html += "<tr class='table-warning'><td><b>Total Fee</b></td><td class='text-right'><b>₱" + parseFloat(a.totalFee).toFixed(2) + "</b></td></tr>";
-                if (parseFloat(a.discountAmount) > 0)
-                    html += "<tr class='table-success'><td>Discount Applied</td><td class='text-right text-success'>- ₱" + parseFloat(a.discountAmount).toFixed(2) + "</td></tr>";
-                html += "<tr class='table-info'><td><b>Net Assessment</b></td><td class='text-right'><b>₱" + parseFloat(a.netAssessment).toFixed(2) + "</b></td></tr>";
-                html += "</table>";
-                html += "</div>";
-
-                // RIGHT: Period Quota
-                html += "<div class='col-md-6'>";
-                html += "<h6 class='font-weight-bold'>Period Quota</h6>";
-                html += "<table class='table table-sm table-bordered mb-0'>";
-                html += "<tr><td>Period</td><td><b>" + a.period + "</b></td></tr>";
-                var cumulative = { 'Prelim': 53, 'Midterm': 64, 'Semi-Final': 75, 'Final': 100 };
-                var pct = parseFloat(a.percentRequired).toFixed(0);
-                var cum = cumulative[a.period] || pct;
-                html += "<tr><td>% Required</td><td><b>" + pct + "% of period (" + cum + "% cumulative)</b></td></tr>";
-                html += "<tr><td>Net Assessment</td><td>₱" + parseFloat(a.netAssessment).toFixed(2) + "</td></tr>";
-                html += "<tr class='table-danger'><td><b>Amount Due</b></td><td><b>₱" + parseFloat(a.amountDue).toFixed(2) + "</b></td></tr>";
-                html += "<tr class='table-success'><td><b>Total Paid</b></td><td><b>₱" + parseFloat(a.totalPaid).toFixed(2) + "</b></td></tr>";
-
-                var balance = parseFloat(a.amountDue) - parseFloat(a.totalPaid);
-                var balColor = balance > 0 ? "text-danger" : "text-success";
-                html += "<tr><td><b>Balance</b></td><td class='" + balColor + "'><b>₱" + balance.toFixed(2) + "</b></td></tr>";
-                html += "<tr><td>Status</td><td><span class='badge badge-" +
-                    (a.status == "Paid" ? "success" : a.status == "Partial" ? "warning" : a.status == "Locked" ? "secondary" : "danger") +
-                    "'>" + a.status + "</span></td></tr>";
-
-                if (parseFloat(a.overpaidAmount) > 0)
-                    html += "<tr class='table-info'><td>Credit Balance</td><td class='text-success'><b>₱" + parseFloat(a.overpaidAmount).toFixed(2) + "</b></td></tr>";
-
-                html += "</table>";
-                html += "</div>";
-
-                html += "</div></div></td></tr>";
-
-                // Payments under this assessment
-                for (var j = 0; j < d.payments.length; j++) {
-                    var p = d.payments[j];
-                    if (p.assessmentID != a.assessmentID) continue;
-
-                    runningBalance -= parseFloat(p.amountPaid);
-                    totalCredits += parseFloat(p.amountPaid);
-
-                    var desc = p.transactionType == "Payment" ? "💵 Payment" : "s🔄 Credit Applied";
-                    html += "<tr>";
-                    html += "<td>" + p.paymentDate + "</td>";
-                    html += "<td>" + p.schoolYear + "</td>";
-                    html += "<td>" + p.semester + "</td>";
-                    html += "<td>Year " + p.yearLevel + "</td>";
-                    html += "<td>" + desc + " <small class='text-muted'>[Payment ID: " + p.orNumber + "]</small></td>";
-                    html += "<td class='text-right'>—</td>";
-                    html += "<td class='text-right text-success'>₱" + parseFloat(p.amountPaid).toFixed(2) + "</td>";
-                    html += "<td class='text-right font-weight-bold'>₱" + runningBalance.toFixed(2) + "</td>";
-                    html += "</tr>";
-                }
-            }
-
-            // Refund rows — show as info only, don't affect running balance
-            for (var k = 0; k < d.refunds.length; k++) {
-                var ref = d.refunds[k];
-                if (ref.status != "Approved") continue;
-
-                // DO NOT subtract from runningBalance
-                // DO NOT add to totalCredits
-                // Just show as an informational row
-
-                html += "<tr class='table-info'>";
-                html += "<td>" + ref.requestDate + "</td>";
-                html += "<td colspan='3'></td>";
-                html += "<td>💰 Refund Approved <small class='text-muted'>(Cash returned to student)</small></td>";
-                html += "<td class='text-right'>—</td>";
-                html += "<td class='text-right text-info'>₱" + parseFloat(ref.amount).toFixed(2) + "</td>";
-                html += "<td class='text-right'>—</td>";  // no effect on balance
-                html += "</tr>";
-            }
-
-            $("#ledgerBody").html(html);
-            $("#totalDebits").text("₱" + totalDebits.toFixed(2));
-            $("#totalCredits").text("₱" + totalCredits.toFixed(2));
-            $("#finalBalance").text("₱" + runningBalance.toFixed(2));
-            $("#divLedger").show();
-        });
-    }
-
-    function toggleDetail(assessmentID) {
-        var row = $("#detail_" + assessmentID);
-        row.toggle();
-    }
-
-    function printLedger() {
-        var printContents = document.getElementById("divLedger").innerHTML;
-        var original = document.body.innerHTML;
-        document.body.innerHTML = printContents;
-        window.print();
-        document.body.innerHTML = original;
-        location.reload();
-    }
+    var AppUrls = {
+        getStudentLedger: '@Url.Action("GetStudentLedger", "Report")'
+    };
 </script>
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
+<script src="~/Scripts/myScripts/Report/studentLedger.js"></script>

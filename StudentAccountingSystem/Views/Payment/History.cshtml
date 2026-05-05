@@ -4,404 +4,581 @@
 }
 
 <style>
-    .badge-payment {
-        background: #d4edda;
-        color: #155724;
-        padding: 3px 8px;
-        border-radius: 10px;
-        font-size: 11px;
-        font-weight: 600;
+    :root {
+        --primary-blue: #1a4b6e;
+        --accent-red: #d32f2f;
+        --border-color: #e2e8f0;
     }
 
-    .badge-refund {
-        background: #f8d7da;
-        color: #721c24;
-        padding: 3px 8px;
-        border-radius: 10px;
-        font-size: 11px;
-        font-weight: 600;
+    .container-fluid {
+        padding: 20px;
     }
 
-    table {
-        border-collapse: collapse;
-        width: 100%;
+    .page-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary-blue);
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--primary-blue);
+        display: inline-block;
     }
 
-    th, td {
-        border: 1px solid #ddd;
-        padding: 7px 10px;
-        font-size: 13px;
+    /* Filter Panels */
+    .filter-panel {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 16px 20px;
+        margin-bottom: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
-    th {
-        background: #f2f2f2;
-        font-weight: 600;
+    .filter-panel-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--primary-blue);
+        margin-bottom: 12px;
+        display: block;
     }
 
-    tr:hover {
-        background: #fafafa;
+    .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+    }
+
+    .filter-field {
+        display: flex;
+        flex-direction: column;
+    }
+
+        .filter-field label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .filter-field input[type="text"],
+        .filter-field select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            background: white;
+            color: #334155;
+        }
+
+            .filter-field input[type="text"]:focus,
+            .filter-field select:focus {
+                outline: none;
+                border-color: var(--primary-blue);
+            }
+
+        .filter-field select {
+            min-width: 130px;
+        }
+
+    /* Section Wraps */
+    .section-wrap {
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 28px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
     .section-title {
         font-weight: 700;
-        font-size: 14px;
-        padding: 10px 14px;
-        border-radius: 6px 6px 0 0;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 12px 16px;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-title-red {
+        background: var(--accent-red);
+    }
+
+    .section-title-dark {
+        background: var(--primary-blue);
+    }
+
+    .history-count {
+        background: white;
+        color: #334155;
+        font-size: 0.7rem;
+        padding: 2px 10px;
+        border-radius: 10px;
+        font-weight: 700;
+    }
+
+    /* Tables */
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        background: white;
+    }
+
+        table th {
+            background-color: #f8fafc;
+            color: #64748b;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.82rem;
+            color: #334155;
+        }
+
+    tr:hover td {
+        background-color: #f8fafc;
+    }
+
+    .td-empty {
+        text-align: center;
+        color: #94a3b8;
+        padding: 30px;
+    }
+
+    /* Badges */
+    .badge {
+        padding: 3px 9px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        display: inline-block;
+    }
+
+    .badge-payment {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .badge-refund {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 10px 18px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: background 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background: var(--primary-blue);
         color: white;
     }
 
-    .section-wrap {
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        overflow: hidden;
-        margin-bottom: 28px;
+        .btn-primary:hover {
+            background: #133852;
+            color: white;
+        }
+
+    .btn-secondary {
+        background: #64748b;
+        color: white;
+    }
+
+        .btn-secondary:hover {
+            background: #475569;
+            color: white;
+        }
+
+    .btn-danger {
+        background: var(--accent-red);
+        color: white;
+    }
+
+        .btn-danger:hover {
+            background: #b71c1c;
+            color: white;
+        }
+
+    .btn-mini {
+        padding: 5px 12px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        letter-spacing: 0.5px;
+        border: none;
+    }
+
+    .btn-mini-danger {
+        background: var(--accent-red);
+        color: white;
+    }
+
+        .btn-mini-danger:hover {
+            background: #b71c1c;
+        }
+
+    .btn-outline-danger {
+        background: transparent;
+        border: 1px solid var(--accent-red);
+        color: var(--accent-red);
+        padding: 5px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        font-weight: 700;
+        transition: all 0.2s;
+    }
+
+        .btn-outline-danger:hover {
+            background: var(--accent-red);
+            color: white;
+        }
+
+    /* Refund Panel */
+    .refund-panel {
+        display: none;
+        border: 1px solid var(--accent-red);
+        border-left: 4px solid var(--accent-red);
+        border-radius: 4px;
+        padding: 20px;
+        margin-bottom: 24px;
+        background: #fff5f5;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .refund-panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+
+    .refund-panel-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--accent-red);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .refund-desc {
+        font-size: 0.85rem;
+        color: #334155;
+        margin-bottom: 6px;
+    }
+
+    .refund-total {
+        font-size: 0.85rem;
+        color: #334155;
+        margin-bottom: 14px;
+    }
+
+        .refund-total strong {
+            color: var(--accent-red);
+        }
+
+    .refund-field label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .refund-field input[type="text"] {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 0.85rem;
+        color: #334155;
+        margin-bottom: 14px;
+        box-sizing: border-box;
+    }
+
+        .refund-field input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-red);
+        }
+
+    /* Pagination */
+    .pagination-wrap {
+        padding: 10px 12px;
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        flex-wrap: wrap;
+        border-top: 1px solid var(--border-color);
+        background: white;
+    }
+
+    .page-btn {
+        padding: 5px 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: white;
+        color: #334155;
+        transition: all 0.15s;
+    }
+
+        .page-btn:hover:not(:disabled) {
+            background: #f1f5f9;
+        }
+
+        .page-btn:disabled {
+            color: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+    .page-btn-active {
+        background: var(--primary-blue);
+        color: white;
+        border-color: var(--primary-blue);
+    }
+
+    .page-info {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        margin-left: 6px;
+    }
+
+    /* Modal Overlay (non-fixed, faux-viewport) */
+    .modal-overlay {
+        display: none;
+        min-height: 400px;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 999;
+    }
+
+    .modal-box {
+        background: white;
+        width: 480px;
+        border-radius: 4px;
+        padding: 24px;
+        border-top: 4px solid var(--accent-red);
+    }
+
+    .modal-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--accent-red);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 0 0 16px 0;
+    }
+
+    .modal-footer {
+        margin-top: 20px;
+        text-align: right;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .modal-warning {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--accent-red);
+        margin-top: 10px;
+    }
+
+    .modal-list {
+        font-size: 0.85rem;
+        color: #334155;
+        padding-left: 18px;
+        margin: 8px 0;
+    }
+
+        .modal-list li {
+            margin-bottom: 4px;
+        }
+
+    /* Messages */
+    .msg-success {
+        color: #15803d;
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    .msg-error {
+        color: var(--accent-red);
+        font-weight: 700;
+        font-size: 0.85rem;
     }
 </style>
 
-<!-- Filters -->
-<div style="background:white; border:1px solid #ddd; border-radius:6px; padding:16px; margin-bottom:20px;">
-    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-        <div>
-            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Student ID</label>
-            <input type="number" id="fStudentID" style="padding:6px; width:120px;" placeholder="Any" />
-        </div>
-        <div>
-            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">School Year</label>
-            <select id="fSchoolYear" style="padding:6px; width:130px;">
-                <option value="">Any</option>
-            </select>
-        </div>
-        <div>
-            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Semester</label>
-            <select id="fSemester" style="padding:6px; width:100px;">
-                <option value="">Any</option>
-            </select>
-        </div>
-        <div>
-            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Year Level</label>
-            <select id="fYearLevel" style="padding:6px; width:100px;">
-                <option value="">Any</option>
-            </select>
-        </div>
-        <div>
-            <button onclick="loadHistory()"
-                    style="padding:6px 18px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">
-                🔍 Filter
-            </button>
-            <button onclick="resetFilters()"
-                    style="padding:6px 14px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; margin-left:6px;">
-                Reset
-            </button>
-        </div>
-    </div>
-</div>
+<div class="container-fluid">
+    <h2 class="page-header">Payment History</h2>
+    <div id="msgBox"></div>
 
-<!-- TABLE 1: Refundable Semesters -->
-<div class="section-wrap">
-    <div class="section-title" style="background:#dc3545;">
-        💰 Refundable Semesters — Latest Unpaid Semester Per Student
+    <!-- Filter Panel: All Payment Transactions -->
+    <div class="filter-panel">
+        <span class="filter-panel-label">Filter All Payment Transactions</span>
+        <div class="filter-row">
+            <div class="filter-field">
+                <label for="fStudentID">Student</label>
+                <select id="fStudentID"></select>
+            </div>
+            <div class="filter-field">
+                <label for="fSchoolYear">School Year</label>
+                <select id="fSchoolYear"></select>
+            </div>
+            <div class="filter-field">
+                <label for="fSemester">Semester</label>
+                <select id="fSemester">
+                    <option value="">Any</option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="fYearLevel">Year Level</label>
+                <select id="fYearLevel">
+                    <option value="">Any</option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="fTransactionType">Type</label>
+                <select id="fTransactionType">
+                    <option value="">Any</option>
+                    <option value="Payment">Payment</option>
+                    <option value="Refund">Refund</option>
+                </select>
+            </div>
+            <div>
+                <button class="btn btn-primary" onclick="loadHistory()">Filter</button>
+                <button class="btn btn-secondary" onclick="resetFilters()" style="margin-left: 6px;">Reset</button>
+            </div>
+        </div>
     </div>
-    <table id="tblRefundable">
-        <thead>
-            <tr>
-                <th>Student ID</th>
-                <th>Student Name</th>
-                <th>Year Level</th>
-                <th>Semester</th>
-                <th>School Year</th>
-                <th>Total Paid</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="refundableTbody">
-            <tr><td colspan="7" style="text-align:center; color:#888;">Loading...</td></tr>
-        </tbody>
-    </table>
-</div>
 
-<!-- TABLE 2: Full Payment History -->
-<div class="section-wrap">
-    <div class="section-title" style="background:#343a40;">
-        📄 All Payment Transactions
-        <span id="historyCount" style="background:white; color:#333; font-size:11px;
-              padding:2px 10px; border-radius:10px; margin-left:10px; font-weight:700;">0</span>
+    <!-- Refund Panel -->
+    <div id="refundPanel" class="refund-panel">
+        <div class="refund-panel-header">
+            <span class="refund-panel-title">Process Full Semester Refund</span>
+            <button class="btn-outline-danger" onclick="$('#refundPanel').hide();">Close</button>
+        </div>
+        <p id="refundDesc" class="refund-desc"></p>
+        <p class="refund-total">Total Paid This Semester: <strong>PHP <span id="refundTotal">0.00</span></strong></p>
+        <div class="refund-field">
+            <label for="refundRemarks">Remarks (optional)</label>
+            <input type="text" id="refundRemarks" placeholder="Reason for refund..." />
+        </div>
+        <button id="refundBtn" class="btn btn-danger">Process Full Refund</button>
     </div>
-    <table id="tblHistory">
-        <thead>
-            <tr>
-                <th>Paymet ID</th>
-                <th>Student ID</th>
-                <th>Name</th>
-                <th>Year</th>
-                <th>Semester</th>
-                <th>Period</th>
-                <th>School Year</th>
-                <th>Amount</th>
-                <th>Mode</th>
-                <th>Type</th>
-                <th>Date</th>
-                <th>Received By</th>
-            </tr>
-        </thead>
-        <tbody id="historyTbody">
-            <tr><td colspan="12" style="text-align:center; color:#888;">Use filters above to load history.</td></tr>
-        </tbody>
-    </table>
-</div>
 
-<!-- Refund Panel -->
-<div id="refundPanel" style="display:none; border:2px solid #dc3545; border-radius:6px;
-     padding:20px; margin-bottom:24px; background:#fff5f5;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <strong style="font-size:15px; color:#dc3545;">💸 Process Full Semester Refund</strong>
-        <button onclick="$('#refundPanel').hide();"
-                style="background:none; border:1px solid #dc3545; color:#dc3545;
-                   padding:3px 10px; border-radius:4px; cursor:pointer;">
-            ✕ Close
-        </button>
+    <!-- TABLE 1: Refundable Payments -->
+    <div class="section-wrap">
+        <div class="section-title section-title-red">
+            Refundable Payments
+        </div>
+        <table id="tblRefundable">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Student Name</th>
+                    <th>Year Level</th>
+                    <th>Semester</th>
+                    <th>School Year</th>
+                    <th>Total Paid</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="refundableTbody">
+                <tr><td colspan="7" class="td-empty">Loading...</td></tr>
+            </tbody>
+        </table>
     </div>
-    <p id="refundDesc" style="margin-bottom:8px;"></p>
-    <p style="margin-bottom:12px;">
-        <strong>Total Paid This Semester: ₱<span id="refundTotal" style="color:#dc3545;">0.00</span></strong>
-    </p>
-    <div style="margin-bottom:12px;">
-        <label style="font-size:13px; font-weight:600;">Remarks (optional)</label>
-        <input type="text" id="refundRemarks" style="display:block; width:100%; margin-top:4px; padding:7px;"
-               placeholder="Reason for refund..." />
+
+    <!-- TABLE 2: All Payment Transactions -->
+    <div class="section-wrap">
+        <div class="section-title section-title-dark">
+            All Payment Transactions
+            <span id="historyCount" class="history-count">0</span>
+        </div>
+        <table id="tblHistory">
+            <thead>
+                <tr>
+                    <th>No#</th>
+                    <th>Payment ID</th>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Year</th>
+                    <th>Semester</th>
+                    <th>Period</th>
+                    <th>School Year</th>
+                    <th>Amount</th>
+                    <th>Type</th>
+                    <th>Date</th>
+                    <th>Received By</th>
+                </tr>
+            </thead>
+            <tbody id="historyTbody">
+                <tr><td colspan="12" class="td-empty">Use filters above to load history.</td></tr>
+            </tbody>
+        </table>
+        <div id="historyPaginationWrap"></div>
     </div>
-    <button id="refundBtn"
-            style="padding:8px 20px; background:#dc3545; color:white; border:none;
-               border-radius:4px; cursor:pointer; font-size:14px;">
-        💸 Process Full Refund
-    </button>
 </div>
 
 <!-- Confirm Refund Modal -->
-<div id="refundModal" style="display:none; position:fixed; top:0; left:0;
-     width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999;">
-    <div style="background:white; width:480px; margin:100px auto; border-radius:6px; padding:24px;">
-        <h4 style="color:#dc3545; margin-top:0;">⚠️ Confirm Full Semester Refund</h4>
+<div id="refundModal" class="modal-overlay">
+    <div class="modal-box">
+        <p class="modal-title">Confirm Full Semester Refund</p>
         <div id="refundModalBody"></div>
-        <div style="margin-top:20px; text-align:right;">
-            <button onclick="$('#refundModal').hide();"
-                    style="padding:8px 16px; margin-right:8px;">
-                Cancel
-            </button>
-            <button id="refundConfirmBtn"
-                    style="padding:8px 20px; background:#dc3545; color:white;
-                       border:none; border-radius:4px; cursor:pointer;">
-                Yes, Process Refund
-            </button>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="$('#refundModal').hide();">Cancel</button>
+            <button id="refundConfirmBtn" class="btn btn-danger">Yes, Process Refund</button>
         </div>
     </div>
 </div>
 
-<script src="~/Scripts/jquery-3.7.0.js"></script>
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
 <script>
-    var allData     = [];
-    var refundTarget = null;
-
-    $(function () { loadHistory(); });
-
-    function loadHistory() {
-        var sid = $('#fStudentID').val();
-        var sy  = $('#fSchoolYear').val();
-        var sem = $('#fSemester').val();
-        var yl  = $('#fYearLevel').val();
-
-        $('#historyTbody').html('<tr><td colspan="12" style="text-align:center;color:#888;">Loading...</td></tr>');
-        $('#refundableTbody').html('<tr><td colspan="7" style="text-align:center;color:#888;">Loading...</td></tr>');
-
-        $.get('@Url.Action("GetHistory")', {
-            studentID:  sid || null,
-            schoolYear: sy  || null,
-            semester:   sem || null,
-            yearLevel:  yl  || null
-        }, function (data) {
-            allData = data;
-            populateFilters(data);
-            renderHistory(data);
-            renderRefundable(data);
-        }).fail(function () {
-            $('#historyTbody').html('<tr><td colspan="12" style="text-align:center;color:red;">Error loading data.</td></tr>');
-        });
-    }
-
-    function populateFilters(data) {
-        var sySeen  = {}, semSeen = {}, ylSeen = {};
-        data.forEach(function (p) {
-            if (p.schoolYear) sySeen[p.schoolYear]  = 1;
-            if (p.semester)   semSeen[p.semester]   = 1;
-            if (p.yearLevel)  ylSeen[p.yearLevel]   = 1;
-        });
-
-        function repopulate(sel, keys, sorted) {
-            var cur = sel.val();
-            sel.empty().append('<option value="">Any</option>');
-            sorted.forEach(function (k) { sel.append('<option value="' + k + '">' + k + '</option>'); });
-            if (cur) sel.val(cur);
-        }
-
-        repopulate($('#fSchoolYear'), sySeen,  Object.keys(sySeen).sort().reverse());
-        repopulate($('#fSemester'),   semSeen, Object.keys(semSeen).sort());
-        repopulate($('#fYearLevel'),  ylSeen,  Object.keys(ylSeen).sort());
-    }
-
-    // ── TABLE 2: Full History ─────────────────────────────────────────
-    function renderHistory(data) {
-        var tbody = $('#historyTbody').empty();
-        $('#historyCount').text(data.length);
-
-        if (!data.length) {
-            tbody.append('<tr><td colspan="12" style="text-align:center;color:#888;">No records found.</td></tr>');
-            return;
-        }
-
-        data.forEach(function (p) {
-            var type  = (p.transactionType || 'Payment');
-            var badge = '<span class="badge-' + type.toLowerCase() + '">' + type + '</span>';
-            tbody.append('<tr>' +
-                '<td>' + (p.orNumber    || '—') + '</td>' +
-                '<td>' + (p.studentID   || '—') + '</td>' +
-                '<td>' + (p.studentName || '—') + '</td>' +
-                '<td>' + (p.yearLevel   || '—') + '</td>' +
-                '<td>' + (p.semester    || '—') + '</td>' +
-                '<td>' + (p.period      || '—') + '</td>' +
-                '<td>' + (p.schoolYear  || '—') + '</td>' +
-                '<td>₱' + fmt(p.amountPaid) + '</td>' +
-                '<td>' + (p.paymentMode || '—') + '</td>' +
-                '<td>' + badge + '</td>' +
-                '<td>' + (p.paymentDate || '—') + '</td>' +
-                '<td>' + (p.receivedBy  || '—') + '</td>' +
-                '</tr>');
-        });
-    }
-
-    // ── TABLE 1: Refundable Semesters ─────────────────────────────────
-    function renderRefundable(data) {
-        var tbody = $('#refundableTbody').empty();
-
-        // Group by student + year + semester + schoolYear
-        var groups = {};
-        data.forEach(function (p) {
-            var key = p.studentID + '|' + p.yearLevel + '|' + p.semester + '|' + p.schoolYear;
-            if (!groups[key]) {
-                groups[key] = {
-                    studentID:   p.studentID,
-                    studentName: p.studentName,
-                    yearLevel:   p.yearLevel,
-                    semester:    p.semester,
-                    schoolYear:  p.schoolYear,
-                    totalPaid:   0,
-                    hasRefund:   false
-                };
-            }
-            if (p.transactionType === 'Payment') groups[key].totalPaid += Number(p.amountPaid);
-            if (p.transactionType === 'Refund')  groups[key].hasRefund = true;
-        });
-
-        // For each student, find only their LATEST semester group
-        var latestPerStudent = {};
-        Object.values(groups).forEach(function (g) {
-            var sid = g.studentID;
-            if (!latestPerStudent[sid] || isLaterSem(g, latestPerStudent[sid])) {
-                latestPerStudent[sid] = g;
-            }
-        });
-
-        var rows = 0;
-        Object.values(latestPerStudent).forEach(function (g) {
-            // Only show if not refunded and has actual payments
-            if (!g.hasRefund && g.totalPaid > 0) {
-                rows++;
-                tbody.append('<tr>' +
-                    '<td>' + g.studentID + '</td>' +
-                    '<td>' + g.studentName + '</td>' +
-                    '<td>Year ' + g.yearLevel + '</td>' +
-                    '<td>' + g.semester + ' Sem</td>' +
-                    '<td>' + g.schoolYear + '</td>' +
-                    '<td>₱' + fmt(g.totalPaid) + '</td>' +
-                    '<td><button onclick="showRefundPanel(' +
-                        g.studentID + ',\'' + escQ(g.studentName) + '\',\'' +
-                        g.schoolYear + '\',\'' + g.semester + '\',' + g.yearLevel +
-                    ')" style="background:#dc3545;color:white;border:none;padding:4px 12px;' +
-                    'border-radius:4px;cursor:pointer;font-size:12px;">💸 Refund Semester</button></td>' +
-                    '</tr>');
-            }
-        });
-
-        if (!rows) {
-            tbody.append('<tr><td colspan="7" style="text-align:center;color:#888;">No refundable semesters found.</td></tr>');
-        }
-    }
-
-    function isLaterSem(a, b) {
-        if (a.yearLevel !== b.yearLevel) return a.yearLevel > b.yearLevel;
-        if (a.semester  !== b.semester)  return a.semester === '2nd';
-        return parseInt(a.schoolYear) > parseInt(b.schoolYear);
-    }
-
-    // ── Refund Panel ──────────────────────────────────────────────────
-    function showRefundPanel(sid, name, sy, sem, yl) {
-        refundTarget = { studentID: sid, studentName: name,
-                         schoolYear: sy, semester: sem, yearLevel: yl };
-
-        $.get('@Url.Action("GetSemesterPaymentSummary")', {
-            studentID: sid, schoolYear: sy, semester: sem, yearLevel: yl
-        }, function (res) {
-            $('#refundDesc').html(
-                '<strong>' + name + '</strong> (ID: ' + sid + ') — ' +
-                sem + ' Semester ' + sy + ', Year ' + yl);
-            $('#refundTotal').text(fmt(res.totalPaid));
-            $('#refundRemarks').val('');
-            $('#refundPanel').show();
-            $('html,body').animate(
-                { scrollTop: $('#refundPanel').offset().top - 20 }, 300);
-        });
-    }
-
-    $('#refundBtn').on('click', function () {
-        if (!refundTarget) return;
-        $('#refundModalBody').html(
-            '<p>You are about to fully refund:</p>' +
-            '<ul>' +
-            '<li><strong>Student:</strong> ' + refundTarget.studentName + ' (ID: ' + refundTarget.studentID + ')</li>' +
-            '<li><strong>Semester:</strong> ' + refundTarget.semester + ' — ' + refundTarget.schoolYear + '</li>' +
-            '<li><strong>Year Level:</strong> ' + refundTarget.yearLevel + '</li>' +
-            '<li><strong>Total Refund:</strong> ₱' + $('#refundTotal').text() + '</li>' +
-            '</ul>' +
-            '<p style="color:#dc3545; font-weight:700;">' +
-            'All periods in this semester will be marked as Refunded.<br>' +
-            'Go to Assessment Management to regenerate if student wants to pay again.' +
-            '</p>');
-        $('#refundModal').show();
-    });
-
-    $('#refundConfirmBtn').on('click', function () {
-        $('#refundModal').hide();
-        $.post('@Url.Action("ProcessRefund")', {
-            studentID:  refundTarget.studentID,
-            schoolYear: refundTarget.schoolYear,
-            semester:   refundTarget.semester,
-            yearLevel:  refundTarget.yearLevel,
-            remarks:    $('#refundRemarks').val()
-        }, function (res) {
-            alert(res.mess === 1 ? '✅ ' + res.message : '❌ ' + res.message);
-            if (res.mess === 1) {
-                $('#refundPanel').hide();
-                loadHistory();
-            }
-        });
-    });
-
-    function resetFilters() {
-        $('#fStudentID, #fSchoolYear, #fSemester, #fYearLevel').val('');
-        loadHistory();
-    }
-
-    function fmt(n) {
-        return Number(n || 0).toLocaleString('en-PH',
-            { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    function escQ(s) { return (s || '').replace(/'/g, "\\'"); }
+    var AppUrls = {
+        getHistory: '@Url.Action("GetHistory", "Payment")',
+        getSemesterSummary: '@Url.Action("GetSemesterPaymentSummary", "Payment")',
+        processRefund: '@Url.Action("ProcessRefund", "Payment")'
+    };
 </script>
+<script src="~/Scripts/myScripts/Payment/paymentHistory.js"></script>

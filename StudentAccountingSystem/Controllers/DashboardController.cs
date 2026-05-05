@@ -13,83 +13,83 @@ namespace StudentAccountingSystem.Controllers
 
         public ActionResult Index()
         {
-            // Keep the security check
             if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
                 return RedirectToAction("Login", "Account");
-
             return View();
         }
 
         public JsonResult GetDashboardData()
         {
-            List<object> data = new List<object>();
-            int totalStudents = 0;
-            int totalCourses = 0;
-            int unpaidCount = 0;
-            decimal totalPaid = 0;
+            var data = new List<object>();
 
             using (var con = new SqlConnection(_conn))
             {
                 con.Open();
-                // Total Students
-                using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Students WHERE Status = 'Enrolled'", con))
-                    totalStudents = (int)cmd.ExecuteScalar();
 
-                // Total Courses
-                using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Courses WHERE IsActive = 1", con))
-                    totalCourses = (int)cmd.ExecuteScalar();
-
-                // Unpaid
-                using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Assessments WHERE Status = 'Unpaid'", con))
-                    unpaidCount = (int)cmd.ExecuteScalar();
-
-                // Total Collections
-                using (var cmd = new SqlCommand("SELECT ISNULL(SUM(AmountPaid), 0) FROM Payments", con))
-                    totalPaid = Convert.ToDecimal(cmd.ExecuteScalar());
-            }
-
-            // Add to list following teacher's "data.Add" sample
-            data.Add(new
-            {
-                totalStudents = totalStudents,
-                totalCourses = totalCourses,
-                unpaidCount = unpaidCount,
-                totalPaid = totalPaid.ToString("N2"),
-                mess = 1
-            });
-
-            return Json(data, JsonRequestBehavior.AllowGet);
-        }
-
-        public JsonResult GetAdminDashboardStats()
-        {
-            List<object> data = new List<object>();
-
-            using (var con = new SqlConnection(_conn))
-            {
-                con.Open();
-                string query = @"
-    SELECT 
-        ISNULL(SUM(a.AmountDue), 0) as TotalAssessed,
-        ISNULL((SELECT SUM(p.AmountPaid) FROM Payments p WHERE p.TransactionType = 'Payment'), 0) as TotalPaid,
-        ISNULL(SUM(a.AmountDue), 0) - ISNULL((SELECT SUM(p.AmountPaid) FROM Payments p WHERE p.TransactionType = 'Payment'), 0) as TotalBalance
-    FROM Assessments a";
-
-                using (var cmd = new SqlCommand(query, con))
+                // Financial summary
+                decimal totalAssessed = 0, totalCollected = 0, totalRefunded = 0;
+                using (var cmd = new SqlCommand(@"
+                    SELECT
+                        ISNULL((SELECT SUM(AmountDue) FROM Assessments), 0) AS TotalAssessed,
+                        ISNULL((SELECT SUM(AmountPaid) FROM Payments WHERE TransactionType = 'Payment'), 0) AS TotalCollected,
+                        ISNULL((SELECT SUM(AmountPaid) FROM Payments WHERE TransactionType = 'Refund'), 0) AS TotalRefunded", con))
                 using (var r = cmd.ExecuteReader())
-                {
                     if (r.Read())
                     {
-                        data.Add(new
-                        {
-                            totalAssessed = Convert.ToDecimal(r["TotalAssessed"]).ToString("N2"),
-                            totalPaid = Convert.ToDecimal(r["TotalPaid"]).ToString("N2"),
-                            totalBalance = Convert.ToDecimal(r["TotalBalance"]).ToString("N2"),
-                            mess = 1
-                        });
+                        totalAssessed = Convert.ToDecimal(r["TotalAssessed"]);
+                        totalCollected = Convert.ToDecimal(r["TotalCollected"]);
+                        totalRefunded = Convert.ToDecimal(r["TotalRefunded"]);
                     }
-                }
+
+                // Student counts by status
+                int totalRegistered = 0, totalEnrolled = 0, totalGraduated = 0;
+                using (var cmd = new SqlCommand(@"
+                    SELECT Status, COUNT(*) AS Count
+                    FROM Students
+                    GROUP BY Status", con))
+                using (var r = cmd.ExecuteReader())
+                    while (r.Read())
+                    {
+                        int count = Convert.ToInt32(r["Count"]);
+                        totalRegistered += count;
+                        switch (r["Status"].ToString())
+                        {
+                            case "Enrolled": totalEnrolled = count; break;
+                            case "Graduated": totalGraduated = count; break;
+                        }
+                    }
+
+                // Active courses
+                int totalCourses = 0;
+                using (var cmd = new SqlCommand(
+                    "SELECT COUNT(*) FROM Courses WHERE IsActive = 1", con))
+                    totalCourses = (int)cmd.ExecuteScalar();
+
+                // Unpaid assessment count
+                int unpaidCount = 0;
+                using (var cmd = new SqlCommand(
+                    "SELECT COUNT(*) FROM Assessments WHERE Status = 'Unpaid'", con))
+                    unpaidCount = (int)cmd.ExecuteScalar();
+
+                data.Add(new
+                {
+                    mess = 1,
+                    // Financial
+                    totalAssessed = totalAssessed.ToString("N2"),
+                    totalCollected = totalCollected.ToString("N2"),
+                    outstandingBal = (totalAssessed - totalCollected).ToString("N2"),
+                    totalRefunded = totalRefunded.ToString("N2"),
+                    // Students
+                    totalRegistered = totalRegistered,
+                    totalEnrolled = totalEnrolled,
+                    totalGraduated = totalGraduated,
+
+                    // Other
+                    totalCourses = totalCourses,
+                    unpaidCount = unpaidCount
+                });
             }
+
             return Json(data, JsonRequestBehavior.AllowGet);
         }
     }

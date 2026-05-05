@@ -2,411 +2,140 @@
     ViewBag.Title = "Admin Dashboard";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<html>
+<body>
+    <style>
+        /* Labels */
+        .section-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 12px;
+            letter-spacing: 0.05em;
+        }
 
-<style>
-    :root {
-        --ink:       #0f1117;
-        --ink-mid:   #3a3f4b;
-        --ink-soft:  #7a8294;
-        --rule:      #e4e7ed;
-        --surface:   #ffffff;
-        --surface-2: #f5f6f9;
-        --blue:      #2563eb;
-        --blue-soft: #eff4ff;
-        --green:     #16a34a;
-        --green-soft:#f0fdf4;
-        --red:       #dc2626;
-        --red-soft:  #fef2f2;
-        --amber:     #d97706;
-        --amber-soft:#fffbeb;
-        --purple:    #7c3aed;
-        --purple-soft:#f5f3ff;
-    }
+        /* Grid Layouts */
+        .stats-grid {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+        .col-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
 
-    body {
-        font-family: 'DM Sans', sans-serif;
-        background: var(--surface-2);
-        color: var(--ink);
-    }
+        .col-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
 
-    .dash {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 32px 24px;
-    }
+        /* Card Styling */
+        .stat-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 20px;
+            position: relative;
+        }
 
-    /* ── Header ── */
-    .dash-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 32px;
-        padding-bottom: 20px;
-        border-bottom: 1px solid var(--rule);
-    }
-    .dash-header h1 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        letter-spacing: -0.03em;
-        color: var(--ink);
-    }
-    .dash-header .sub {
-        font-size: 0.82rem;
-        color: var(--ink-soft);
-        margin-top: 3px;
-    }
-    .dash-header .welcome {
-        font-size: 0.85rem;
-        color: var(--ink-soft);
-        text-align: right;
-    }
-    .dash-header .welcome strong {
-        color: var(--ink);
-        font-weight: 600;
-    }
+            /* Accent border matching the sample image */
+            .stat-card .accent {
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 4px;
+            }
 
-    /* ── Stat Cards ── */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 16px;
-        margin-bottom: 32px;
-    }
-    .stat-card {
-        background: var(--surface);
-        border: 1px solid var(--rule);
-        border-radius: 10px;
-        padding: 20px;
-        position: relative;
-        overflow: hidden;
-        transition: box-shadow 0.2s;
-    }
-    .stat-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); }
-    .stat-card .label {
-        font-size: 0.72rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        color: var(--ink-soft);
-        margin-bottom: 10px;
-    }
-    .stat-card .value {
-        font-family: 'DM Mono', monospace;
-        font-size: 1.45rem;
-        font-weight: 500;
-        color: var(--ink);
-        letter-spacing: -0.02em;
-    }
-    .stat-card .accent-bar {
-        position: absolute;
-        top: 0; left: 0;
-        width: 3px;
-        height: 100%;
-        border-radius: 10px 0 0 10px;
-    }
-    .stat-card.blue  .accent-bar { background: var(--blue); }
-    .stat-card.green .accent-bar { background: var(--green); }
-    .stat-card.red   .accent-bar { background: var(--red); }
-    .stat-card.amber .accent-bar { background: var(--amber); }
-    .stat-card.blue  .value { color: var(--blue); }
-    .stat-card.green .value { color: var(--green); }
-    .stat-card.red   .value { color: var(--red); }
-    .stat-card.amber .value { color: var(--amber); }
+        .card-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
 
-    /* ── Section Label ── */
-    .section-label {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--ink-soft);
-        margin-bottom: 12px;
-    }
+        .card-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1a4b6e;
+        }
 
-    /* ── Daily Operations ── */
-    .ops-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-        margin-bottom: 32px;
-    }
-    .op-card {
-        background: var(--surface);
-        border: 1px solid var(--rule);
-        border-radius: 10px;
-        padding: 22px 20px;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        transition: all 0.18s;
-        position: relative;
-        overflow: hidden;
-    }
-    .op-card:hover {
-        border-color: var(--blue);
-        box-shadow: 0 0 0 3px var(--blue-soft);
-        transform: translateY(-1px);
-    }
-    .op-card .icon {
-        width: 44px; height: 44px;
-        border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.3rem;
-        flex-shrink: 0;
-    }
-    .op-card .icon.blue   { background: var(--blue-soft); }
-    .op-card .icon.green  { background: var(--green-soft); }
-    .op-card .icon.red    { background: var(--red-soft); }
-    .op-card .icon.purple { background: var(--purple-soft); }
-    .op-card .text h3 {
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--ink);
-        margin-bottom: 3px;
-    }
-    .op-card .text p {
-        font-size: 0.78rem;
-        color: var(--ink-soft);
-        line-height: 1.4;
-    }
-    .op-card .arrow {
-        margin-left: auto;
-        color: var(--rule);
-        font-size: 1.1rem;
-        transition: color 0.18s, transform 0.18s;
-    }
-    .op-card:hover .arrow {
-        color: var(--blue);
-        transform: translateX(3px);
-    }
+        /* Theme Colors */
+        .bg-blue {
+            background: #1a4b6e;
+        }
 
-    /* ── Bottom Row ── */
-    .bottom-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-    }
+        .bg-yellow {
+            background: #f1c40f;
+        }
 
-    /* ── Setup Links ── */
-    .setup-card {
-        background: var(--surface);
-        border: 1px solid var(--rule);
-        border-radius: 10px;
-        padding: 20px;
-    }
-    .setup-card .setup-title {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--ink);
-        margin-bottom: 14px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid var(--rule);
-    }
-    .setup-links {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-    .setup-link {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 9px 12px;
-        border-radius: 7px;
-        text-decoration: none;
-        color: var(--ink-mid);
-        font-size: 0.85rem;
-        font-weight: 500;
-        transition: background 0.15s, color 0.15s;
-    }
-    .setup-link:hover {
-        background: var(--surface-2);
-        color: var(--blue);
-    }
-    .setup-link .dot {
-        width: 7px; height: 7px;
-        border-radius: 50%;
-        background: var(--rule);
-        flex-shrink: 0;
-        transition: background 0.15s;
-    }
-    .setup-link:hover .dot { background: var(--blue); }
+        .bg-red {
+            background: #c0392b;
+        }
 
-    /* ── Reports Card ── */
-    .reports-card {
-        background: var(--surface);
-        border: 1px solid var(--rule);
-        border-radius: 10px;
-        padding: 20px;
-    }
-    .reports-card .setup-title {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--ink);
-        margin-bottom: 14px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid var(--rule);
-    }
-    .report-btn {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 14px 16px;
-        border-radius: 8px;
-        text-decoration: none;
-        margin-bottom: 10px;
-        transition: opacity 0.15s, transform 0.15s;
-    }
-    .report-btn:hover { opacity: 0.88; transform: translateX(2px); }
-    .report-btn.ledger {
-        background: var(--blue-soft);
-        border: 1px solid #bfdbfe;
-    }
-    .report-btn.assessment {
-        background: var(--green-soft);
-        border: 1px solid #bbf7d0;
-    }
-    .report-btn .ricon { font-size: 1.2rem; }
-    .report-btn .rtext h4 {
-        font-size: 0.88rem;
-        font-weight: 600;
-        color: var(--ink);
-        margin-bottom: 2px;
-    }
-    .report-btn .rtext p {
-        font-size: 0.75rem;
-        color: var(--ink-soft);
-    }
+        .bg-slate {
+            background: #64748b;
+        }
 
-    @@media (max-width: 900px) {
-        .stats-grid { grid-template-columns: repeat(2, 1fr); }
-        .ops-grid   { grid-template-columns: repeat(2, 1fr); }
-        .bottom-row { grid-template-columns: 1fr; }
-    }
-    @@media (max-width: 560px) {
-        .stats-grid { grid-template-columns: 1fr; }
-        .ops-grid   { grid-template-columns: 1fr; }
-    }
-</style>
+        /* Response adjustments */
+        @@media (max-width: 1024px) {
+            .col-4, .col-3 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
 
-<div class="dash">
+    <div class="dash-wrapper">
 
-    <!-- Header -->
-    <div class="dash-header">
-        <div>
-            <h1>Dashboard</h1>
-            <div class="sub">Student Accounting System</div>
-        </div>
-        <div class="welcome">
-            Logged in as <strong>@Session["Username"]</strong><br>
-            <span style="font-size:0.78rem;">Administrator</span>
-        </div>
-    </div>
-
-    <!-- Stats -->
-    <div class="section-label">Financial Overview</div>
-    <div class="stats-grid">
-        <div class="stat-card blue">
-            <div class="accent-bar"></div>
-            <div class="label">Total Assessed</div>
-            <div class="value">₱<span id="adminTotalAssessed">—</span></div>
-        </div>
-        <div class="stat-card green">
-            <div class="accent-bar"></div>
-            <div class="label">Total Collected</div>
-            <div class="value">₱<span id="adminTotalPaid">—</span></div>
-        </div>
-        <div class="stat-card red">
-            <div class="accent-bar"></div>
-            <div class="label">Outstanding Balance</div>
-            <div class="value">₱<span id="adminTotalBalance">—</span></div>
-        </div>
-        <div class="stat-card amber">
-            <div class="accent-bar"></div>
-            <div class="label">Total Refunded</div>
-            <div class="value">₱<span id="adminTotalRefunded">—</span></div>
-        </div>
-    </div>
-
-    <!-- Daily Operations -->
-    <div class="section-label">Daily Operations</div>
-    <div class="ops-grid">
-        <a href="@Url.Action("Index", "Payment")" class="op-card">
-            <div class="icon green">💳</div>
-            <div class="text">
-                <h3>Record Payment</h3>
-                <p>Accept and post student payments by period</p>
+        <!-- Financial Section -->
+        <div class="section-label">Financial Overview</div>
+        <div class="stats-grid col-4">
+            <div class="stat-card">
+                <div class="accent bg-blue"></div>
+                <div class="card-label">Total Assessed</div>
+                <div class="card-value">₱<span id="statAssessed">—</span></div>
             </div>
-            <span class="arrow">›</span>
-        </a>
-        <a href="@Url.Action("Index", "Assessment")" class="op-card">
-            <div class="icon blue">📋</div>
-            <div class="text">
-                <h3>Assessment Management</h3>
-                <p>Generate and manage semester assessments</p>
+            <div class="stat-card">
+                <div class="accent bg-yellow"></div>
+                <div class="card-label">Total Collected</div>
+                <div class="card-value">₱<span id="statCollected">—</span></div>
             </div>
-            <span class="arrow">›</span>
-        </a>
-        <a href="@Url.Action("History", "Payment")" class="op-card">
-            <div class="icon red">↩️</div>
-            <div class="text">
-                <h3>Payment History & Refunds</h3>
-                <p>View transactions and process semester refunds</p>
+            <div class="stat-card">
+                <div class="accent bg-red"></div>
+                <div class="card-label">Outstanding Balance</div>
+                <div class="card-value">₱<span id="statBalance">—</span></div>
             </div>
-            <span class="arrow">›</span>
-        </a>
-    </div>
-
-    <!-- Bottom Row -->
-    <div class="bottom-row">
-
-        <!-- System Setup -->
-        <div class="setup-card">
-            <div class="setup-title">⚙️ System Setup</div>
-            <div class="setup-links">
-                <a href="@Url.Action("Index", "Student")" class="setup-link">
-                    <span class="dot"></span> Student Management
-                </a>
-                <a href="@Url.Action("Index", "Course")" class="setup-link">
-                    <span class="dot"></span> Course Management
-                </a>
-                <a href="@Url.Action("Index", "Scholarship")" class="setup-link">
-                    <span class="dot"></span> Scholarship Management
-                </a>
-                <a href="@Url.Action("Index", "Discount")" class="setup-link">
-                    <span class="dot"></span> Discount Management
-                </a>
-                <a href="@Url.Action("Index", "User")" class="setup-link">
-                    <span class="dot"></span> User Management
-                </a>
+            <div class="stat-card">
+                <div class="accent bg-slate"></div>
+                <div class="card-label">Total Refunded</div>
+                <div class="card-value">₱<span id="statRefunded">—</span></div>
             </div>
         </div>
 
-        <!-- Reports -->
-        <div class="reports-card">
-            <div class="setup-title">📊 Reports</div>
-            <a href="@Url.Action("StudentLedger", "Report")" class="report-btn ledger">
-                <span class="ricon">📒</span>
-                <div class="rtext">
-                    <h4>Student Ledger Report</h4>
-                    <p>Charges, payments, discounts, refunds & balance per student</p>
-                </div>
-            </a>
-            <a href="@Url.Action("AssessmentReport", "Report")" class="report-btn assessment">
-                <span class="ricon">📄</span>
-                <div class="rtext">
-                    <h4>Assessment Report</h4>
-                    <p>Assessed tuition and fees filtered by school year & semester</p>
-                </div>
-            </a>
+        <!-- Student Section -->
+        <div class="section-label">Student Overview</div>
+        <div class="stats-grid col-3">
+            <div class="stat-card">
+                <div class="accent bg-slate"></div>
+                <div class="card-label">Total Registered</div>
+                <div class="card-value"><span id="statRegistered">—</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="accent bg-blue"></div>
+                <div class="card-label">Enrolled</div>
+                <div class="card-value"><span id="statEnrolled">—</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="accent bg-yellow"></div>
+                <div class="card-label">Graduated</div>
+                <div class="card-value"><span id="statGraduated">—</span></div>
+            </div>
         </div>
 
     </div>
-</div>
-
-@section scripts {
-    <script src="~/Scripts/myScripts/dashboard.js"></script>
-}
+</body>
+</html>
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
+<script src="~/Scripts/myScripts/dashboardv2.js"></script>

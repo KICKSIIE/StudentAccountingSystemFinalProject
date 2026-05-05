@@ -28,8 +28,8 @@ namespace StudentAccountingSystem.Controllers
             var students = new List<SelectListItem>();
             using (var con = new SqlConnection(_conn))
             using (var cmd = new SqlCommand(
-                @"SELECT StudentID, FirstName + ' ' + LastName AS FullName
-          FROM Students ORDER BY LastName", con))
+                @"SELECT StudentID, LastName + ', ' + FirstName + ' ' + ISNULL(MiddleName, '') AS FullName
+                  FROM Students ORDER BY LastName", con))
             {
                 con.Open();
                 using (var r = cmd.ExecuteReader())
@@ -56,7 +56,7 @@ namespace StudentAccountingSystem.Controllers
                     // 1. Student header info
                     object studentInfo = null;
                     using (var cmd = new SqlCommand(@"
-                        SELECT s.StudentID, s.FirstName, s.LastName,
+                        SELECT s.StudentID, s.FirstName, s.LastName, s.MiddleName,
                                s.YearLevel, s.Semester, s.SchoolYear,
                                s.Status, c.CourseName, c.CourseCode,
                                sc.ScholarshipName, sc.Type AS SchType,
@@ -77,7 +77,7 @@ namespace StudentAccountingSystem.Controllers
                                 studentInfo = new
                                 {
                                     studentID = r["StudentID"],
-                                    fullName = r["LastName"].ToString() + ", " + r["FirstName"].ToString(),
+                                    fullName = r["LastName"].ToString() + ", " + r["FirstName"].ToString() + " " + (r["MiddleName"] == DBNull.Value ? "" : r["MiddleName"].ToString()),
                                     course = r["CourseCode"].ToString() + " - " + r["CourseName"].ToString(),
                                     yearLevel = r["YearLevel"],
                                     semester = r["Semester"],
@@ -94,6 +94,7 @@ namespace StudentAccountingSystem.Controllers
                         SELECT a.AssessmentID, a.Period, a.SchoolYear,
                                a.Semester, a.YearLevel,
                                a.TuitionFee, a.RegistrationFee, a.MiscFee, a.LabFee,
+c.Units, c.TuitionPerUnit,
                                a.TotalFee, a.DiscountAmount, a.NetAssessment,
                                a.PercentRequired, a.AmountDue, 
                                a.Status, a.AssessedAt, a.OverpaidAmount,
@@ -101,10 +102,13 @@ namespace StudentAccountingSystem.Controllers
                         FROM Assessments a
                         LEFT JOIN Payments p ON p.AssessmentID = a.AssessmentID
                                             AND p.TransactionType = 'Payment'
-                        WHERE a.StudentID = @sid
-                        GROUP BY a.AssessmentID, a.Period, a.SchoolYear,
-                                 a.Semester, a.YearLevel,
-                                 a.TuitionFee, a.RegistrationFee, a.MiscFee, a.LabFee,
+                        JOIN Students s ON s.StudentID = a.StudentID
+JOIN Courses c ON c.CourseID = s.CourseID
+WHERE a.StudentID = @sid
+GROUP BY a.AssessmentID, a.Period, a.SchoolYear,
+         a.Semester, a.YearLevel,
+         a.TuitionFee, a.RegistrationFee, a.MiscFee, a.LabFee,
+         c.Units, c.TuitionPerUnit,
                                  a.TotalFee, a.DiscountAmount, a.NetAssessment,
                                  a.PercentRequired, a.AmountDue,
                                  a.Status, a.AssessedAt, a.OverpaidAmount
@@ -126,6 +130,8 @@ namespace StudentAccountingSystem.Controllers
                                     schoolYear = r["SchoolYear"],
                                     semester = r["Semester"],
                                     yearLevel = r["YearLevel"],
+                                    units = r["Units"],
+                                    tuitionPerUnit = r["TuitionPerUnit"],
                                     tuitionFee = r["TuitionFee"],
                                     registrationFee = r["RegistrationFee"],
                                     miscFee = r["MiscFee"],
@@ -251,7 +257,7 @@ namespace StudentAccountingSystem.Controllers
                     con.Open();
 
                     string sql = @"
-                        SELECT s.StudentID, s.FirstName + ' ' + s.LastName AS StudentName,
+                        SELECT s.StudentID, s.LastName + ', ' + s.FirstName + ' ' + ISNULL(s.MiddleName, '') AS StudentName,
                                c.CourseCode, c.CourseName,
                                a.YearLevel, a.SchoolYear, a.Semester, a.Period,
                                a.TotalFee, a.TuitionFee, a.RegistrationFee,
@@ -264,7 +270,8 @@ namespace StudentAccountingSystem.Controllers
                         JOIN Courses c  ON c.CourseID  = s.CourseID
                         LEFT JOIN Payments p ON p.AssessmentID = a.AssessmentID
                                             AND p.TransactionType = 'Payment'
-                        WHERE a.SchoolYear = @sy AND a.Semester = @sem";
+                        WHERE (@sy IS NULL OR a.SchoolYear = @sy)
+                            AND (@sem IS NULL OR a.Semester = @sem)";
 
                     if (!string.IsNullOrEmpty(courseID))
                         sql += " AND s.CourseID = @cid";
@@ -275,7 +282,7 @@ namespace StudentAccountingSystem.Controllers
                     if (!string.IsNullOrEmpty(status))
                         sql += " AND a.Status = @status";
 
-                    sql += @" GROUP BY s.StudentID, s.FirstName, s.LastName,
+                    sql += @" GROUP BY s.StudentID, s.FirstName, s.LastName, s.MiddleName,
                                c.CourseCode, c.CourseName, a.YearLevel,
                                a.SchoolYear, a.Semester, a.Period,
                                a.TotalFee, a.TuitionFee, a.RegistrationFee,
@@ -291,8 +298,8 @@ namespace StudentAccountingSystem.Controllers
 
                     using (var cmd = new SqlCommand(sql, con))
                     {
-                        cmd.Parameters.AddWithValue("@sy", schoolYear);
-                        cmd.Parameters.AddWithValue("@sem", semester);
+                        cmd.Parameters.AddWithValue("@sy", string.IsNullOrEmpty(schoolYear) ? (object)DBNull.Value : schoolYear);
+                        cmd.Parameters.AddWithValue("@sem", string.IsNullOrEmpty(semester) ? (object)DBNull.Value : semester);
                         if (!string.IsNullOrEmpty(courseID))
                             cmd.Parameters.AddWithValue("@cid", int.Parse(courseID));
                         if (!string.IsNullOrEmpty(yearLevel))

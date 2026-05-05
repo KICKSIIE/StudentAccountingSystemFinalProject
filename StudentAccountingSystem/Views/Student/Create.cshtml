@@ -5,113 +5,279 @@
 }
 
 <style>
-    .entry-card {
-        background: #fff;
-        padding: 30px;
-        border-radius: 8px;
-        border: 1px solid #dcdde1;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    :root {
+        --primary-blue: #1a4b6e;
+        --accent-red: #d32f2f;
+        --border-color: #e2e8f0;
     }
 
-    .form-label {
-        font-weight: 600;
+    .container-fluid {
+        padding: 20px;
+    }
+
+    .page-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary-blue);
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--primary-blue);
+        display: inline-block;
+    }
+
+    .form-section {
+        background: white;
+        border: 1px solid var(--border-color);
+        padding: 25px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .section-label {
+        color: var(--primary-blue);
+        font-weight: 700;
+        margin: 0 0 15px 0;
         font-size: 0.85rem;
-        color: #2f3640;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
-    .section-head {
-        font-size: 1rem;
-        font-weight: bold;
-        color: #2c3e50;
-        margin: 20px 0 10px 0;
-        border-bottom: 1px solid #f1f2f6;
-        padding-bottom: 5px;
+    .input-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 15px;
     }
 
-    .assessment-summary {
-        background: #f8f9fa;
-        border-left: 5px solid #27ae60;
-        padding: 15px;
-        margin-top: 20px;
-        display: none;
+    .field {
+        display: flex;
+        flex-direction: column;
+        min-width: 160px;
+        flex: 1;
+    }
+
+        .field.wide {
+            flex: 3;
+            min-width: 300px;
+        }
+
+        .field.narrow {
+            flex: 0 0 140px;
+            min-width: 140px;
+        }
+
+    label {
+        font-weight: 700;
+        font-size: 0.75rem;
+        margin-bottom: 5px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="date"],
+    select {
+        padding: 10px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 0.85rem;
+        background: white;
+        color: #334155;
+    }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+    .form-divider {
+        border: none;
+        border-top: 1px solid var(--border-color);
+        margin: 20px 0;
+    }
+
+    .btn {
+        padding: 10px 18px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: background 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background: var(--primary-blue);
+        color: white;
+    }
+
+        .btn-primary:hover {
+            background: #133852;
+            color: white;
+        }
+
+        .btn-primary:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+    .btn-secondary {
+        background: #64748b;
+        color: white;
+    }
+
+        .btn-secondary:hover {
+            background: #475569;
+            color: white;
+        }
+
+    .msg-success {
+        color: #15803d;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .msg-error {
+        color: var(--accent-red);
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    #msgBox {
+        margin-bottom: 10px;
     }
 </style>
 
-<div class="container mt-4">
-    <div class="entry-card">
-        <h2 class="text-secondary">New Student Registration</h2>
-        <p class="text-muted small">Fill out the fields below to enroll a new student into the system.</p>
-        <hr />
+<div class="container-fluid">
+    <h2 class="page-header">New Student Registration</h2>
 
-        <div id="result"></div>
+    <div class="form-section">
+        <p class="section-label">I. Personal Information</p>
 
-        <!-- Section 1: Personal -->
-        <div class="section-head text-uppercase">I. Personal Information</div>
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Last Name</label>
-                <input id="txtLname" type="text" class="form-control" placeholder="e.g. Dela Cruz" />
+        <div class="input-row">
+            <div class="field">
+                <label for="txtLastName">Last Name *</label>
+                <input type="text" id="txtLastName" placeholder="e.g. Dela Cruz" />
             </div>
-            <div class="col-md-4">
-                <label class="form-label">First Name</label>
-                <input id="txtFname" type="text" class="form-control" placeholder="e.g. Juan" />
+            <div class="field">
+                <label for="txtFirstName">First Name *</label>
+                <input type="text" id="txtFirstName" placeholder="e.g. Juan" />
             </div>
-            <div class="col-md-4">
-                <label class="form-label">Middle Name</label>
-                <input id="txtMname" type="text" class="form-control" />
+            <div class="field">
+                <label for="txtMiddleName">Middle Name</label>
+                <input type="text" id="txtMiddleName" />
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Gender</label>
-                <select id="selGender" class="form-select">
+        </div>
+
+        <div class="input-row">
+            <div class="field narrow">
+                <label for="selGender">Gender</label>
+                <select id="selGender">
                     <option value="">-- Select --</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Birth Date</label>
-                <input id="txtBirthDate" type="date" class="form-control" />
+            <div class="field narrow">
+                <label for="txtBirthDate">Birth Date *</label>
+                <input type="date" id="txtBirthDate" />
             </div>
-            <div class="col-md-6">
-                <label class="form-label">Email Address</label>
-                <input id="txtEmail" type="email" class="form-control" placeholder="juan@example.com" />
+            <div class="field">
+                <label for="txtContact">Contact No.</label>
+                <input type="text" id="txtContact" placeholder="09XXXXXXXXX" />
+            </div>
+            <div class="field">
+                <label for="txtEmail">Email Address</label>
+                <input type="email" id="txtEmail" placeholder="juan@example.com" />
             </div>
         </div>
 
-        <!-- Section 2: Academic -->
-        <div class="section-head text-uppercase">II. Enrollment Details</div>
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label">Course</label>
-                <select id="selCourse" class="form-select">
+        <div class="input-row">
+            <div class="field wide">
+                <label for="txtAddress">Address</label>
+                <input type="text" id="txtAddress" />
+            </div>
+        </div>
+
+        <hr class="form-divider" />
+        <p class="section-label">II. Enrollment Details</p>
+
+        <div class="input-row">
+            <div class="field wide">
+                <label for="selCourse">Course *</label>
+                <select id="selCourse">
                     <option value="">-- Select Course --</option>
-                    @foreach (var course in ViewBag.Courses)
+                    @foreach (var c in ViewBag.Courses)
                     {
-                        <option value="@course.Value">@course.Text</option>
+                        <option value="@c.Value">@c.Text</option>
                     }
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Year Level</label>
-                <select id="selYearLevel" class="form-select">
+            <div class="field narrow">
+                <label for="selYear">Year Level *</label>
+                <select id="selYear">
                     <option value="1">1st Year</option>
                     <option value="2">2nd Year</option>
                     <option value="3">3rd Year</option>
                     <option value="4">4th Year</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Semester</label>
-                <select id="selSemester" class="form-select">
-                    <option value="1st">1st Semester</option>
-                    <option value="2nd">2nd Semester</option>
+            <div class="field narrow">
+                <label for="selSemester">Semester *</label>
+                <select id="selSemester">
+                    <option value="1st">1st</option>
+                    <option value="2nd">2nd</option>
+                </select>
+            </div>
+            <div class="field narrow">
+                <label for="selSchoolYear">School Year *</label>
+                <select id="selSchoolYear"></select>
+            </div>
+        </div>
+
+        <div class="input-row">
+            <div class="field">
+                <label for="selScholarship">Scholarship</label>
+                <select id="selScholarship">
+                    <option value="">-- None --</option>
+                    @foreach (var s in ViewBag.Scholarships)
+                    {
+                        <option value="@s.Value">@s.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label for="selDiscount">Discount</label>
+                <select id="selDiscount">
+                    <option value="">-- None --</option>
+                    @foreach (var d in ViewBag.Discounts)
+                    {
+                        <option value="@d.Value">@d.Text</option>
+                    }
                 </select>
             </div>
         </div>
 
-        <div class="mt-4 border-top pt-3">
-            <button id="btnSubmit" class="btn btn-primary px-4">Register Student</button>
-            <button id="btnView" class="btn btn-outline-secondary">Go to Student List</button>
-        </div>
+        <hr class="form-divider" />
+        <div id="msgBox"></div>
+        <button id="btnRegister" class="btn btn-primary">Register Student</button>
+        <a href="/Student/Index" class="btn btn-secondary" style="margin-left: 6px;">Cancel</a>
     </div>
 </div>
+
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
+<script src="~/Scripts/myScripts/Student/studentCreate.js"></script>

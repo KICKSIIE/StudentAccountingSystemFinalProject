@@ -193,7 +193,7 @@ namespace StudentAccountingSystem.Controllers
                         cmd.Parameters.AddWithValue("@fname", firstName.Trim().ToUpper());
                         cmd.Parameters.AddWithValue("@mname", string.IsNullOrEmpty(middleName) ? (object)DBNull.Value : middleName.Trim().ToUpper());
                         cmd.Parameters.AddWithValue("@gender", gender);
-                        cmd.Parameters.AddWithValue("@bdate", DateTime.Parse(birthDate));
+                        cmd.Parameters.AddWithValue("@bdate", DateTime.ParseExact(birthDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
                         cmd.Parameters.AddWithValue("@contact", string.IsNullOrEmpty(contact) ? (object)DBNull.Value : contact.Trim());
                         cmd.Parameters.AddWithValue("@address", string.IsNullOrEmpty(address) ? (object)DBNull.Value : address.Trim());
                         cmd.Parameters.AddWithValue("@email", string.IsNullOrEmpty(email) ? (object)DBNull.Value : email.Trim());
@@ -210,16 +210,7 @@ namespace StudentAccountingSystem.Controllers
                     GenerateAssessments(con, newStudentID, int.Parse(courseID),
                         int.Parse(yearLevel), semester, schoolYear.Trim());
 
-                    // Create user account — username and password = StudentID
-                    using (var cmd = new SqlCommand(
-                        @"INSERT INTO Users (Username, PasswordHash, Role, StudentID, IsActive, CreatedAt)
-                  VALUES (@user, @pass, 'Student', @sid, 1, GETDATE())", con))
-                    {
-                        cmd.Parameters.AddWithValue("@user", newStudentID.ToString());
-                        cmd.Parameters.AddWithValue("@pass", newStudentID.ToString());
-                        cmd.Parameters.AddWithValue("@sid", newStudentID);
-                        cmd.ExecuteNonQuery();
-                    }
+                    
                 }
 
                 data.Add(new { mess = 1, studentNumber = newStudentID.ToString(), message = "Student registered successfully." });
@@ -406,7 +397,7 @@ namespace StudentAccountingSystem.Controllers
                 cmd.Parameters.AddWithValue("@fname", firstName.Trim().ToUpper());
                 cmd.Parameters.AddWithValue("@mname", string.IsNullOrEmpty(middleName) ? (object)DBNull.Value : middleName.Trim().ToUpper());
                 cmd.Parameters.AddWithValue("@gender", gender);
-                cmd.Parameters.AddWithValue("@bdate", DateTime.Parse(birthDate));
+                cmd.Parameters.AddWithValue("@bdate", DateTime.ParseExact(birthDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
                 cmd.Parameters.AddWithValue("@contact", string.IsNullOrEmpty(contact) ? (object)DBNull.Value : contact);
                 cmd.Parameters.AddWithValue("@address", string.IsNullOrEmpty(address) ? (object)DBNull.Value : address);
                 cmd.Parameters.AddWithValue("@email", string.IsNullOrEmpty(email) ? (object)DBNull.Value : email);
@@ -488,26 +479,44 @@ int yearLevel, string semester, string schoolYear, SqlTransaction trans = null)
             decimal discountAmount = 0;
 
             using (var cmd = new SqlCommand(@"SELECT sc.Type AS SchType, sc.DiscountPercent AS SchPct, sc.DiscountAmount AS SchAmt,
-                                     d.Type  AS DisType, d.DiscountPercent  AS DisPct, d.DiscountAmount  AS DisAmt
-                              FROM Students s
-                              LEFT JOIN Scholarships sc ON sc.ScholarshipID = s.ScholarshipID
-                              LEFT JOIN Discounts     d ON d.DiscountID     = s.DiscountID
-                              WHERE s.StudentID = @sid", con, trans))
+                                 d.Type  AS DisType, d.DiscountPercent  AS DisPct, d.DiscountAmount  AS DisAmt
+                          FROM Students s
+                          LEFT JOIN Scholarships sc ON sc.ScholarshipID = s.ScholarshipID
+                          LEFT JOIN Discounts     d ON d.DiscountID     = s.DiscountID
+                          WHERE s.StudentID = @sid", con, trans))
             {
                 cmd.Parameters.AddWithValue("@sid", studentID);
                 using (var r = cmd.ExecuteReader())
                 {
                     if (r.Read())
                     {
-                        if (r["SchType"] != DBNull.Value && r["SchType"].ToString() == "Percent")
-                            discountAmount += totalFee * (decimal)r["SchPct"] / 100;
-                        else if (r["SchType"] != DBNull.Value && r["SchType"].ToString() == "Fixed")
-                            discountAmount += (decimal)r["SchAmt"];
+                        // DEBUG
+                        System.Diagnostics.Debug.WriteLine($"SchType: {r["SchType"]}");
+                        System.Diagnostics.Debug.WriteLine($"SchPct:  {r["SchPct"]}");
+                        System.Diagnostics.Debug.WriteLine($"SchAmt:  {r["SchAmt"]}");
+                        System.Diagnostics.Debug.WriteLine($"DisType: {r["DisType"]}");
+                        System.Diagnostics.Debug.WriteLine($"DisPct:  {r["DisPct"]}");
+                        System.Diagnostics.Debug.WriteLine($"DisAmt:  {r["DisAmt"]}");
 
-                        if (r["DisType"] != DBNull.Value && r["DisType"].ToString() == "Percent")
-                            discountAmount += totalFee * (decimal)r["DisPct"] / 100;
-                        else if (r["DisType"] != DBNull.Value && r["DisType"].ToString() == "Fixed")
-                            discountAmount += (decimal)r["DisAmt"];
+                        // SCHOLARSHIP
+                        if (r["SchType"] != DBNull.Value)
+                        {
+                            if (r["SchType"].ToString() == "Percent" && r["SchPct"] != DBNull.Value)
+                                discountAmount += totalFee * Convert.ToDecimal(r["SchPct"]) / 100;
+                            else if (r["SchType"].ToString() == "Fixed" && r["SchAmt"] != DBNull.Value)
+                                discountAmount += Convert.ToDecimal(r["SchAmt"]);
+                        }
+
+                        // DISCOUNT
+                        if (r["DisType"] != DBNull.Value)
+                        {
+                            if (r["DisType"].ToString() == "Percent" && r["DisPct"] != DBNull.Value)
+                                discountAmount += totalFee * Convert.ToDecimal(r["DisPct"]) / 100;
+                            else if (r["DisType"].ToString() == "Fixed" && r["DisAmt"] != DBNull.Value)
+                                discountAmount += Convert.ToDecimal(r["DisAmt"]);
+                        }
+
+                        System.Diagnostics.Debug.WriteLine($"discountAmount: {discountAmount}, totalFee: {totalFee}");
                     }
                 }
             }
@@ -574,53 +583,91 @@ int yearLevel, string semester, string schoolYear, SqlTransaction trans = null)
 
             foreach (var p in periods)
             {
-                int exists = 0;
-                using (var cmd = new SqlCommand(@"SELECT COUNT(*) FROM Assessments
-    WHERE StudentID=@sid AND SchoolYear=@sy AND Semester=@sem 
-      AND Period=@period AND Status != 'Refunded'", con, trans))
+                try
                 {
-                    cmd.Parameters.AddWithValue("@sid", studentID);
-                    cmd.Parameters.AddWithValue("@sy", schoolYear);
-                    cmd.Parameters.AddWithValue("@sem", semester);
-                    cmd.Parameters.AddWithValue("@period", p.Period);
-                    exists = (int)cmd.ExecuteScalar();
+                    int exists = 0;
+                    using (var cmd = new SqlCommand(@"SELECT COUNT(*) FROM Assessments
+            WHERE StudentID=@sid AND SchoolYear=@sy AND Semester=@sem 
+            AND Period=@period AND Status != 'Refunded'", con, trans))
+                    {
+                        cmd.Parameters.AddWithValue("@sid", studentID);
+                        cmd.Parameters.AddWithValue("@sy", schoolYear);
+                        cmd.Parameters.AddWithValue("@sem", semester);
+                        cmd.Parameters.AddWithValue("@period", p.Period);
+                        exists = (int)cmd.ExecuteScalar();
+                    }
+
+                    if (exists > 0)
+                    {
+                        // Log that we skipped this period
+                        System.Diagnostics.Debug.WriteLine($"Skipping {p.Period} - already exists");
+                        continue;
+                    }
+
+                    using (var cmd = new SqlCommand(@"INSERT INTO Assessments 
+        (StudentID, YearLevel, CourseFeeID, SchoolYear, Semester, Period, 
+         TotalFee, TuitionFee, RegistrationFee, MiscFee, LabFee, 
+         DiscountAmount, NetAssessment, PercentRequired, 
+         AmountDue, Status, AssessedAt) 
+        VALUES 
+        (@sid, @yl, NULL, @sy, @sem, @period, 
+         @totalFee, @tuitionFee, @regFee, @miscFee, @labFee, 
+         @discount, @net, @pct, 
+         @amountDue, @status, GETDATE());
+        SELECT SCOPE_IDENTITY();", con, trans))  // <-- added here
+                    {
+                        decimal pct = 0;
+                        if (p.Period == "Prelim") pct = 53;
+                        else if (p.Period == "Midterm") pct = 11;
+                        else if (p.Period == "Semi-Final") pct = 11;
+                        else if (p.Period == "Final") pct = 25;
+
+                        cmd.Parameters.AddWithValue("@sid", studentID);
+                        cmd.Parameters.AddWithValue("@yl", yearLevel);
+                        cmd.Parameters.AddWithValue("@sy", schoolYear);
+                        cmd.Parameters.AddWithValue("@sem", semester);
+                        cmd.Parameters.AddWithValue("@period", p.Period);
+                        cmd.Parameters.AddWithValue("@totalFee", totalFee);
+                        cmd.Parameters.AddWithValue("@tuitionFee", tuitionFee);
+                        cmd.Parameters.AddWithValue("@regFee", regFee);
+                        cmd.Parameters.AddWithValue("@miscFee", miscFee);
+                        cmd.Parameters.AddWithValue("@labFee", labFee);
+                        cmd.Parameters.AddWithValue("@discount", discountAmount);
+                        cmd.Parameters.AddWithValue("@net", netAssessment);
+                        cmd.Parameters.AddWithValue("@pct", pct);
+                        cmd.Parameters.AddWithValue("@amountDue", p.Amount);
+                        cmd.Parameters.AddWithValue("@status", p.Status);
+
+                        // ExecuteScalar returns the new AssessmentID in one round-trip
+                        int newAssessmentID = Convert.ToInt32(cmd.ExecuteScalar());
+
+                        if (p.Status == "Paid")
+                        {
+                            using (var payCmd = new SqlCommand(@"
+                                INSERT INTO Payments 
+                                    (AssessmentID, StudentID, AmountPaid, PaymentDate, 
+                                     PaymentMode, Remarks, TransactionType,
+                                     Period, SchoolYear, Semester, YearLevel)
+                                VALUES 
+                                    (@aid, @sid, 0, GETDATE(), 
+                                     'Discount', '100% discount/scholarship - no payment collected', 'Discount Adjustment',
+                                     @period, @sy, @sem, @yl)", con, trans))
+                            {
+                                payCmd.Parameters.AddWithValue("@aid", newAssessmentID);
+                                payCmd.Parameters.AddWithValue("@sid", studentID);
+                                payCmd.Parameters.AddWithValue("@period", p.Period);
+                                payCmd.Parameters.AddWithValue("@sy", schoolYear);
+                                payCmd.Parameters.AddWithValue("@sem", semester);
+                                payCmd.Parameters.AddWithValue("@yl", yearLevel);
+                                payCmd.ExecuteNonQuery();
+                            }
+                        }
+                    }
                 }
-                if (exists > 0) continue;
-
-                using (var cmd = new SqlCommand(@"INSERT INTO Assessments 
-            (StudentID, YearLevel, CourseFeeID, SchoolYear, Semester, Period, 
-             TotalFee, TuitionFee, RegistrationFee, MiscFee, LabFee, 
-             DiscountAmount, NetAssessment, PercentRequired, 
-             AmountDue, Status, AssessedAt) 
-          VALUES 
-            (@sid, @yl, NULL, @sy, @sem, @period, 
-             @totalFee, @tuitionFee, @regFee, @miscFee, @labFee, 
-             @discount, @net, @pct, 
-             @amountDue, @status, GETDATE())", con, trans))
+                catch (Exception ex)
                 {
-                    // Get the percentage for this period (for PercentRequired field)
-                    decimal pct = 0;
-                    if (p.Period == "Prelim") pct = 53;
-                    else if (p.Period == "Midterm") pct = 11;
-                    else if (p.Period == "Semi-Final") pct = 11;
-                    else if (p.Period == "Final") pct = 25;
-
-                    cmd.Parameters.AddWithValue("@sid", studentID);
-                    cmd.Parameters.AddWithValue("@yl", yearLevel);
-                    cmd.Parameters.AddWithValue("@sy", schoolYear);
-                    cmd.Parameters.AddWithValue("@sem", semester);
-                    cmd.Parameters.AddWithValue("@period", p.Period);
-                    cmd.Parameters.AddWithValue("@totalFee", totalFee);
-                    cmd.Parameters.AddWithValue("@tuitionFee", tuitionFee);
-                    cmd.Parameters.AddWithValue("@regFee", regFee);
-                    cmd.Parameters.AddWithValue("@miscFee", miscFee);
-                    cmd.Parameters.AddWithValue("@labFee", labFee);
-                    cmd.Parameters.AddWithValue("@discount", discountAmount);
-                    cmd.Parameters.AddWithValue("@net", netAssessment);
-                    cmd.Parameters.AddWithValue("@pct", pct);
-                    cmd.Parameters.AddWithValue("@amountDue", p.Amount);
-                    cmd.Parameters.AddWithValue("@status", p.Status);
-                    cmd.ExecuteNonQuery();
+                    System.Diagnostics.Debug.WriteLine($"Error inserting {p.Period}: {ex.Message}");
+                    throw; // Re-throw to see what's happening
                 }
             }
         }
@@ -791,6 +838,89 @@ int yearLevel, string semester, string schoolYear, SqlTransaction trans = null)
             ViewBag.Discounts = discounts;
 
             return View(student);
+        }
+
+        public ActionResult Create()
+        {
+            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
+                return RedirectToAction("Login", "Account");
+
+            // Courses dropdown
+            var courses = new List<SelectListItem>();
+            using (var con = new SqlConnection(_conn))
+            using (var cmd = new SqlCommand(
+                "SELECT CourseID, CourseCode, CourseName FROM Courses WHERE IsActive=1", con))
+            {
+                con.Open();
+                using (var r = cmd.ExecuteReader())
+                    while (r.Read())
+                        courses.Add(new SelectListItem
+                        {
+                            Value = r["CourseID"].ToString(),
+                            Text = r["CourseCode"].ToString() + " - " + r["CourseName"].ToString()
+                        });
+            }
+            ViewBag.Courses = courses;
+
+            // Scholarships dropdown
+            var scholarships = new List<SelectListItem>();
+            using (var con = new SqlConnection(_conn))
+            using (var cmd = new SqlCommand(
+                "SELECT ScholarshipID, ScholarshipName, Type, DiscountPercent, DiscountAmount FROM Scholarships WHERE IsActive=1", con))
+            {
+                con.Open();
+                using (var r = cmd.ExecuteReader())
+                    while (r.Read())
+                    {
+                        var val = r["Type"].ToString() == "Percent"
+                            ? r["DiscountPercent"].ToString() + "%"
+                            : "₱" + r["DiscountAmount"].ToString();
+                        scholarships.Add(new SelectListItem
+                        {
+                            Value = r["ScholarshipID"].ToString(),
+                            Text = r["ScholarshipName"].ToString() + " (" + val + ")"
+                        });
+                    }
+            }
+            ViewBag.Scholarships = scholarships;
+
+            // Discounts dropdown
+            var discounts = new List<SelectListItem>();
+            using (var con = new SqlConnection(_conn))
+            using (var cmd = new SqlCommand(
+                "SELECT DiscountID, DiscountName, Type, DiscountPercent, DiscountAmount FROM Discounts WHERE IsActive=1", con))
+            {
+                con.Open();
+                using (var r = cmd.ExecuteReader())
+                    while (r.Read())
+                    {
+                        var val = r["Type"].ToString() == "Percent"
+                            ? r["DiscountPercent"].ToString() + "%"
+                            : "₱" + r["DiscountAmount"].ToString();
+                        discounts.Add(new SelectListItem
+                        {
+                            Value = r["DiscountID"].ToString(),
+                            Text = r["DiscountName"].ToString() + " (" + val + ")"
+                        });
+                    }
+            }
+            ViewBag.Discounts = discounts;
+
+            return View();
+        }
+
+        public ActionResult GetStudentStatus(int studentID)
+        {
+            using (var con = new SqlConnection(_conn))
+            {
+                con.Open();
+                using (var cmd = new SqlCommand("SELECT Status FROM Students WHERE StudentID = @sid", con))
+                {
+                    cmd.Parameters.AddWithValue("@sid", studentID);
+                    var status = cmd.ExecuteScalar()?.ToString();
+                    return Json(new { status = status ?? "Unknown" }, JsonRequestBehavior.AllowGet);
+                }
+            }
         }
 
 

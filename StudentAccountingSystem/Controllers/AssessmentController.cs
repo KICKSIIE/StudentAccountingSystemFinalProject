@@ -37,7 +37,7 @@ namespace StudentAccountingSystem.Controllers
                 con.Open();
                 using (var cmd = new SqlCommand(@"
             SELECT  s.StudentID,
-                    s.FirstName + ' ' + s.LastName AS StudentName,
+                    s.LastName + ', ' + s.FirstName + ' ' + ISNULL(s.MiddleName, '') AS StudentName,
                     c.CourseCode,
                     s.YearLevel,
                     s.Semester,

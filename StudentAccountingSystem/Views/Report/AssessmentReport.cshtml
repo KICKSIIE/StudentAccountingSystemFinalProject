@@ -3,21 +3,325 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Assessment Report</h2>
-<hr />
-<div id="msgBox"></div>
+<style>
+    :root {
+        --primary-blue: #1a4b6e;
+        --accent-red: #d32f2f;
+        --surface: #f5f6f9;
+        --border-color: #e2e8f0;
+    }
 
-<!-- FILTERS -->
-<div class="card shadow mb-4">
-    <div class="card-body">
-        <div class="form-row">
-            <div class="col-md-2">
-                <label>School Year <span class="text-danger">*</span></label>
-                <select id="selSchoolYear" class="form-control">
-                    <option value="">-- Select --</option>
+    .container-fluid {
+        padding: 20px;
+    }
+
+    .page-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary-blue);
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--primary-blue);
+        display: inline-block;
+    }
+
+    /* Filter Panel */
+    .filter-panel {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .filter-panel-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--primary-blue);
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+    }
+
+    .filter-field {
+        display: flex;
+        flex-direction: column;
+    }
+
+        .filter-field label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .filter-field select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            background: white;
+            color: #334155;
+            min-width: 130px;
+        }
+
+            .filter-field select:focus {
+                outline: none;
+                border-color: var(--primary-blue);
+            }
+
+    /* Data Card */
+    .data-card {
+        background: white;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-bottom: 28px;
+    }
+
+    /* Report Header Bar */
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--primary-blue);
+        color: white;
+    }
+
+    .report-header-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Tables */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+    }
+
+        table th {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 14px 12px;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            color: #334155;
+        }
+
+    tr:hover td {
+        background-color: #f8fafc;
+    }
+
+    .th-right {
+        text-align: right;
+    }
+
+    .td-right {
+        text-align: right;
+    }
+
+    .td-empty {
+        text-align: center;
+        color: #94a3b8;
+        padding: 40px;
+    }
+
+    /* Totals Footer */
+    .tfoot-row td {
+        background: var(--primary-blue);
+        color: white;
+        font-weight: 700;
+        font-size: 0.8rem;
+        padding: 12px;
+        border-bottom: none;
+    }
+
+    .tfoot-label {
+        text-align: right;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.7rem;
+    }
+
+    /* Status Badges */
+    .badge {
+        padding: 3px 9px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        display: inline-block;
+    }
+
+    .badge-paid {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .badge-unpaid {
+        background: #fef9c3;
+        color: #854d0e;
+    }
+
+    .badge-partial {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .badge-locked {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .badge-period {
+        background: #e0f2fe;
+        color: #0369a1;
+    }
+
+    /* Amount colors */
+    .amt-positive {
+        color: #15803d;
+        font-weight: 700;
+    }
+
+    .amt-negative {
+        color: var(--accent-red);
+        font-weight: 700;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 10px 18px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: background 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background: var(--primary-blue);
+        color: white;
+    }
+
+        .btn-primary:hover {
+            background: #133852;
+            color: white;
+        }
+
+    .btn-secondary {
+        background: #64748b;
+        color: white;
+        transition: background 0.2s ease, transform 0.1s ease;
+    }
+
+        .btn-secondary:hover {
+            background: #475569;
+            color: white;
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.98);
+        }
+
+    .btn-print {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        color: white;
+        padding: 5px 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: background 0.2s;
+    }
+
+        .btn-print:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+    /* Messages */
+    .msg-success {
+        color: #15803d;
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    .msg-error {
+        color: var(--accent-red);
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    .msg-warning {
+        color: #854d0e;
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    /* Print styles */
+    @@media print {
+        .filter-panel,
+        .btn-print {
+            display: none !important;
+        }
+
+        .data-card {
+            box-shadow: none;
+            border: 1px solid #ccc;
+        }
+    }
+</style>
+
+<div class="container-fluid">
+    <h2 class="page-header">Assessment Report</h2>
+
+    <div id="msgBox"></div>
+
+    <!-- Filter Panel -->
+    <div class="filter-panel">
+        <span class="filter-panel-label">Filter Report</span>
+        <div class="filter-row">
+            <div class="filter-field">
+                <label for="selSchoolYear">School Year</label>
+                <select id="selSchoolYear">
+                    <option value="">All Years</option>
                     @{
                         int curYear = DateTime.Now.Year;
-                        for (int y = curYear - 2; y <= curYear + 2; y++)
+                        for (int y = curYear - 1; y <= curYear + 2; y++)
                         {
                             string sy = y + "-" + (y + 1);
                             <option value="@sy">@sy</option>
@@ -25,17 +329,17 @@
                     }
                 </select>
             </div>
-            <div class="col-md-2">
-                <label>Semester <span class="text-danger">*</span></label>
-                <select id="selSemester" class="form-control">
-                    <option value="">-- Select --</option>
+            <div class="filter-field">
+                <label for="selSemester">Semester</label>
+                <select id="selSemester">
+                    <option value="">All Semesters</option>
                     <option value="1st">1st</option>
                     <option value="2nd">2nd</option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <label>Course</label>
-                <select id="selCourse" class="form-control">
+            <div class="filter-field">
+                <label for="selCourse">Course</label>
+                <select id="selCourse">
                     <option value="">All Courses</option>
                     @foreach (SelectListItem c in ViewBag.Courses)
                     {
@@ -43,9 +347,9 @@
                     }
                 </select>
             </div>
-            <div class="col-md-1">
-                <label>Year Level</label>
-                <select id="selYear" class="form-control">
+            <div class="filter-field">
+                <label for="selYear">Year Level</label>
+                <select id="selYear">
                     <option value="">All</option>
                     <option value="1">1st</option>
                     <option value="2">2nd</option>
@@ -53,9 +357,9 @@
                     <option value="4">4th</option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <label>Period</label>
-                <select id="selPeriod" class="form-control">
+            <div class="filter-field">
+                <label for="selPeriod">Period</label>
+                <select id="selPeriod">
                     <option value="">All Periods</option>
                     <option value="Prelim">Prelim</option>
                     <option value="Midterm">Midterm</option>
@@ -63,9 +367,9 @@
                     <option value="Final">Final</option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <label>Status</label>
-                <select id="selStatus" class="form-control">
+            <div class="filter-field">
+                <label for="selStatus">Status</label>
+                <select id="selStatus">
                     <option value="">All</option>
                     <option value="Unpaid">Unpaid</option>
                     <option value="Partial">Partial</option>
@@ -73,56 +377,49 @@
                     <option value="Locked">Locked</option>
                 </select>
             </div>
-            <div class="col-md-1 d-flex align-items-end">
-                <button class="btn btn-primary btn-block" onclick="loadReport()">
-                    Generate
-                </button>
+            <div>
+                <button type="button" class="btn btn-primary" onclick="loadReport()">Generate</button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- REPORT OUTPUT -->
-<div id="divReport" style="display:none;">
-    <div class="d-flex justify-content-between mb-2">
-        <h5 id="reportTitle"></h5>
-        <button class="btn btn-secondary btn-sm" onclick="printReport()">
-            🖨 Print
-        </button>
-    </div>
-
-    <div class="card shadow mb-4">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm mb-0" id="reportTable">
-                    <thead class="thead-dark">
+    <!-- Report Output -->
+    <div id="divReport" style="display: none;">
+        <div class="data-card">
+            <div class="report-header">
+                <span id="reportTitle" class="report-header-title"></span>
+                <button type="button" class="btn-print" onclick="printReport()">Print</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table id="reportTable">
+                    <thead>
                         <tr>
-                            <th>#</th>
+                            <th>No #</th>
                             <th>Student ID</th>
                             <th>Student Name</th>
                             <th>Course</th>
                             <th>Year</th>
                             <th>Period</th>
-                            <th class="text-right">Tuition</th>
-                            <th class="text-right">Reg. Fee</th>
-                            <th class="text-right">Misc</th>
-                            <th class="text-right">Lab</th>
-                            <th class="text-right">Discount</th>
-                            <th class="text-right">Net Assessment</th>
-                            <th class="text-right">Amount Due</th>
-                            <th class="text-right">Total Paid</th>
-                            <th class="text-right">Balance</th>
+                            <th class="th-right">Tuition</th>
+                            <th class="th-right">Reg. Fee</th>
+                            <th class="th-right">Misc</th>
+                            <th class="th-right">Lab</th>
+                            <th class="th-right">Discount</th>
+                            <th class="th-right">Net Assessment</th>
+                            <th class="th-right">Amount Due</th>
+                            <th class="th-right">Total Paid</th>
+                            <th class="th-right">Balance</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="reportBody">
                     </tbody>
                     <tfoot>
-                        <tr class="bg-dark text-white font-weight-bold">
-                            <td colspan="12" class="text-right">TOTALS</td>
-                            <td class="text-right" id="sumAmountDue"></td>
-                            <td class="text-right" id="sumTotalPaid"></td>
-                            <td class="text-right" id="sumBalance"></td>
+                        <tr class="tfoot-row">
+                            <td colspan="12" class="tfoot-label">Totals</td>
+                            <td class="td-right" id="sumAmountDue"></td>
+                            <td class="td-right" id="sumTotalPaid"></td>
+                            <td class="td-right" id="sumBalance"></td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -132,83 +429,10 @@
     </div>
 </div>
 
-<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
 <script>
-    function loadReport() {
-        var sy = $("#selSchoolYear").val();
-        var sem = $("#selSemester").val();
-        if (!sy || !sem) { alert("School Year and Semester are required."); return; }
-
-        $.post("/Report/GetAssessmentReport", {
-            schoolYear: sy,
-            semester: sem,
-            courseID: $("#selCourse").val(),
-            yearLevel: $("#selYear").val(),
-            period: $("#selPeriod").val(),
-            status: $("#selStatus").val()
-        }, function (res) {
-            if (res.length == 0) {
-                $("#msgBox").html("<div class='alert alert-warning'>No records found.</div>");
-                $("#divReport").hide();
-                return;
-            }
-            if (res[0].mess == 0) {
-                $("#msgBox").html("<div class='alert alert-danger'>" + res[0].message + "</div>");
-                return;
-            }
-
-            $("#msgBox").html("");
-            $("#reportTitle").text("Assessment Report — " + sy + " | " + sem + " Semester");
-
-            var html = "";
-            var sumDue = 0, sumPaid = 0, sumBal = 0;
-
-            for (var i = 0; i < res.length; i++) {
-                var r = res[i];
-                var bal = parseFloat(r.balance);
-                sumDue += parseFloat(r.amountDue);
-                sumPaid += parseFloat(r.totalPaid);
-                sumBal += bal;
-
-                var statusBadge = r.status == "Paid" ? "success"
-                    : r.status == "Partial" ? "warning"
-                    : r.status == "Unpaid" ? "danger"
-                    : r.status == "Locked" ? "secondary" : "light";
-
-                html += "<tr>";
-                html += "<td>" + (i + 1) + "</td>";
-                html += "<td>" + r.studentID + "</td>";
-                html += "<td>" + r.studentName + "</td>";
-                html += "<td>" + r.courseCode + "</td>";
-                html += "<td>Year " + r.yearLevel + "</td>";
-                html += "<td><span class='badge badge-info'>" + r.period + "</span></td>";
-                html += "<td class='text-right'>₱" + parseFloat(r.tuitionFee).toFixed(2) + "</td>";
-                html += "<td class='text-right'>₱" + parseFloat(r.registrationFee).toFixed(2) + "</td>";
-                html += "<td class='text-right'>₱" + parseFloat(r.miscFee).toFixed(2) + "</td>";
-                html += "<td class='text-right'>₱" + parseFloat(r.labFee).toFixed(2) + "</td>";
-                html += "<td class='text-right text-success'>₱" + parseFloat(r.discountAmount).toFixed(2) + "</td>";
-                html += "<td class='text-right font-weight-bold'>₱" + parseFloat(r.netAssessment).toFixed(2) + "</td>";
-                html += "<td class='text-right'>₱" + parseFloat(r.amountDue).toFixed(2) + "</td>";
-                html += "<td class='text-right text-success'>₱" + parseFloat(r.totalPaid).toFixed(2) + "</td>";
-                html += "<td class='text-right " + (bal > 0 ? "text-danger" : "text-success") + "'>₱" + bal.toFixed(2) + "</td>";
-                html += "<td><span class='badge badge-" + statusBadge + "'>" + r.status + "</span></td>";
-                html += "</tr>";
-            }
-
-            $("#reportBody").html(html);
-            $("#sumAmountDue").text("₱" + sumDue.toFixed(2));
-            $("#sumTotalPaid").text("₱" + sumPaid.toFixed(2));
-            $("#sumBalance").text("₱" + sumBal.toFixed(2));
-            $("#divReport").show();
-        });
-    }
-
-    function printReport() {
-        var printContents = document.getElementById("divReport").innerHTML;
-        var original = document.body.innerHTML;
-        document.body.innerHTML = "<h2>Assessment Report</h2><hr/>" + printContents;
-        window.print();
-        document.body.innerHTML = original;
-        location.reload();
-    }
+    var AppUrls = {
+        getAssessmentReport: '@Url.Action("GetAssessmentReport", "Report")'
+    };
 </script>
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
+<script src="~/Scripts/myScripts/Report/assessmentReport.js"></script>

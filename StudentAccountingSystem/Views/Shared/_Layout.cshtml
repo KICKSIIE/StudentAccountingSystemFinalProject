@@ -3,133 +3,180 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewBag.Title — Admin Portal</title>
-    <link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+    <title>@ViewBag.Title — Student Accounting</title>
     <style>
-       
         :root {
-            --sidebar-bg: #0d1b2a;
+            --sidebar-bg: #1a4b6e;
             --sidebar-w: 240px;
-            --accent: #3b82f6;
-            --accent-dim: rgba(59,130,246,0.15);
-            --text-muted: rgba(255,255,255,0.4);
-            --text-dim: rgba(255,255,255,0.65);
-            --text-bright: #ffffff;
-            --rule: rgba(255,255,255,0.08);
+            --accent-yellow: #f1c40f;
+            --accent-red: #d32f2f;
+            --text-dim: rgba(255,255,255,0.6);
             --surface: #f5f6f9;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--surface); min-height: 100vh; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-        /* Sidebar */
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: var(--surface);
+            min-height: 100vh;
+            /* Prevents horizontal scroll by letting the browser handle content flow */
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Container */
         .sidebar {
             width: var(--sidebar-w);
-            min-height: 100vh;
+            height: 100vh;
             background: var(--sidebar-bg);
             position: fixed;
-            top: 0; left: 0;
-            z-index: 100;
+            top: 0;
+            left: 0;
             display: flex;
             flex-direction: column;
+            z-index: 100;
+            transition: all 0.3s ease;
         }
+
+        .sidebar-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .sidebar-nav {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+
         .sidebar-brand {
-            padding: 20px 16px 16px;
-            border-bottom: 1px solid var(--rule);
+            padding: 25px 20px;
+            color: #ffffff;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
         }
-        .sidebar-brand .app-name {
-            font-size: 0.78rem;
+
+        .app-name {
+            font-size: 0.85rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--accent);
-            margin-bottom: 2px;
+            letter-spacing: 1.2px;
         }
-        .sidebar-brand .app-sub { font-size: 0.7rem; color: var(--text-muted); }
 
         .sidebar-user {
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--rule);
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.25);
+            margin: 15px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .sidebar-avatar {
-            width: 34px; height: 34px;
-            border-radius: 8px;
-            background: var(--accent-dim);
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            font-size: 14px;
+        .u-label {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
             font-weight: 700;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
         }
-        .sidebar-user .uname { font-size: 0.82rem; font-weight: 600; color: var(--text-bright); line-height: 1.2; }
-        .sidebar-user .urole { font-size: 0.68rem; color: var(--text-muted); }
 
-        .sidebar-nav { flex: 1; padding: 10px 0; overflow-y: auto; }
-        .sidebar-nav::-webkit-scrollbar { width: 3px; }
-        .sidebar-nav::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+        .u-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-top: 4px;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 5px 0;
+            overflow-y: auto;
+        }
 
         .nav-section {
-            padding: 14px 16px 4px;
-            font-size: 0.63rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-        }
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            padding: 8px 16px;
-            font-size: 0.82rem;
-            font-weight: 500;
+            padding: 18px 20px 8px;
+            font-size: 0.65rem;
+            font-weight: 800;
             color: var(--text-dim);
-            border-left: 2px solid transparent;
-            text-decoration: none;
-            transition: all 0.15s;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
         }
-        .nav-link:hover { color: var(--text-bright); background: rgba(255,255,255,0.04); text-decoration: none; }
-        .nav-link.active { color: var(--text-bright); background: var(--accent-dim); border-left-color: var(--accent); }
-        .nav-link .ni { font-size: 13px; width: 16px; text-align: center; }
-        .nav-divider { height: 1px; background: var(--rule); margin: 8px 16px; }
 
-        .sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--rule); }
-        .sidebar-footer .date-str { font-size: 0.68rem; color: var(--text-muted); margin-bottom: 10px; }
+        .nav-link {
+            display: block;
+            padding: 10px 22px;
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-link:hover {
+            background: rgba(255,255,255,0.06);
+            color: #ffffff;
+            padding-left: 26px;
+        }
+
+        .nav-link.active {
+            color: #ffffff;
+            background: rgba(0,0,0,0.15);
+            border-left: 4px solid var(--accent-yellow);
+            font-weight: 600;
+        }
+
+        .sidebar-footer {
+            padding: 15px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+
         .btn-logout {
             width: 100%;
-            padding: 8px;
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.15);
-            color: var(--text-dim);
-            border-radius: 6px;
-            font-size: 0.78rem;
+            padding: 10px;
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
             cursor: pointer;
-            font-family: 'DM Sans', sans-serif;
-            transition: all 0.15s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background 0.2s;
         }
-        .btn-logout:hover { background: rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.4); color: #fca5a5; }
 
-        /* Main */
-        .main-content { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
-        .topbar {
-            background: #fff;
-            padding: 0 24px;
-            height: 52px;
-            border-bottom: 1px solid #e8eaed;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 50;
+        .btn-logout:hover {
+            background: #b71c1c;
         }
-        .topbar .page-title { font-size: 0.9rem; font-weight: 600; color: #0d1b2a; }
-        .topbar .topbar-right { font-size: 0.75rem; color: #9ca3af; }
-        .page-content { padding: 28px; flex: 1; }
+
+        /* Main Content - Pushed by the sidebar width */
+
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-w);
+            min-height: 100vh;
+            transition: margin 0.3s ease;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .topbar {
+            background: white;
+            height: 50px;
+            padding: 0 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .page-content {
+            padding: 25px;
+        }
     </style>
 </head>
 <body>
@@ -137,97 +184,55 @@
     <div class="sidebar">
         <div class="sidebar-brand">
             <div class="app-name">Student Accounting</div>
-            <div class="app-sub">Administration Portal</div>
         </div>
 
         <div class="sidebar-user">
-            <div class="sidebar-avatar">@(Session["Username"] != null ? Session["Username"].ToString().Substring(0,1).ToUpper() : "A")</div>
-            <div>
-                <div class="uname">@Session["Username"]</div>
-                <div class="urole">Administrator</div>
-            </div>
+            <div class="u-label">System Administrator</div>
+            <div class="u-name">@Session["Username"]</div>
         </div>
 
         <nav class="sidebar-nav">
             <div class="nav-section">Overview</div>
-            <a href="@Url.Action("Index", "Dashboard")"
-               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Dashboard" ? "active" : "")">
-                <span class="ni">🏠</span> Dashboard
-            </a>
+            <a href="@Url.Action("Index", "Dashboard")" class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Dashboard" ? "active" : "")">Dashboard</a>
 
             <div class="nav-section">Finance</div>
-            <a href="@Url.Action("Index", "Assessment")"
-               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Assessment" ? "active" : "")">
-                <span class="ni">📋</span> Assessments
-            </a>
-            <a href="@Url.Action("Index", "Payment")"
-               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Payment" && ViewContext.RouteData.Values["action"].ToString() == "Index" ? "active" : "")">
-                <span class="ni">💳</span> Record Payment
-            </a>
-            <a href="@Url.Action("History", "Payment")"
-               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Payment" && ViewContext.RouteData.Values["action"].ToString() == "History" ? "active" : "")">
-                <span class="ni">📄</span> Payment History
-            </a>
-
-            <div class="nav-section">Reports</div>
-            <a href="@Url.Action("StudentLedger", "Report")"
-               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Report" && ViewContext.RouteData.Values["action"].ToString() == "StudentLedger" ? "active" : "")">
-                <span class="ni">📒</span> Student Ledger
-            </a>
-            <a href="@Url.Action("AssessmentReport", "Report")"
-               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Report" && ViewContext.RouteData.Values["action"].ToString() == "AssessmentReport" ? "active" : "")">
-                <span class="ni">📊</span> Assessment Report
-            </a>
-
-            <div class="nav-divider"></div>
+            <a href="@Url.Action("Index", "Assessment")" class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Assessment" ? "active" : "")">Assessments</a>
+            <a href="@Url.Action("Index", "Payment")" class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Payment" && ViewContext.RouteData.Values["action"].ToString() == "Index" ? "active" : "")">Record Payment</a>
+            <a href="@Url.Action("History", "Payment")" class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Payment" && ViewContext.RouteData.Values["action"].ToString() == "History" ? "active" : "")">Payment History</a>
 
             <div class="nav-section">System Setup</div>
-            <a href="@Url.Action("Index", "Student")"
-               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Student" ? "active" : "")">
-                <span class="ni">👥</span> Students
-            </a>
-            <a href="@Url.Action("Index", "Course")"
-               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Course" ? "active" : "")">
-                <span class="ni">📚</span> Courses
-            </a>
-            <a href="@Url.Action("Index", "Scholarship")"
-               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Scholarship" ? "active" : "")">
-                <span class="ni">🎓</span> Scholarships
-            </a>
-            <a href="@Url.Action("Index", "Discount")"
-               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Discount" ? "active" : "")">
-                <span class="ni">🏷️</span> Discounts
-            </a>
-            <a href="@Url.Action("Index", "User")"
-               class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "User" ? "active" : "")">
-                <span class="ni">⚙️</span> Users
-            </a>
+            <a href="@Url.Action("Index", "Course")" class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Course" ? "active" : "")">Courses</a>
+            <a href="@Url.Action("Index", "Scholarship")" class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Scholarship" ? "active" : "")">Scholarships</a>
+            <a href="@Url.Action("Index", "Discount")" class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Discount" ? "active" : "")">Discounts</a>
+
+            <div class="nav-section">User Management</div>
+            <a href="@Url.Action("Index", "Admin")" class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "User" ? "active" : "")">Admin</a>
+            <a href="@Url.Action("Index", "Student")" class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Student" ? "active" : "")">Students</a>
+
+            <!-- Added Reports Section -->
+            <div class="nav-section">Reports</div>
+            <a href="@Url.Action("StudentLedger", "Report")" class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Report" && ViewContext.RouteData.Values["action"].ToString() == "StudentLedger" ? "active" : "")">Student Ledger</a>
+            <a href="@Url.Action("AssessmentReport", "Report")" class="nav-link @(ViewContext.RouteData.Values["controller"].ToString() == "Report" && ViewContext.RouteData.Values["action"].ToString() == "AssessmentReport" ? "active" : "")">Assessment Report</a>
         </nav>
 
         <div class="sidebar-footer">
-            <div class="date-str">@DateTime.Now.ToString("dddd, MMM d yyyy")</div>
             @using (Html.BeginForm("Logout", "Account", FormMethod.Post))
             {
                 @Html.AntiForgeryToken()
-                <button type="submit" class="btn-logout">⏻ Sign Out</button>
+                <button type="submit" class="btn-logout">Logout</button>
             }
         </div>
     </div>
 
     <div class="main-content">
         <div class="topbar">
-            <span class="page-title">@ViewBag.Title</span>
-            <span class="topbar-right">@DateTime.Now.ToString("HH:mm") · @DateTime.Now.ToString("MMM d, yyyy")</span>
+            <div style="font-weight: 600; color: #1a4b6e; font-size: 0.9rem;">@ViewBag.Title</div>
+            <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 500;">@DateTime.Now.ToString("MMMM dd, yyyy")</div>
         </div>
         <div class="page-content">
             @RenderBody()
         </div>
     </div>
 
-    <script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
-    <script src="~/Scripts/bootstrap.min.js"></script>
-    @RenderSection("scripts", required: false)
-
 </body>
 </html>
-

@@ -129,22 +129,18 @@
     <Compile Include="Controllers\ReportController.cs" />
     <Compile Include="Controllers\ScholarshipController.cs" />
     <Compile Include="Controllers\StudentController.cs" />
-    <Compile Include="Controllers\StudentPortalController.cs" />
-    <Compile Include="Controllers\UserController.cs" />
+    <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="CustomRoleProvider.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\Assessment.cs" />
     <Compile Include="Models\Course.cs" />
-    <Compile Include="Models\CourseFee.cs" />
     <Compile Include="Models\Discount.cs" />
     <Compile Include="Models\Payment.cs" />
     <Compile Include="Models\ReactivationRequest.cs" />
     <Compile Include="Models\Scholarship.cs" />
     <Compile Include="Models\Student.cs" />
-    <Compile Include="Models\StudentPortal.cs" />
-    <Compile Include="Models\User.cs" />
     <Compile Include="Models\WithdrawalsRequest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -191,15 +187,27 @@
     <Content Include="Scripts\jQuery\jquery-4.0.0.js" />
     <Content Include="Scripts\modernizr-2.8.3.js" />
     <Content Include="Scripts\myScripts\account.js" />
+    <Content Include="Scripts\myScripts\Admin\adminIndex.js" />
     <Content Include="Scripts\myScripts\assessment.js" />
-    <Content Include="Scripts\myScripts\dashboard.js" />
-    <Content Include="Scripts\myScripts\discountListv3.js" />
+    <Content Include="Scripts\myScripts\Assessment\assessmentIndex.js" />
+    <Content Include="Scripts\myScripts\Course\courseCreate.js" />
+    <Content Include="Scripts\myScripts\Course\courseEdit.js" />
+    <Content Include="Scripts\myScripts\dashboardv2.js" />
+    <Content Include="Scripts\myScripts\Discount\discountCreate.js" />
+    <Content Include="Scripts\myScripts\Discount\discountEdit.js" />
+    <Content Include="Scripts\myScripts\Discount\discountIndex.js" />
     <Content Include="Scripts\myScripts\login.js" />
-    <Content Include="Scripts\myScripts\paymentv1.js" />
-    <Content Include="Scripts\myScripts\paymentHistory.js" />
-    <Content Include="Scripts\myScripts\scholarshipListv3.js" />
-    <Content Include="Scripts\myScripts\studentListv2.js" />
-    <Content Include="Scripts\myScripts\courseListv3.js" />
+    <Content Include="Scripts\myScripts\Payment\paymentRecording.js" />
+    <Content Include="Scripts\myScripts\Payment\paymentHistory.js" />
+    <Content Include="Scripts\myScripts\Report\assessmentReport.js" />
+    <Content Include="Scripts\myScripts\Report\studentLedger.js" />
+    <Content Include="Scripts\myScripts\Scholarship\scholarshipCreate.js" />
+    <Content Include="Scripts\myScripts\Scholarship\scholarshipEdit.js" />
+    <Content Include="Scripts\myScripts\Scholarship\scholarshipIndex.js" />
+    <Content Include="Scripts\myScripts\Student\studentCreate.js" />
+    <Content Include="Scripts\myScripts\Student\studentIndex.js" />
+    <Content Include="Scripts\myScripts\Course\courseIndex.js" />
+    <Content Include="Scripts\myScripts\Student\studentEdit.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -227,11 +235,10 @@
     <Content Include="Views\Discount\Edit.cshtml" />
     <Content Include="Views\Assessment\Index.cshtml" />
     <Content Include="Views\Payment\Index.cshtml" />
-    <Content Include="Views\Payment\Create.cshtml" />
-    <Content Include="Views\Payment\Details.cshtml" />
     <Content Include="Views\Report\StudentLedger.cshtml" />
     <Content Include="Views\Report\AssessmentReport.cshtml" />
     <Content Include="Views\Payment\History.cshtml" />
+    <Content Include="Views\Admin\Index.cshtml" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
