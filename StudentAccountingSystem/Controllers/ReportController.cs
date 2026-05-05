@@ -176,20 +176,26 @@ namespace StudentAccountingSystem.Controllers
                     // 4. Refund requests
                     var refunds = new List<object>();
                     using (var cmd = new SqlCommand(@"
-                        SELECT RequestID, Amount, RequestDate, Status
-                        FROM RefundRequests
-                        WHERE StudentID = @sid
-                        ORDER BY RequestDate ASC", con))
+    SELECT p.PaymentID, p.AmountPaid, p.PaymentDate, 
+           p.Semester, p.SchoolYear, p.YearLevel, p.Remarks
+    FROM Payments p
+    WHERE p.StudentID = @sid
+      AND p.TransactionType = 'Refund'
+    ORDER BY p.PaymentDate ASC", con))
                     {
                         cmd.Parameters.AddWithValue("@sid", studentID);
                         using (var r = cmd.ExecuteReader())
                             while (r.Read())
                                 refunds.Add(new
                                 {
-                                    requestID = r["RequestID"],
-                                    amount = r["Amount"],
-                                    requestDate = ((DateTime)r["RequestDate"]).ToString("MMM dd, yyyy"),
-                                    status = r["Status"]
+                                    requestID = r["PaymentID"],
+                                    amount = r["AmountPaid"],
+                                    requestDate = ((DateTime)r["PaymentDate"]).ToString("MMM dd, yyyy"),
+                                    status = "Approved",
+                                    semester = r["Semester"],
+                                    schoolYear = r["SchoolYear"],
+                                    yearLevel = r["YearLevel"],
+                                    remarks = r["Remarks"] == DBNull.Value ? "" : r["Remarks"]
                                 });
                     }
 

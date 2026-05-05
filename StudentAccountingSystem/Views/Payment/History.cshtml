@@ -4,451 +4,404 @@
 }
 
 <style>
-    .status-badge {
-        font-size: 11px;
-        padding: 3px 8px;
-        border-radius: 10px;
-        font-weight: 600;
-    }
-
     .badge-payment {
         background: #d4edda;
         color: #155724;
+        padding: 3px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 600;
     }
 
     .badge-refund {
         background: #f8d7da;
         color: #721c24;
-    }
-
-    .btn-refund, .btn-reenable {
         padding: 3px 8px;
-        font-size: 12px;
-        border-radius: 4px;
-        cursor: pointer;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 600;
     }
 
-    .btn-refund {
-        background-color: #dc3545;
-        color: white;
-        border: none;
+    table {
+        border-collapse: collapse;
+        width: 100%;
     }
 
-    .btn-reenable {
-        background-color: #ffc107;
-        color: black;
-        border: none;
-    }
-
-    .refundable-section {
-        margin-bottom: 30px;
-        border: 1px solid #28a745;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-
-    .refundable-header {
-        background-color: #28a745;
-        color: white;
-        padding: 10px 15px;
-        font-weight: bold;
-    }
-
-    .history-section {
+    th, td {
         border: 1px solid #ddd;
-        border-radius: 8px;
-        overflow: hidden;
+        padding: 7px 10px;
+        font-size: 13px;
     }
 
-    .history-header {
-        background-color: #6c757d;
+    th {
+        background: #f2f2f2;
+        font-weight: 600;
+    }
+
+    tr:hover {
+        background: #fafafa;
+    }
+
+    .section-title {
+        font-weight: 700;
+        font-size: 14px;
+        padding: 10px 14px;
+        border-radius: 6px 6px 0 0;
         color: white;
-        padding: 10px 15px;
-        font-weight: bold;
+    }
+
+    .section-wrap {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 28px;
     }
 </style>
 
 <!-- Filters -->
-<div class="card shadow-sm mb-3">
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-3">
-                <label class="small font-weight-bold">Student ID</label>
-                <input type="number" id="fStudentID" class="form-control form-control-sm" placeholder="Any" />
-            </div>
-            <div class="col-md-3">
-                <label class="small font-weight-bold">School Year</label>
-                <select id="fSchoolYear" class="form-control form-control-sm">
-                    <option value="">Any</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="small font-weight-bold">Semester</label>
-                <select id="fSemester" class="form-control form-control-sm">
-                    <option value="">Any</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="small font-weight-bold">Year Level</label>
-                <select id="fYearLevel" class="form-control form-control-sm">
-                    <option value="">Any</option>
-                </select>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button class="btn btn-primary btn-sm btn-block" onclick="loadHistory()">Filter</button>
-                <button class="btn btn-secondary btn-sm btn-block ml-1" onclick="resetFilters()">Reset</button>
-            </div>
+<div style="background:white; border:1px solid #ddd; border-radius:6px; padding:16px; margin-bottom:20px;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div>
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Student ID</label>
+            <input type="number" id="fStudentID" style="padding:6px; width:120px;" placeholder="Any" />
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">School Year</label>
+            <select id="fSchoolYear" style="padding:6px; width:130px;">
+                <option value="">Any</option>
+            </select>
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Semester</label>
+            <select id="fSemester" style="padding:6px; width:100px;">
+                <option value="">Any</option>
+            </select>
+        </div>
+        <div>
+            <label style="font-size:12px; font-weight:600; display:block; margin-bottom:4px;">Year Level</label>
+            <select id="fYearLevel" style="padding:6px; width:100px;">
+                <option value="">Any</option>
+            </select>
+        </div>
+        <div>
+            <button onclick="loadHistory()"
+                    style="padding:6px 18px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">
+                🔍 Filter
+            </button>
+            <button onclick="resetFilters()"
+                    style="padding:6px 14px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; margin-left:6px;">
+                Reset
+            </button>
         </div>
     </div>
 </div>
 
-<!-- REFUNDABLE SECTION -->
-<div class="refundable-section">
-    <div class="refundable-header">
-        Refundable Semesters (Latest Only)
+<!-- TABLE 1: Refundable Semesters -->
+<div class="section-wrap">
+    <div class="section-title" style="background:#dc3545;">
+        💰 Refundable Semesters — Latest Unpaid Semester Per Student
     </div>
-    <div class="card-body p-0">
-        <table class="table table-sm table-hover mb-0">
-            <thead class="thead-light">
-                <tr>
-                    <th>Student ID</th>
-                    <th>Student Name</th>
-                    <th>Year Level</th>
-                    <th>Semester</th>
-                    <th>School Year</th>
-                    <th>Total Paid</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="refundableTbody">
-                <tr><td colspan="7" class="text-center text-muted">Loading...</td></tr>
-            </tbody>
-        </table>
-    </div>
+    <table id="tblRefundable">
+        <thead>
+            <tr>
+                <th>Student ID</th>
+                <th>Student Name</th>
+                <th>Year Level</th>
+                <th>Semester</th>
+                <th>School Year</th>
+                <th>Total Paid</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="refundableTbody">
+            <tr><td colspan="7" style="text-align:center; color:#888;">Loading...</td></tr>
+        </tbody>
+    </table>
 </div>
 
-<!-- PAYMENT HISTORY SECTION -->
-<div class="history-section">
-    <div class="history-header">
-        All Payment History
+<!-- TABLE 2: Full Payment History -->
+<div class="section-wrap">
+    <div class="section-title" style="background:#343a40;">
+        📄 All Payment Transactions
+        <span id="historyCount" style="background:white; color:#333; font-size:11px;
+              padding:2px 10px; border-radius:10px; margin-left:10px; font-weight:700;">0</span>
     </div>
-    <div class="card-body p-0">
-        <table class="table table-sm table-hover mb-0" id="historyTable">
-            <thead class="thead-light">
-                <tr>
-                    <th>OR #</th>
-                    <th>Student ID</th>
-                    <th>Name</th>
-                    <th>Year</th>
-                    <th>Semester</th>
-                    <th>Period</th>
-                    <th>School Year</th>
-                    <th>Amount</th>
-                    <th>Type</th>
-                    <th>Date</th>
-                    <th>Received By</th>
-                </tr>
-            </thead>
-            <tbody id="historyTbody">
-                <tr><td colspan="11" class="text-center text-muted">Loading...</td></tr>
-            </tbody>
-        </table>
-    </div>
+    <table id="tblHistory">
+        <thead>
+            <tr>
+                <th>Paymet ID</th>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Year</th>
+                <th>Semester</th>
+                <th>Period</th>
+                <th>School Year</th>
+                <th>Amount</th>
+                <th>Mode</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th>Received By</th>
+            </tr>
+        </thead>
+        <tbody id="historyTbody">
+            <tr><td colspan="12" style="text-align:center; color:#888;">Use filters above to load history.</td></tr>
+        </tbody>
+    </table>
 </div>
 
 <!-- Refund Panel -->
-<div id="refundPanel" style="display:none;" class="card shadow-sm mb-3 border-danger">
-    <div class="card-header bg-danger text-white d-flex justify-content-between">
-        <strong>Issue Refund</strong>
-        <button class="btn btn-sm btn-light" onclick="$('#refundPanel').hide()">X</button>
+<div id="refundPanel" style="display:none; border:2px solid #dc3545; border-radius:6px;
+     padding:20px; margin-bottom:24px; background:#fff5f5;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <strong style="font-size:15px; color:#dc3545;">💸 Process Full Semester Refund</strong>
+        <button onclick="$('#refundPanel').hide();"
+                style="background:none; border:1px solid #dc3545; color:#dc3545;
+                   padding:3px 10px; border-radius:4px; cursor:pointer;">
+            ✕ Close
+        </button>
     </div>
-    <div class="card-body">
-        <p id="refundDesc"></p>
-        <p><strong>Total Paid: ₱<span id="refundTotal">0.00</span></strong></p>
-        <div class="form-group">
-            <label>Remarks</label>
-            <input type="text" id="refundRemarks" class="form-control" placeholder="Reason for refund..." />
-        </div>
-        <button class="btn btn-danger" id="refundBtn">Process Full Refund</button>
-        <button class="btn btn-outline-secondary ml-2" id="reenableBtn" style="display:none;">Re-enable Payment</button>
+    <p id="refundDesc" style="margin-bottom:8px;"></p>
+    <p style="margin-bottom:12px;">
+        <strong>Total Paid This Semester: ₱<span id="refundTotal" style="color:#dc3545;">0.00</span></strong>
+    </p>
+    <div style="margin-bottom:12px;">
+        <label style="font-size:13px; font-weight:600;">Remarks (optional)</label>
+        <input type="text" id="refundRemarks" style="display:block; width:100%; margin-top:4px; padding:7px;"
+               placeholder="Reason for refund..." />
     </div>
+    <button id="refundBtn"
+            style="padding:8px 20px; background:#dc3545; color:white; border:none;
+               border-radius:4px; cursor:pointer; font-size:14px;">
+        💸 Process Full Refund
+    </button>
 </div>
 
 <!-- Confirm Refund Modal -->
-<div class="modal fade" id="refundModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Confirm Full Semester Refund</h5>
-            </div>
-            <div class="modal-body" id="refundModalBody"></div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button class="btn btn-danger" id="refundConfirmBtn">Yes, Process Refund</button>
-            </div>
+<div id="refundModal" style="display:none; position:fixed; top:0; left:0;
+     width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999;">
+    <div style="background:white; width:480px; margin:100px auto; border-radius:6px; padding:24px;">
+        <h4 style="color:#dc3545; margin-top:0;">⚠️ Confirm Full Semester Refund</h4>
+        <div id="refundModalBody"></div>
+        <div style="margin-top:20px; text-align:right;">
+            <button onclick="$('#refundModal').hide();"
+                    style="padding:8px 16px; margin-right:8px;">
+                Cancel
+            </button>
+            <button id="refundConfirmBtn"
+                    style="padding:8px 20px; background:#dc3545; color:white;
+                       border:none; border-radius:4px; cursor:pointer;">
+                Yes, Process Refund
+            </button>
         </div>
     </div>
 </div>
 
-@section scripts {
-    <script>
-var refundTarget = null;
+<script src="~/Scripts/jquery-3.7.0.js"></script>
+<script>
+    var allData     = [];
+    var refundTarget = null;
 
-$(function () {
-    loadHistory();
-});
+    $(function () { loadHistory(); });
 
-function loadHistory() {
-    var sid = $('#fStudentID').val();
-    var sy = $('#fSchoolYear').val();
-    var sem = $('#fSemester').val();
-    var yl = $('#fYearLevel').val();
+    function loadHistory() {
+        var sid = $('#fStudentID').val();
+        var sy  = $('#fSchoolYear').val();
+        var sem = $('#fSemester').val();
+        var yl  = $('#fYearLevel').val();
 
-    $('#historyTbody').html('<tr><td colspan="11" class="text-center">Loading...</td></tr>');
+        $('#historyTbody').html('<tr><td colspan="12" style="text-align:center;color:#888;">Loading...</td></tr>');
+        $('#refundableTbody').html('<tr><td colspan="7" style="text-align:center;color:#888;">Loading...</td></tr>');
 
-    $.get('@Url.Action("GetHistory")', {
-        studentID: sid || null,
-        schoolYear: sy || null,
-        semester: sem || null,
-        yearLevel: yl || null
-    }, function (data) {
-        populateFilters(data);
-        displayHistory(data);
-        displayRefundableSemesters(data);
-    }).fail(function() {
-        $('#historyTbody').html('<tr><td colspan="11" class="text-center text-danger">Error loading data</td></tr>');
-    });
-}
-
-function populateFilters(data) {
-    var schoolYears = new Set();
-    var semesters = new Set();
-    var yearLevels = new Set();
-
-    for (var i = 0; i < data.length; i++) {
-        var p = data[i];
-        if (p.schoolYear) schoolYears.add(p.schoolYear);
-        if (p.semester) semesters.add(p.semester);
-        if (p.yearLevel) yearLevels.add(p.yearLevel);
+        $.get('@Url.Action("GetHistory")', {
+            studentID:  sid || null,
+            schoolYear: sy  || null,
+            semester:   sem || null,
+            yearLevel:  yl  || null
+        }, function (data) {
+            allData = data;
+            populateFilters(data);
+            renderHistory(data);
+            renderRefundable(data);
+        }).fail(function () {
+            $('#historyTbody').html('<tr><td colspan="12" style="text-align:center;color:red;">Error loading data.</td></tr>');
+        });
     }
 
-    var sySelect = $('#fSchoolYear');
-    var currentSy = sySelect.val();
-    sySelect.empty().append('<option value="">Any</option>');
-    var sortedYears = Array.from(schoolYears).sort().reverse();
-    for (var i = 0; i < sortedYears.length; i++) {
-        sySelect.append('<option value="' + sortedYears[i] + '">' + sortedYears[i] + '</option>');
-    }
-    if (currentSy) sySelect.val(currentSy);
+    function populateFilters(data) {
+        var sySeen  = {}, semSeen = {}, ylSeen = {};
+        data.forEach(function (p) {
+            if (p.schoolYear) sySeen[p.schoolYear]  = 1;
+            if (p.semester)   semSeen[p.semester]   = 1;
+            if (p.yearLevel)  ylSeen[p.yearLevel]   = 1;
+        });
 
-    var semSelect = $('#fSemester');
-    var currentSem = semSelect.val();
-    semSelect.empty().append('<option value="">Any</option>');
-    var sortedSems = Array.from(semesters).sort();
-    for (var i = 0; i < sortedSems.length; i++) {
-        semSelect.append('<option value="' + sortedSems[i] + '">' + sortedSems[i] + '</option>');
-    }
-    if (currentSem) semSelect.val(currentSem);
-
-    var ylSelect = $('#fYearLevel');
-    var currentYl = ylSelect.val();
-    ylSelect.empty().append('<option value="">Any</option>');
-    var sortedYls = Array.from(yearLevels).sort();
-    for (var i = 0; i < sortedYls.length; i++) {
-        ylSelect.append('<option value="' + sortedYls[i] + '">' + sortedYls[i] + '</option>');
-    }
-    if (currentYl) ylSelect.val(currentYl);
-}
-
-function displayHistory(data) {
-    var tbody = $('#historyTbody');
-    tbody.empty();
-
-    if (data.length === 0) {
-        tbody.append('<tr><td colspan="11" class="text-center text-muted">No records found.</td></tr>');
-        return;
-    }
-
-    for (var i = 0; i < data.length; i++) {
-        var p = data[i];
-        if (!p) continue;
-
-        var transType = p.transactionType ? p.transactionType.toString() : 'Payment';
-        var typeBadge = '<span class="status-badge badge-' + transType.toLowerCase() + '">' + transType + '</span>';
-
-        var row = '<tr>' +
-            '<td>' + (p.orNumber || '—') + '</td>' +
-            '<td>' + (p.studentID || '—') + '</td>' +
-            '<td>' + (p.studentName || '—') + '</td>' +
-            '<td>' + (p.yearLevel || '—') + '</td>' +
-            '<td>' + (p.semester || '—') + '</td>' +
-            '<td>' + (p.period || '—') + '</td>' +
-            '<td>' + (p.schoolYear || '—') + '</td>' +
-            '<td>₱' + fmt(p.amountPaid) + '</td>' +
-            '<td>' + typeBadge + '</td>' +
-            '<td>' + (p.paymentDate || '—') + '</td>' +
-            '<td>' + (p.receivedBy || '—') + '</td>' +
-            '</tr>';
-
-        tbody.append(row);
-    }
-}
-
-function displayRefundableSemesters(data) {
-    var semesterMap = new Map();
-
-    for (var i = 0; i < data.length; i++) {
-        var p = data[i];
-        if (!p || p.transactionType !== 'Payment') continue;
-
-        var semKey = p.studentID + '|' + p.yearLevel + '|' + p.semester + '|' + p.schoolYear;
-
-        if (!semesterMap.has(semKey)) {
-            semesterMap.set(semKey, {
-                studentID: p.studentID,
-                studentName: p.studentName,
-                yearLevel: p.yearLevel,
-                semester: p.semester,
-                schoolYear: p.schoolYear,
-                totalPaid: 0,
-                hasRefund: false
-            });
+        function repopulate(sel, keys, sorted) {
+            var cur = sel.val();
+            sel.empty().append('<option value="">Any</option>');
+            sorted.forEach(function (k) { sel.append('<option value="' + k + '">' + k + '</option>'); });
+            if (cur) sel.val(cur);
         }
 
-        var sem = semesterMap.get(semKey);
-        sem.totalPaid += p.amountPaid;
-        if (p.transactionType === 'Refund') sem.hasRefund = true;
+        repopulate($('#fSchoolYear'), sySeen,  Object.keys(sySeen).sort().reverse());
+        repopulate($('#fSemester'),   semSeen, Object.keys(semSeen).sort());
+        repopulate($('#fYearLevel'),  ylSeen,  Object.keys(ylSeen).sort());
     }
 
-    // Find latest semester per student
-    var studentLatest = new Map();
+    // ── TABLE 2: Full History ─────────────────────────────────────────
+    function renderHistory(data) {
+        var tbody = $('#historyTbody').empty();
+        $('#historyCount').text(data.length);
 
-    semesterMap.forEach(function(sem, key) {
-        var studentKey = sem.studentID;
-        if (!studentLatest.has(studentKey) || isLaterSemester(sem, studentLatest.get(studentKey))) {
-            studentLatest.set(studentKey, sem);
+        if (!data.length) {
+            tbody.append('<tr><td colspan="12" style="text-align:center;color:#888;">No records found.</td></tr>');
+            return;
         }
-    });
 
-    var tbody = $('#refundableTbody');
-    tbody.empty();
-
-    var hasRefundable = false;
-    studentLatest.forEach(function(sem) {
-        if (!sem.hasRefund && sem.totalPaid > 0) {
-            hasRefundable = true;
-            var row = '<tr>' +
-                '<td>' + sem.studentID + '</td>' +
-                '<td>' + sem.studentName + '</td>' +
-                '<td>' + sem.yearLevel + '</td>' +
-                '<td>' + sem.semester + '</td>' +
-                '<td>' + sem.schoolYear + '</td>' +
-                '<td>₱' + fmt(sem.totalPaid) + '</td>' +
-                '<td><button class="btn-refund" onclick="showRefundPanel(' + sem.studentID + ', \'' + sem.studentName + '\', \'' + sem.schoolYear + '\', \'' + sem.semester + '\', ' + sem.yearLevel + ')">Refund Semester</button></td>' +
-                '</tr>';
-            tbody.append(row);
-        }
-    });
-
-    if (!hasRefundable) {
-        tbody.append('<tr><td colspan="7" class="text-center text-muted">No refundable semesters available.</td></tr>');
+        data.forEach(function (p) {
+            var type  = (p.transactionType || 'Payment');
+            var badge = '<span class="badge-' + type.toLowerCase() + '">' + type + '</span>';
+            tbody.append('<tr>' +
+                '<td>' + (p.orNumber    || '—') + '</td>' +
+                '<td>' + (p.studentID   || '—') + '</td>' +
+                '<td>' + (p.studentName || '—') + '</td>' +
+                '<td>' + (p.yearLevel   || '—') + '</td>' +
+                '<td>' + (p.semester    || '—') + '</td>' +
+                '<td>' + (p.period      || '—') + '</td>' +
+                '<td>' + (p.schoolYear  || '—') + '</td>' +
+                '<td>₱' + fmt(p.amountPaid) + '</td>' +
+                '<td>' + (p.paymentMode || '—') + '</td>' +
+                '<td>' + badge + '</td>' +
+                '<td>' + (p.paymentDate || '—') + '</td>' +
+                '<td>' + (p.receivedBy  || '—') + '</td>' +
+                '</tr>');
+        });
     }
-}
 
-function isLaterSemester(sem1, sem2) {
-    if (sem1.yearLevel !== sem2.yearLevel) {
-        return sem1.yearLevel > sem2.yearLevel;
-    }
-    if (sem1.semester !== sem2.semester) {
-        return sem1.semester === '2nd' && sem2.semester === '1st';
-    }
-    var year1 = parseInt(sem1.schoolYear.split('-')[0]);
-    var year2 = parseInt(sem2.schoolYear.split('-')[0]);
-    return year1 > year2;
-}
+    // ── TABLE 1: Refundable Semesters ─────────────────────────────────
+    function renderRefundable(data) {
+        var tbody = $('#refundableTbody').empty();
 
-function showRefundPanel(studentID, studentName, schoolYear, semester, yearLevel) {
-    refundTarget = {
-        studentID: studentID,
-        studentName: studentName,
-        schoolYear: schoolYear,
-        semester: semester,
-        yearLevel: yearLevel
-    };
+        // Group by student + year + semester + schoolYear
+        var groups = {};
+        data.forEach(function (p) {
+            var key = p.studentID + '|' + p.yearLevel + '|' + p.semester + '|' + p.schoolYear;
+            if (!groups[key]) {
+                groups[key] = {
+                    studentID:   p.studentID,
+                    studentName: p.studentName,
+                    yearLevel:   p.yearLevel,
+                    semester:    p.semester,
+                    schoolYear:  p.schoolYear,
+                    totalPaid:   0,
+                    hasRefund:   false
+                };
+            }
+            if (p.transactionType === 'Payment') groups[key].totalPaid += Number(p.amountPaid);
+            if (p.transactionType === 'Refund')  groups[key].hasRefund = true;
+        });
 
-    $.get('@Url.Action("GetSemesterPaymentSummary")', {
-        studentID: studentID,
-        schoolYear: schoolYear,
-        semester: semester,
-        yearLevel: yearLevel
-    }, function(res) {
-        $('#refundDesc').html('<strong>' + studentName + '</strong> (ID: ' + studentID + ') — ' + semester + ' Semester ' + schoolYear + ', Year ' + yearLevel);
-        $('#refundTotal').text(fmt(res.totalPaid));
-        $('#refundPanel').show();
-        $('#refundBtn').show();
-        $('#reenableBtn').hide();
-        $('html,body').animate({ scrollTop: $('#refundPanel').offset().top - 20 }, 300);
-    });
-}
+        // For each student, find only their LATEST semester group
+        var latestPerStudent = {};
+        Object.values(groups).forEach(function (g) {
+            var sid = g.studentID;
+            if (!latestPerStudent[sid] || isLaterSem(g, latestPerStudent[sid])) {
+                latestPerStudent[sid] = g;
+            }
+        });
 
-function resetFilters() {
-    $('#fStudentID').val('');
-    $('#fSchoolYear').val('');
-    $('#fSemester').val('');
-    $('#fYearLevel').val('');
-    loadHistory();
-}
+        var rows = 0;
+        Object.values(latestPerStudent).forEach(function (g) {
+            // Only show if not refunded and has actual payments
+            if (!g.hasRefund && g.totalPaid > 0) {
+                rows++;
+                tbody.append('<tr>' +
+                    '<td>' + g.studentID + '</td>' +
+                    '<td>' + g.studentName + '</td>' +
+                    '<td>Year ' + g.yearLevel + '</td>' +
+                    '<td>' + g.semester + ' Sem</td>' +
+                    '<td>' + g.schoolYear + '</td>' +
+                    '<td>₱' + fmt(g.totalPaid) + '</td>' +
+                    '<td><button onclick="showRefundPanel(' +
+                        g.studentID + ',\'' + escQ(g.studentName) + '\',\'' +
+                        g.schoolYear + '\',\'' + g.semester + '\',' + g.yearLevel +
+                    ')" style="background:#dc3545;color:white;border:none;padding:4px 12px;' +
+                    'border-radius:4px;cursor:pointer;font-size:12px;">💸 Refund Semester</button></td>' +
+                    '</tr>');
+            }
+        });
 
-$('#refundBtn').on('click', function() {
-    if (!refundTarget) return;
-    var body = '<p>You are about to refund the <strong>entire semester payment</strong> for:</p>' +
-        '<ul>' +
-        '<li><strong>Student:</strong> ' + refundTarget.studentName + ' (ID: ' + refundTarget.studentID + ')</li>' +
-        '<li><strong>Semester:</strong> ' + refundTarget.semester + ' — ' + refundTarget.schoolYear + '</li>' +
-        '<li><strong>Year Level:</strong> ' + refundTarget.yearLevel + '</li>' +
-        '<li><strong>Total to Refund:</strong> ₱' + $('#refundTotal').text() + '</li>' +
-        '</ul>' +
-        '<p class="text-danger font-weight-bold">All assessment periods for this semester will be marked as Refunded.</p>';
-    $('#refundModalBody').html(body);
-    $('#refundModal').modal('show');
-});
-
-$('#refundConfirmBtn').on('click', function() {
-    $('#refundModal').modal('hide');
-    $.post('@Url.Action("ProcessRefund")', {
-        studentID: refundTarget.studentID,
-        schoolYear: refundTarget.schoolYear,
-        semester: refundTarget.semester,
-        yearLevel: refundTarget.yearLevel,
-        remarks: $('#refundRemarks').val()
-    }, function(res) {
-        alert(res.mess === 1 ? 'Success: ' + res.message : 'Error: ' + res.message);
-        if (res.mess === 1) {
-            loadHistory();
-            $('#refundPanel').hide();
+        if (!rows) {
+            tbody.append('<tr><td colspan="7" style="text-align:center;color:#888;">No refundable semesters found.</td></tr>');
         }
-    });
-});
+    }
 
-$('#reenableBtn').on('click', function() {
-    if (!confirm('Re-enable payment for this semester? Student can pay again.')) return;
-    $.post('@Url.Action("ReenableAfterRefund")', {
-        studentID: refundTarget.studentID,
-        schoolYear: refundTarget.schoolYear,
-        semester: refundTarget.semester,
-        yearLevel: refundTarget.yearLevel
-    }, function(res) {
-        alert(res.mess === 1 ? 'Success: ' + res.message : 'Error: ' + res.message);
-        if (res.mess === 1) {
-            loadHistory();
-            $('#refundPanel').hide();
-        }
-    });
-});
+    function isLaterSem(a, b) {
+        if (a.yearLevel !== b.yearLevel) return a.yearLevel > b.yearLevel;
+        if (a.semester  !== b.semester)  return a.semester === '2nd';
+        return parseInt(a.schoolYear) > parseInt(b.schoolYear);
+    }
 
-function fmt(n) {
-    if (n === undefined || n === null) return '0.00';
-    return Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-    </script>
-}
+    // ── Refund Panel ──────────────────────────────────────────────────
+    function showRefundPanel(sid, name, sy, sem, yl) {
+        refundTarget = { studentID: sid, studentName: name,
+                         schoolYear: sy, semester: sem, yearLevel: yl };
+
+        $.get('@Url.Action("GetSemesterPaymentSummary")', {
+            studentID: sid, schoolYear: sy, semester: sem, yearLevel: yl
+        }, function (res) {
+            $('#refundDesc').html(
+                '<strong>' + name + '</strong> (ID: ' + sid + ') — ' +
+                sem + ' Semester ' + sy + ', Year ' + yl);
+            $('#refundTotal').text(fmt(res.totalPaid));
+            $('#refundRemarks').val('');
+            $('#refundPanel').show();
+            $('html,body').animate(
+                { scrollTop: $('#refundPanel').offset().top - 20 }, 300);
+        });
+    }
+
+    $('#refundBtn').on('click', function () {
+        if (!refundTarget) return;
+        $('#refundModalBody').html(
+            '<p>You are about to fully refund:</p>' +
+            '<ul>' +
+            '<li><strong>Student:</strong> ' + refundTarget.studentName + ' (ID: ' + refundTarget.studentID + ')</li>' +
+            '<li><strong>Semester:</strong> ' + refundTarget.semester + ' — ' + refundTarget.schoolYear + '</li>' +
+            '<li><strong>Year Level:</strong> ' + refundTarget.yearLevel + '</li>' +
+            '<li><strong>Total Refund:</strong> ₱' + $('#refundTotal').text() + '</li>' +
+            '</ul>' +
+            '<p style="color:#dc3545; font-weight:700;">' +
+            'All periods in this semester will be marked as Refunded.<br>' +
+            'Go to Assessment Management to regenerate if student wants to pay again.' +
+            '</p>');
+        $('#refundModal').show();
+    });
+
+    $('#refundConfirmBtn').on('click', function () {
+        $('#refundModal').hide();
+        $.post('@Url.Action("ProcessRefund")', {
+            studentID:  refundTarget.studentID,
+            schoolYear: refundTarget.schoolYear,
+            semester:   refundTarget.semester,
+            yearLevel:  refundTarget.yearLevel,
+            remarks:    $('#refundRemarks').val()
+        }, function (res) {
+            alert(res.mess === 1 ? '✅ ' + res.message : '❌ ' + res.message);
+            if (res.mess === 1) {
+                $('#refundPanel').hide();
+                loadHistory();
+            }
+        });
+    });
+
+    function resetFilters() {
+        $('#fStudentID, #fSchoolYear, #fSemester, #fYearLevel').val('');
+        loadHistory();
+    }
+
+    function fmt(n) {
+        return Number(n || 0).toLocaleString('en-PH',
+            { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function escQ(s) { return (s || '').replace(/'/g, "\\'"); }
+</script>

@@ -3,175 +3,476 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<html>
-<head>
-    <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 20px;
+<style>
+    .status-paid {
+        background: #d4edda;
+        color: #155724;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+    }
+
+    .status-unpaid {
+        background: #fff3cd;
+        color: #856404;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+    }
+
+    .status-locked {
+        background: #e2e3e5;
+        color: #383d41;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+    }
+
+    .status-partial {
+        background: #cce5ff;
+        color: #004085;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+    }
+
+    .status-refunded {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+    }
+
+    .student-row {
+        cursor: pointer;
+    }
+
+        .student-row:hover {
+            background-color: #f0f0ff !important;
         }
 
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
+    .detail-panel {
+        margin-top: 24px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 16px;
+        display: none;
+    }
 
-        th {
-            background-color: #f2f2f2;
-        }
+    /* Fee breakdown modal */
+    .breakdown-table td {
+        padding: 4px 10px;
+        font-size: 13px;
+    }
 
-        .student-row {
-            cursor: pointer;
-        }
+    .breakdown-table .section-header td {
+        background: #f2f2f2;
+        font-weight: 700;
+        padding: 6px 10px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
 
-            .student-row:hover {
-                background-color: #f0f0ff;
-            }
+    .breakdown-table .total-row td {
+        border-top: 2px solid #333;
+        font-weight: 700;
+    }
 
-        .btn-gen {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
+    .breakdown-table .net-row td {
+        background: #d4edda;
+        font-weight: 700;
+        color: #155724;
+    }
 
-        .btn-next {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
+    .breakdown-table .period-row td.pct {
+        color: #6c757d;
+        font-size: 12px;
+        text-align: right;
+    }
 
-        .btn-unlock {
-            background-color: #ffc107;
-            color: black;
-            border: none;
-            padding: 3px 8px;
-            cursor: pointer;
-            font-size: 12px;
-        }
+    .breakdown-table .discount-row td {
+        color: #dc3545;
+    }
 
-        .status-paid {
-            background-color: #d4edda;
-            color: #155724;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-        }
+    .period-bar {
+        height: 10px;
+        border-radius: 4px;
+        display: inline-block;
+        vertical-align: middle;
+    }
+</style>
 
-        .status-unpaid {
-            background-color: #fff3cd;
-            color: #856404;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-        }
+<div style="margin-bottom:16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <input type="text" id="searchStudent" style="padding:8px; width:280px;"
+           placeholder="Search by ID or Name..." />
+    <select id="filterStatus" style="padding:8px;">
+        <option value="">All Students</option>
+        <option value="can_generate">Needs Generation</option>
+        <option value="next_ready">Next Sem Ready</option>
+        <option value="regenerate">Needs Regeneration</option>
+    </select>
+    <button onclick="loadStudents()" style="padding:8px 16px;">🔄 Refresh</button>
+</div>
 
-        .status-locked {
-            background-color: #e2e3e5;
-            color: #383d41;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-        }
+<!-- Student List -->
+<table id="tblStudents" style="width:100%; border-collapse:collapse;">
+    <thead>
+        <tr style="background:#f2f2f2;">
+            <th style="padding:8px; border:1px solid #ddd;">Student ID</th>
+            <th style="padding:8px; border:1px solid #ddd;">Name</th>
+            <th style="padding:8px; border:1px solid #ddd;">Course</th>
+            <th style="padding:8px; border:1px solid #ddd;">Year / Semester</th>
+            <th style="padding:8px; border:1px solid #ddd;">School Year</th>
+            <th style="padding:8px; border:1px solid #ddd;">Predicted Grad</th>
+            <th style="padding:8px; border:1px solid #ddd;">Current Sem</th>
+            <th style="padding:8px; border:1px solid #ddd;">Next Sem</th>
+        </tr>
+    </thead>
+    <tbody id="studentTbody">
+        <tr><td colspan="8" style="padding:12px; text-align:center; color:#888;">Loading students...</td></tr>
+    </tbody>
+</table>
 
-        .status-partial {
-            background-color: #cce5ff;
-            color: #004085;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-        }
-
-        .status-refunded {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-        }
-
-        .detail-panel {
-            margin-top: 30px;
-            border: 1px solid #ccc;
-            padding: 15px;
-            display: none;
-        }
-
-        .search-box {
-            margin-bottom: 20px;
-            padding: 8px;
-            width: 300px;
-        }
-
-        .filter-select {
-            padding: 8px;
-            margin-left: 10px;
-        }
-    </style>
-</head>
-<body>
-
-    <h2>Assessment Management</h2>
-
-    <div>
-        <input type="text" id="searchStudent" class="search-box" placeholder="Search by ID or Name..." />
-        <select id="filterStatus" class="filter-select">
-            <option value="">All Students</option>
-            <option value="can_generate">Needs Generation</option>
-            <option value="next_ready">Next Sem Ready</option>
-        </select>
-        <button id="btnRefresh" style="padding: 8px 15px;">Refresh</button>
+<!-- Assessment Detail Panel -->
+<div id="detailPanel" class="detail-panel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <strong id="detailTitle" style="font-size:16px;">Assessment Details</strong>
+        <button onclick="closeDetail()">✕ Close</button>
     </div>
-
-    <table id="tblStudents">
+    <table id="tblAssessments" style="width:100%; border-collapse:collapse;">
         <thead>
-            <tr>
-                <th>Student ID</th>
-                <th>Student Name</th>
-                <th>Course</th>
-                <th>Year Level</th>
-                <th>Semester</th>
-                <th>School Year</th>
-                <th>Current Sem</th>
-                <th>Next Sem</th>
+            <tr style="background:#f2f2f2;">
+                <th style="padding:8px; border:1px solid #ddd;">Year</th>
+                <th style="padding:8px; border:1px solid #ddd;">Semester</th>
+                <th style="padding:8px; border:1px solid #ddd;">Period</th>
+                <th style="padding:8px; border:1px solid #ddd;">School Year</th>
+                <th style="padding:8px; border:1px solid #ddd;">Amount Due</th>
+                <th style="padding:8px; border:1px solid #ddd;">Paid</th>
+                <th style="padding:8px; border:1px solid #ddd;">Balance</th>
+                <th style="padding:8px; border:1px solid #ddd;">Status</th>
+                <th style="padding:8px; border:1px solid #ddd;">Breakdown</th>
             </tr>
         </thead>
-        <tbody id="studentTbody">
-            <tr><td colspan="8">Loading students...</td></tr>
+        <tbody id="assessmentTbody">
         </tbody>
     </table>
+</div>
 
-    <!-- Detail Panel -->
-    <div id="detailPanel" class="detail-panel">
-        <h3 id="detailTitle">Assessment Details</h3>
-        <button id="btnCloseDetail">Close</button>
-        <table id="tblAssessments">
-            <thead>
-                <tr>
-                    <th>Assessment ID</th>
-                    <th>Year</th>
-                    <th>Semester</th>
-                    <th>Period</th>
-                    <th>School Year</th>
-                    <th>Amount Due</th>
-                    <th>Total Paid</th>
-                    <th>Balance</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="assessmentTbody">
-            </tbody>
-        </table>
+<!-- Confirm Modal (generate / regenerate) -->
+<div id="confirmModal" style="display:none; position:fixed; top:0; left:0;
+     width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999;">
+    <div style="background:white; width:460px; margin:100px auto;
+                border-radius:6px; padding:24px;">
+        <h4 id="confirmTitle" style="margin-top:0;">Confirm</h4>
+        <div id="confirmBody"></div>
+        <div style="margin-top:20px; text-align:right;">
+            <button onclick="$('#confirmModal').hide();"
+                    style="padding:8px 16px; margin-right:8px;">
+                Cancel
+            </button>
+            <button id="confirmBtn" style="padding:8px 16px;
+                    background:#007bff; color:white; border:none; border-radius:4px;">
+                Confirm
+            </button>
+        </div>
     </div>
+</div>
 
-</body>
-</html>
+<!-- Fee Breakdown Modal -->
+<div id="breakdownModal" style="display:none; position:fixed; top:0; left:0;
+     width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; overflow-y:auto;">
+    <div style="background:white; width:520px; margin:60px auto;
+                border-radius:6px; padding:0; overflow:hidden;">
+        <div style="background:#0d1b2a; color:white; padding:14px 20px;
+                    display:flex; justify-content:space-between; align-items:center;">
+            <strong id="breakdownTitle">Fee Breakdown</strong>
+            <button onclick="$('#breakdownModal').hide();"
+                    style="background:none; border:none; color:white; font-size:18px; cursor:pointer;">
+                ✕
+            </button>
+        </div>
+        <div style="padding:20px;">
+            <div id="breakdownContent"></div>
+        </div>
+    </div>
+</div>
 
-<script src="~/Scripts/jquery-3.7.0.js"></script>
-<script src="~/Scripts/myScripts/assessment.js"></script>
+<script src="~/Scripts/jQuery/jquery-4.0.0.js"></script>
+
+<!-- Toast notification -->
+<div id="toastMsg" style="position:fixed; bottom:30px; right:30px; padding:12px 20px;
+     border-radius:6px; font-size:14px; z-index:9999; display:none;
+     color:white; box-shadow:0 4px 12px rgba(0,0,0,0.2); max-width:400px;"></div>
+
+<script>
+    var allStudents  = [];
+    var selectedSID  = 0;
+    var selectedSName = '';
+    var pendingAction = null;   // ← stores what confirmBtn should do
+
+    // ── Toast ────────────────────────────────────────────────────────
+    function showToast(msg, success) {
+        $('#toastMsg')
+            .text(msg)
+            .css('background', success ? '#28a745' : '#dc3545')
+            .fadeIn(200);
+        setTimeout(function () { $('#toastMsg').fadeOut(400); }, 3500);
+    }
+
+    // ── Boot ─────────────────────────────────────────────────────────
+    $(function () { loadStudents(); });
+
+    // ── Load & Render Students ───────────────────────────────────────
+    function loadStudents() {
+        $('#studentTbody').html('<tr><td colspan="8" style="padding:12px;text-align:center;color:#888;">Loading...</td></tr>');
+        $.get('@Url.Action("GetStudentAssessmentStatus")', function (data) {
+            allStudents = data;
+            renderStudents();
+        });
+    }
+
+    function renderStudents() {
+        var search = $('#searchStudent').val().toLowerCase();
+        var filter = $('#filterStatus').val();
+        var tbody  = $('#studentTbody').empty();
+
+        var filtered = allStudents.filter(function (s) {
+            var matchSearch = !search ||
+                s.StudentID.toString().includes(search) ||
+                s.StudentName.toLowerCase().includes(search);
+            var matchFilter = true;
+            if (filter === 'can_generate') matchFilter = s.CanGenerate;
+            if (filter === 'next_ready')   matchFilter = s.NextCanGenerate && !s.IsGraduating && !s.NeedsRegenerate;
+            if (filter === 'regenerate')   matchFilter = s.NeedsRegenerate;
+            return matchSearch && matchFilter;
+        });
+
+        if (!filtered.length) {
+            tbody.append('<tr><td colspan="8" style="padding:12px;text-align:center;color:#888;">No students found.</td></tr>');
+            return;
+        }
+
+        filtered.forEach(function (s) {
+            // Current sem column
+            var currentCell = s.CanGenerate
+                ? '<button onclick="event.stopPropagation(); confirmGenerate(' + s.StudentID + ', false)" style="background:#28a745;color:white;border:none;padding:4px 10px;cursor:pointer;border-radius:4px;">⚡ Generate</button>'
+                : '<span class="status-paid">✓ Generated</span>';
+
+            // Next sem column
+            var nextCell = '';
+            if (s.NeedsRegenerate) {
+                nextCell = '<button onclick="event.stopPropagation(); confirmGenerate(' + s.StudentID + ', false, true)" style="background:#fd7e14;color:white;border:none;padding:4px 10px;cursor:pointer;border-radius:4px;">🔄 Regenerate</button>';
+            } else if (s.IsGraduating) {
+                nextCell = '<span style="color:#6c757d;font-size:12px;">—</span>';
+            } else if (s.NextCanGenerate) {
+                nextCell = '<button onclick="event.stopPropagation(); confirmGenerate(' + s.StudentID + ', true)" style="background:#007bff;color:white;border:none;padding:4px 10px;cursor:pointer;border-radius:4px;">⚡ Generate Next</button>';
+            } else {
+                nextCell = '<span class="status-locked">Locked</span>';
+            }
+
+            var remainingSems = ((4 - s.YearLevel) * 2) + (s.Semester === '1st' ? 2 : 1);
+            var gradYear = new Date().getFullYear() + Math.ceil(remainingSems / 2);
+
+            tbody.append(
+                '<tr class="student-row" onclick="loadDetail(' + s.StudentID + ', \'' + s.StudentName.replace(/'/g, "\\'") + '\')">' +
+                '<td style="padding:8px;border:1px solid #ddd;">' + s.StudentID + '</td>' +
+                '<td style="padding:8px;border:1px solid #ddd;">' + s.StudentName + '</td>' +
+                '<td style="padding:8px;border:1px solid #ddd;">' + s.CourseCode + '</td>' +
+                '<td style="padding:8px;border:1px solid #ddd;">Year ' + s.YearLevel + ' — ' + s.Semester + ' Sem</td>' +
+                '<td style="padding:8px;border:1px solid #ddd;">' + s.SchoolYear + '</td>' +
+                '<td style="padding:8px;border:1px solid #ddd;color:#6c757d;font-size:12px;">~' + gradYear + '</td>' +
+                '<td style="padding:8px;border:1px solid #ddd;">' + currentCell + '</td>' +
+                '<td style="padding:8px;border:1px solid #ddd;">' + nextCell + '</td>' +
+                '</tr>'
+            );
+        });
+    }
+
+    $('#searchStudent').on('input', renderStudents);
+    $('#filterStatus').on('change', renderStudents);
+
+    // ── Detail Panel ─────────────────────────────────────────────────
+    function loadDetail(sid, name) {
+        selectedSID   = sid;
+        selectedSName = name;
+        $('#detailTitle').text('Assessments — ' + name + ' (ID: ' + sid + ')');
+        $('#detailPanel').show();
+        $('html,body').animate({ scrollTop: $('#detailPanel').offset().top - 20 }, 400);
+
+        $.get('@Url.Action("GetStudentAssessments")', { studentID: sid }, function (data) {
+            data.sort(function (a, b) { return a.AssessmentID - b.AssessmentID; });
+    var tbody = $('#assessmentTbody').empty();
+    if (!data.length) {
+        tbody.append('<tr><td colspan="9" style="padding:12px;text-align:center;color:#888;">No assessments generated yet.</td></tr>');
+        return;
+    }
+
+    data.forEach(function (a) {
+        var isRefunded = a.Status === 'Refunded';
+        var statusClass = 'status-' + a.Status.toLowerCase().replace('-', '');
+        var statusBadge = '<span class="' + statusClass + '">' + a.Status + '</span>';
+        var breakdownBtn = '<button onclick="showBreakdown(' + sid + ', \'' +
+            a.Period + '\', \'' + a.SchoolYear + '\', \'' + a.Semester + '\', ' + a.YearLevel + ')" style="background:#6c757d;color:white;border:none;padding:3px 8px;cursor:pointer;font-size:12px;border-radius:4px;">📊 View</button>';
+
+        tbody.append(
+            '<tr style="font-size:13px;' + (isRefunded ? 'background:#fff5f5;' : '') + '">' +
+            '<td style="padding:8px;border:1px solid #ddd;' + (isRefunded ? 'color:#aaa;' : '') + '">Year ' + a.YearLevel + '</td>' +
+            '<td style="padding:8px;border:1px solid #ddd;' + (isRefunded ? 'color:#aaa;' : '') + '">' + a.Semester + '</td>' +
+            '<td style="padding:8px;border:1px solid #ddd;' + (isRefunded ? 'color:#aaa;' : '') + '">' + a.Period + '</td>' +
+            '<td style="padding:8px;border:1px solid #ddd;' + (isRefunded ? 'color:#aaa;' : '') + '">' + a.SchoolYear + '</td>' +
+            '<td style="padding:8px;border:1px solid #ddd;' + (isRefunded ? 'color:#aaa;' : '') + '">₱' + fmt(a.AmountDue) + '</td>' +
+            '<td style="padding:8px;border:1px solid #ddd;' + (isRefunded ? 'color:#aaa;' : '') + '">₱' + fmt(a.TotalPaid) + '</td>' +
+            '<td style="padding:8px;border:1px solid #ddd;' + (isRefunded ? 'color:#aaa;' : '') + '">₱' + fmt(a.Balance) + '</td>' +
+            '<td style="padding:8px;border:1px solid #ddd;">' + statusBadge + '</td>' +
+            '<td style="padding:8px;border:1px solid #ddd;">' + breakdownBtn + '</td>' +
+            '</tr>'
+        );
+    });
+});
+    }
+
+    // Sort both chronologically
+    function periodOrder(p) {
+        return p === 'Prelim' ? 1 : p === 'Midterm' ? 2 : p === 'Semi-Final' ? 3 : 4;
+    }
+    function sortAssessments(arr) {
+        return arr.sort(function (a, b) {
+            if (a.YearLevel !== b.YearLevel) return a.YearLevel - b.YearLevel;
+            if (a.Semester !== b.Semester) return (a.Semester === '1st' ? 1 : 2) - (b.Semester === '1st' ? 1 : 2);
+            return periodOrder(a.Period) - periodOrder(b.Period);
+        });
+    }
+
+    function showBreakdown(sid, period, sy, sem, yl) {
+    $.get('@Url.Action("GetStudentFeeBreakdown")', { studentID: sid }, function (res) {
+        if (!res || res.mess === 0) {
+            alert('Could not load breakdown.');
+            return;
+        }
+        $('#breakdownTitle').text('Fee Breakdown — ' + period + ' | ' + sem + ' Sem ' + sy + ' Year ' + yl);
+        $('#breakdownContent').html(
+            '<table class="breakdown-table" style="width:100%;">' +
+            '<tr class="section-header"><td colspan="2">Course</td></tr>' +
+            '<tr><td>' + res.courseCode + ' — ' + res.courseName + '</td><td></td></tr>' +
+            '<tr class="section-header"><td colspan="2">Fee Components</td></tr>' +
+            '<tr><td>Tuition (' + res.units + ' units × ₱' + fmt(res.tuitionPerUnit) + ')</td><td>₱' + fmt(res.tuitionFee) + '</td></tr>' +
+            '<tr><td>Registration Fee</td><td>₱' + fmt(res.regFee) + '</td></tr>' +
+            '<tr><td>Miscellaneous Fee</td><td>₱' + fmt(res.miscFee) + '</td></tr>' +
+            '<tr><td>Laboratory Fee</td><td>₱' + fmt(res.labFee) + '</td></tr>' +
+            '<tr class="total-row"><td>Total Fee</td><td>₱' + fmt(res.totalFee) + '</td></tr>' +
+            (res.schName ? '<tr class="discount-row"><td>Scholarship: ' + res.schName + ' (' + res.schDetail + ')</td><td>−₱' + fmt(res.schDiscount) + '</td></tr>' : '') +
+            (res.disName ? '<tr class="discount-row"><td>Discount: ' + res.disName + ' (' + res.disDetail + ')</td><td>−₱' + fmt(res.disDiscount) + '</td></tr>' : '') +
+            '<tr class="net-row"><td>Net Assessment</td><td>₱' + fmt(res.netAssessment) + '</td></tr>' +
+            '<tr class="section-header"><td colspan="2">Period Breakdown</td></tr>' +
+            '<tr class="period-row' + (period === "Prelim" ? ' total-row' : '') + '"><td>Prelim (53%)</td><td>₱' + fmt(res.prelimAmt) + '</td></tr>' +
+            '<tr class="period-row' + (period === "Midterm" ? ' total-row' : '') + '"><td>Midterm (11%)</td><td>₱' + fmt(res.midtermAmt) + '</td></tr>' +
+            '<tr class="period-row' + (period === "Semi-Final" ? ' total-row' : '') + '"><td>Semi-Final (11%)</td><td>₱' + fmt(res.semiFinalAmt) + '</td></tr>' +
+            '<tr class="period-row' + (period === "Final" ? ' total-row' : '') + '"><td>Final (25%)</td><td>₱' + fmt(res.finalAmt) + '</td></tr>' +
+            '</table>'
+        );
+        $('#breakdownModal').show();
+    });
+}
+
+    function closeDetail() { $('#detailPanel').hide(); }
+
+    // ── Confirm Modal — SET pendingAction only, NO handler here ──────
+    function confirmGenerate(sid, isNext, isRegenerate) {
+        var s = allStudents.find(function (x) { return x.StudentID == sid; });
+        if (!s) return;
+
+        var title, sem, sy, yr, url, extraNote = '';
+        var postData = { studentID: sid };
+
+        if (isRegenerate) {
+            title     = 'Regenerate Assessments';
+            sem       = s.RefundedSem;
+            yr        = s.RefundedYL;
+            sy        = s.RefundedSY;
+            url       = '@Url.Action("RegenerateAfterRefund")';
+            postData.schoolYear = s.RefundedSY;
+            postData.semester   = s.RefundedSem;
+            postData.yearLevel  = s.RefundedYL;
+            extraNote = '<p style="color:#fd7e14;margin-top:8px;">⚠️ Previous refunded assessments remain as records. New assessments will be created for Year ' + yr + ', ' + sem + ' Semester ' + sy + '.</p>';
+        } else if (isNext) {
+            title = 'Generate Next Semester';
+            sem   = s.NextSem;
+            yr    = s.NextYear;
+            sy    = s.NextSY;
+            url   = '@Url.Action("GenerateNextSemester")';
+        } else {
+            title = 'Generate Current Semester';
+            sem   = s.Semester;
+            yr    = s.YearLevel;
+            sy    = s.SchoolYear;
+            url   = '@Url.Action("GenerateAssessment")';
+        }
+
+        $('#confirmTitle').text(title);
+        $('#confirmBody').html(
+            '<table style="font-size:13px;">' +
+            '<tr><td style="padding:4px 12px 4px 0;color:#6c757d;">Student</td><td><strong>' + s.StudentName + ' (ID: ' + sid + ')</strong></td></tr>' +
+            '<tr><td style="padding:4px 12px 4px 0;color:#6c757d;">Year Level</td><td>' + yr + '</td></tr>' +
+            '<tr><td style="padding:4px 12px 4px 0;color:#6c757d;">Semester</td><td>' + sem + '</td></tr>' +
+            '<tr><td style="padding:4px 12px 4px 0;color:#6c757d;">School Year</td><td>' + sy + '</td></tr>' +
+            '</table>' +
+            '<p style="margin-top:12px;color:#856404;background:#fff3cd;padding:8px;border-radius:4px;font-size:13px;">This will create 4 assessment periods: Prelim, Midterm, Semi-Final, Final.</p>' +
+            extraNote
+        );
+
+        // Store everything the button needs — do NOT attach a handler here
+        pendingAction = {
+            url:         url,
+            postData:    postData,
+            sid:         sid,
+            studentName: s.StudentName
+        };
+
+        $('#confirmBtn').prop('disabled', false);
+        $('#confirmModal').show();
+    }
+
+    // ── ONE confirm handler, attached ONCE at page load ───────────────
+    $('#confirmBtn').on('click', function () {
+        if (!pendingAction) return;
+
+        $(this).prop('disabled', true);   // prevent double-click
+        $('#confirmModal').hide();
+
+        var action = pendingAction;
+        pendingAction = null;             // clear immediately
+
+        console.log('Posting to:', action.url);
+        console.log('Post data:', JSON.stringify(action.postData));
+
+        $.post(action.url, action.postData)
+            .done(function (res) {
+                console.log('Response:', res);
+                if (typeof res === 'string') {
+                    showToast('❌ Server error', false);
+                    return;
+                }
+                showToast(res.mess === 1 ? '✅ ' + res.message : '❌ ' + res.message, res.mess === 1);
+                loadStudents();
+                if (res.mess === 1) {
+                    loadDetail(action.sid, action.studentName);
+                }
+            })
+            .fail(function (xhr) {
+                console.error('XHR fail:', xhr.responseText);
+                showToast('❌ Request failed: ' + xhr.status, false);
+            })
+            .always(function () {
+                $('#confirmBtn').prop('disabled', false);
+            });
+    });
+
+    // ── Helpers ──────────────────────────────────────────────────────
+    function fmt(n) {
+        if (n === undefined || n === null) return '0.00';
+        return Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+</script>
+

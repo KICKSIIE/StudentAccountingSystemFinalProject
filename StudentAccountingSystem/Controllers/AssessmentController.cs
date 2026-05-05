@@ -36,69 +36,85 @@ namespace StudentAccountingSystem.Controllers
             {
                 con.Open();
                 using (var cmd = new SqlCommand(@"
-                    SELECT  s.StudentID,
-                            s.FirstName + ' ' + s.LastName AS StudentName,
-                            c.CourseCode,
-                            s.YearLevel,
-                            s.Semester,
-                            s.SchoolYear,
-                            s.Status,
-                            (SELECT COUNT(*) FROM Assessments a
-                             WHERE a.StudentID = s.StudentID
-                               AND a.SchoolYear = s.SchoolYear
-                               AND a.Semester = s.Semester) AS AssessmentCount,
-                            (SELECT COUNT(*) FROM Assessments a
-                             WHERE a.StudentID = s.StudentID
-                               AND a.SchoolYear = s.SchoolYear
-                               AND a.Semester = s.Semester
-                               AND a.Period = 'Final'
-                               AND a.Status = 'Paid') AS FinalPaid
-                    FROM    Students s
-                    JOIN    Courses c ON c.CourseID = s.CourseID
-                    WHERE   s.Status IN ('Enrolled', 'Active')
-                    ORDER BY s.LastName, s.FirstName", con))
+            SELECT  s.StudentID,
+                    s.FirstName + ' ' + s.LastName AS StudentName,
+                    c.CourseCode,
+                    s.YearLevel,
+                    s.Semester,
+                    s.SchoolYear,
+                    s.Status,
+                    -- Active assessments for current student sem
+                    (SELECT COUNT(*) FROM Assessments a
+                     WHERE a.StudentID  = s.StudentID
+                       AND a.SchoolYear = s.SchoolYear
+                       AND a.Semester   = s.Semester
+                       AND a.Status    != 'Refunded') AS ActiveCount,
+                    -- Refunded assessments for current student sem
+                    (SELECT COUNT(*) FROM Assessments a
+                     WHERE a.StudentID  = s.StudentID
+                       AND a.SchoolYear = s.SchoolYear
+                       AND a.Semester   = s.Semester
+                       AND a.Status     = 'Refunded') AS RefundedCount,
+                    -- Final paid for current student sem
+                    (SELECT COUNT(*) FROM Assessments a
+                     WHERE a.StudentID  = s.StudentID
+                       AND a.SchoolYear = s.SchoolYear
+                       AND a.Semester   = s.Semester
+                       AND a.Period     = 'Final'
+                       AND a.Status     = 'Paid') AS FinalPaid,
+                    -- Latest refunded semester details (may differ from current student record)
+                    (SELECT TOP 1 a.SchoolYear FROM Assessments a
+                     WHERE a.StudentID = s.StudentID AND a.Status = 'Refunded'
+                     ORDER BY a.YearLevel DESC,
+                              CASE a.Semester WHEN '2nd' THEN 2 ELSE 1 END DESC) AS RefSY,
+                    (SELECT TOP 1 a.Semester FROM Assessments a
+                     WHERE a.StudentID = s.StudentID AND a.Status = 'Refunded'
+                     ORDER BY a.YearLevel DESC,
+                              CASE a.Semester WHEN '2nd' THEN 2 ELSE 1 END DESC) AS RefSem,
+                    (SELECT TOP 1 a.YearLevel FROM Assessments a
+                     WHERE a.StudentID = s.StudentID AND a.Status = 'Refunded'
+                     ORDER BY a.YearLevel DESC,
+                              CASE a.Semester WHEN '2nd' THEN 2 ELSE 1 END DESC) AS RefYL
+            FROM    Students s
+            JOIN    Courses c ON c.CourseID = s.CourseID
+            WHERE   s.Status IN ('Enrolled','Active')
+            ORDER BY s.LastName, s.FirstName", con))
                 {
                     using (var r = cmd.ExecuteReader())
                     {
                         while (r.Read())
                         {
-                            int assessmentCount = Convert.ToInt32(r["AssessmentCount"]);
+                            int activeCount = Convert.ToInt32(r["ActiveCount"]);
+                            int refundedCount = Convert.ToInt32(r["RefundedCount"]);
                             int finalPaid = Convert.ToInt32(r["FinalPaid"]);
                             string sem = r["Semester"].ToString();
                             int year = Convert.ToInt32(r["YearLevel"]);
                             string sy = r["SchoolYear"].ToString();
 
-                            string nextSem = "";
-                            string nextSY = "";
-                            int nextYear = year;
-                            bool isGraduating = false;
+                            // NeedsRegenerate: current semester on Students record has only Refunded rows
+                            bool needsRegenerate = (refundedCount > 0 && activeCount == 0);
+                            bool canGenerate = (activeCount == 0 && refundedCount == 0);
+                            bool nextCanGenerate = (finalPaid == 1 && !needsRegenerate);
+                            bool isGraduating = (year == 4 && sem == "2nd");
 
+                            // Refunded semester details — use Assessment table values, not Students table
+                            string refSY = r["RefSY"] == DBNull.Value ? sy : r["RefSY"].ToString();
+                            string refSem = r["RefSem"] == DBNull.Value ? sem : r["RefSem"].ToString();
+                            int refYL = r["RefYL"] == DBNull.Value ? year : Convert.ToInt32(r["RefYL"]);
+
+                            string nextSem, nextSY;
+                            int nextYear = year;
                             if (sem == "1st")
                             {
-                                nextSem = "2nd";
-                                nextYear = year;
-                                nextSY = sy;
+                                nextSem = "2nd"; nextSY = sy;
                             }
                             else
                             {
-                                nextSem = "1st";
-                                nextYear = year + 1;
-                                string[] pts = sy.Split('-');
-                                if (pts.Length == 2)
-                                {
-                                    int start = int.Parse(pts[0]) + 1;
-                                    int end = int.Parse(pts[1]) + 1;
-                                    nextSY = start + "-" + end;
-                                }
-                                else
-                                {
-                                    nextSY = sy;
-                                }
-                            }
-
-                            if (year == 4 && sem == "2nd")
-                            {
-                                isGraduating = true;
+                                nextSem = "1st"; nextYear = year + 1;
+                                var pts = sy.Split('-');
+                                nextSY = pts.Length == 2
+                                    ? (int.Parse(pts[0]) + 1) + "-" + (int.Parse(pts[1]) + 1)
+                                    : sy;
                             }
 
                             data.Add(new
@@ -109,18 +125,21 @@ namespace StudentAccountingSystem.Controllers
                                 YearLevel = year,
                                 Semester = sem,
                                 SchoolYear = sy,
-                                CanGenerate = (assessmentCount == 0),
-                                NextCanGenerate = (finalPaid == 1),
+                                CanGenerate = canGenerate,
+                                NeedsRegenerate = needsRegenerate,
+                                NextCanGenerate = nextCanGenerate,
                                 NextSem = nextSem,
                                 NextYear = nextYear,
                                 NextSY = nextSY,
-                                IsGraduating = isGraduating
+                                IsGraduating = isGraduating,
+                                RefundedSY = refSY,
+                                RefundedSem = refSem,
+                                RefundedYL = refYL
                             });
                         }
                     }
                 }
             }
-            System.Diagnostics.Debug.WriteLine("Number of students found: " + data.Count); // DEBUG
             return Json(data, JsonRequestBehavior.AllowGet);
         }
 
@@ -178,6 +197,98 @@ namespace StudentAccountingSystem.Controllers
                 }
             }
             return Json(data, JsonRequestBehavior.AllowGet);
+        }
+
+        public ActionResult RegenerateAfterRefund()
+        {
+            int studentID = 0;
+            string schoolYear = "", semester = "";
+            int yearLevel = 0;
+
+            if (Request["studentID"] != null) studentID = int.Parse(Request["studentID"]);
+            if (Request["schoolYear"] != null) schoolYear = Request["schoolYear"];
+            if (Request["semester"] != null) semester = Request["semester"];
+            if (Request["yearLevel"] != null) yearLevel = int.Parse(Request["yearLevel"]);
+
+            if (!IsAdmin())
+                return Json(new { mess = 0, message = "Unauthorized." });
+
+            try
+            {
+                using (var con = new SqlConnection(_conn))
+                {
+                    con.Open();
+                    SqlTransaction trans = con.BeginTransaction();
+                    try
+                    {
+                        // Get courseID only — do NOT read YearLevel/Semester from Students table
+                        // because the student may have already advanced beyond the refunded semester
+                        int courseID = 0;
+                        using (var cmd = new SqlCommand(
+                            "SELECT CourseID FROM Students WHERE StudentID=@sid", con, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@sid", studentID);
+                            courseID = (int)cmd.ExecuteScalar();
+                        }
+
+                        // Verify that the rows being regenerated are all Refunded
+                        // (no active rows exist for this exact semester)
+                        int active = 0;
+                        using (var cmd = new SqlCommand(@"
+                    SELECT COUNT(*) FROM Assessments
+                    WHERE StudentID  = @sid
+                      AND SchoolYear = @sy
+                      AND Semester   = @sem
+                      AND YearLevel  = @yl
+                      AND Status    != 'Refunded'", con, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@sid", studentID);
+                            cmd.Parameters.AddWithValue("@sy", schoolYear);
+                            cmd.Parameters.AddWithValue("@sem", semester);
+                            cmd.Parameters.AddWithValue("@yl", yearLevel);
+                            active = (int)cmd.ExecuteScalar();
+                        }
+
+                        if (active > 0)
+                        {
+                            trans.Rollback();
+                            return Json(new
+                            {
+                                mess = 0,
+                                message = "Active assessments already exist for this semester."
+                            });
+                        }
+
+                        // Use the semester/year FROM THE REQUEST — not from Students table
+                        // This is the critical fix: yearLevel, semester, schoolYear come from
+                        // the refunded assessment rows, not the student's current position
+                        StudentController.GenerateAssessments(
+                            con, studentID, courseID,
+                            yearLevel,   // from request — the refunded semester's year
+                            semester,    // from request — the refunded semester
+                            schoolYear,  // from request — the refunded school year
+                            trans);
+
+                        trans.Commit();
+                        return Json(new
+                        {
+                            mess = 1,
+                            message = "New assessments generated for " + semester +
+                                      " Semester " + schoolYear + " Year " + yearLevel +
+                                      ". Student can now pay again."
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        trans.Rollback();
+                        return Json(new { mess = 0, message = ex.Message });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { mess = 0, message = "Error: " + ex.Message });
+            }
         }
 
         // Generate assessments for current semester
@@ -418,6 +529,125 @@ namespace StudentAccountingSystem.Controllers
             catch (Exception ex)
             {
                 return Json(new { mess = 0, message = "Error: " + ex.Message });
+            }
+        }
+
+        // Get fee breakdown for modal
+        public ActionResult GetStudentFeeBreakdown(int studentID)
+        {
+            using (var con = new SqlConnection(_conn))
+            {
+                con.Open();
+
+                // Get student + course + scholarship + discount info
+                using (var cmd = new SqlCommand(@"
+            SELECT  s.StudentID,
+                    s.FirstName + ' ' + s.LastName AS StudentName,
+                    c.CourseCode, c.CourseName,
+                    c.Units, c.TuitionPerUnit,
+                    c.RegistrationFee, c.MiscFee, c.LabFee,
+                    sc.ScholarshipName,
+                    sc.Type         AS SchType,
+                    sc.DiscountPercent AS SchPct,
+                    sc.DiscountAmount  AS SchAmt,
+                    d.DiscountName,
+                    d.Type          AS DisType,
+                    d.DiscountPercent  AS DisPct,
+                    d.DiscountAmount   AS DisAmt
+            FROM    Students s
+            JOIN    Courses c       ON c.CourseID       = s.CourseID
+            LEFT JOIN Scholarships sc ON sc.ScholarshipID = s.ScholarshipID
+            LEFT JOIN Discounts    d  ON d.DiscountID     = s.DiscountID
+            WHERE   s.StudentID = @sid", con))
+                {
+                    cmd.Parameters.AddWithValue("@sid", studentID);
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        if (!r.Read())
+                            return Json(new { mess = 0, message = "Student not found." },
+                                        JsonRequestBehavior.AllowGet);
+
+                        int units = (int)r["Units"];
+                        decimal tuitionPerUnit = (decimal)r["TuitionPerUnit"];
+                        decimal regFee = (decimal)r["RegistrationFee"];
+                        decimal miscFee = (decimal)r["MiscFee"];
+                        decimal labFee = (decimal)r["LabFee"];
+
+                        decimal tuitionFee = tuitionPerUnit * units;
+                        decimal totalFee = tuitionFee + regFee + miscFee + labFee;
+
+                        // Scholarship discount
+                        decimal schDiscount = 0;
+                        string schName = "";
+                        string schDetail = "";
+                        if (r["SchType"] != DBNull.Value)
+                        {
+                            schName = r["ScholarshipName"].ToString();
+                            if (r["SchType"].ToString() == "Percent")
+                            {
+                                decimal pct = (decimal)r["SchPct"];
+                                schDiscount = totalFee * pct / 100;
+                                schDetail = pct + "%";
+                            }
+                            else
+                            {
+                                schDiscount = (decimal)r["SchAmt"];
+                                schDetail = "Fixed ₱" + schDiscount.ToString("N2");
+                            }
+                        }
+
+                        // Other discount
+                        decimal disDiscount = 0;
+                        string disName = "";
+                        string disDetail = "";
+                        if (r["DisType"] != DBNull.Value)
+                        {
+                            disName = r["DiscountName"].ToString();
+                            if (r["DisType"].ToString() == "Percent")
+                            {
+                                decimal pct = (decimal)r["DisPct"];
+                                disDiscount = totalFee * pct / 100;
+                                disDetail = pct + "%";
+                            }
+                            else
+                            {
+                                disDiscount = (decimal)r["DisAmt"];
+                                disDetail = "Fixed ₱" + disDiscount.ToString("N2");
+                            }
+                        }
+
+                        decimal totalDiscount = Math.Min(schDiscount + disDiscount, totalFee);
+                        decimal netAssessment = Math.Max(0, totalFee - totalDiscount);
+
+                        return Json(new
+                        {
+                            mess = 1,
+                            studentName = r["StudentName"].ToString(),
+                            courseCode = r["CourseCode"].ToString(),
+                            courseName = r["CourseName"].ToString(),
+                            units = units,
+                            tuitionPerUnit = tuitionPerUnit,
+                            tuitionFee = tuitionFee,
+                            regFee = regFee,
+                            miscFee = miscFee,
+                            labFee = labFee,
+                            totalFee = totalFee,
+                            schName = schName,
+                            schDetail = schDetail,
+                            schDiscount = schDiscount,
+                            disName = disName,
+                            disDetail = disDetail,
+                            disDiscount = disDiscount,
+                            totalDiscount = totalDiscount,
+                            netAssessment = netAssessment,
+                            // Period breakdown
+                            prelimAmt = Math.Round(netAssessment * 53m / 100, 2),
+                            midtermAmt = Math.Round(netAssessment * 11m / 100, 2),
+                            semiFinalAmt = Math.Round(netAssessment * 11m / 100, 2),
+                            finalAmt = Math.Round(netAssessment * 25m / 100, 2)
+                        }, JsonRequestBehavior.AllowGet);
+                    }
+                }
             }
         }
     }

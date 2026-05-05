@@ -734,6 +734,90 @@ namespace StudentAccountingSystem.Controllers
             }
         }
 
+        public ActionResult RegenerateAfterRefund()
+        {
+            int studentID = 0;
+            string schoolYear = "";
+            string semester = "";
+            int yearLevel = 0;
+
+            if (Request["studentID"] != null)
+                studentID = int.Parse(Request["studentID"]);
+            if (Request["schoolYear"] != null)
+                schoolYear = Request["schoolYear"];
+            if (Request["semester"] != null)
+                semester = Request["semester"];
+            if (Request["yearLevel"] != null)
+                yearLevel = int.Parse(Request["yearLevel"]);
+
+            if (!IsAdmin())
+                return Json(new { mess = 0, message = "Unauthorized." });
+
+            try
+            {
+                using (var con = new SqlConnection(_conn))
+                {
+                    con.Open();
+                    SqlTransaction trans = con.BeginTransaction();
+
+                    try
+                    {
+                        // Get courseID for this student
+                        int courseID = 0;
+                        using (var cmd = new SqlCommand("SELECT CourseID FROM Students WHERE StudentID = @sid", con, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@sid", studentID);
+                            courseID = (int)cmd.ExecuteScalar();
+                        }
+
+                        // Check if NEW assessments already exist for this semester
+                        int existing = 0;
+                        using (var cmd = new SqlCommand(@"
+                    SELECT COUNT(*) FROM Assessments 
+                    WHERE StudentID = @sid 
+                      AND SchoolYear = @sy 
+                      AND Semester = @sem 
+                      AND YearLevel = @yl
+                      AND Status != 'Refunded'", con, trans))
+                        {
+                            cmd.Parameters.AddWithValue("@sid", studentID);
+                            cmd.Parameters.AddWithValue("@sy", schoolYear);
+                            cmd.Parameters.AddWithValue("@sem", semester);
+                            cmd.Parameters.AddWithValue("@yl", yearLevel);
+                            existing = (int)cmd.ExecuteScalar();
+                        }
+
+                        if (existing > 0)
+                        {
+                            trans.Rollback();
+                            return Json(new { mess = 0, message = "Active assessments already exist for this semester. No need to regenerate." });
+                        }
+
+                        // Generate NEW assessments
+                        StudentController.GenerateAssessments(con, studentID, courseID, yearLevel, semester, schoolYear, trans);
+
+                        trans.Commit();
+
+                        return Json(new
+                        {
+                            mess = 1,
+                            message = "New assessments generated for " + semester + " Semester " + schoolYear + ". Student can now pay again."
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        trans.Rollback();
+                        return Json(new { mess = 0, message = ex.Message });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { mess = 0, message = "Error: " + ex.Message });
+            }
+        }
+
+
         // Re-enable payment after refund
         public ActionResult ReenableAfterRefund()
         {

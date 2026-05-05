@@ -576,7 +576,8 @@ int yearLevel, string semester, string schoolYear, SqlTransaction trans = null)
             {
                 int exists = 0;
                 using (var cmd = new SqlCommand(@"SELECT COUNT(*) FROM Assessments
-                                  WHERE StudentID=@sid AND SchoolYear=@sy AND Semester=@sem AND Period=@period", con, trans))
+    WHERE StudentID=@sid AND SchoolYear=@sy AND Semester=@sem 
+      AND Period=@period AND Status != 'Refunded'", con, trans))
                 {
                     cmd.Parameters.AddWithValue("@sid", studentID);
                     cmd.Parameters.AddWithValue("@sy", schoolYear);

@@ -195,7 +195,7 @@
     <Content Include="Scripts\myScripts\dashboard.js" />
     <Content Include="Scripts\myScripts\discountListv3.js" />
     <Content Include="Scripts\myScripts\login.js" />
-    <Content Include="Scripts\myScripts\payment.js" />
+    <Content Include="Scripts\myScripts\paymentv1.js" />
     <Content Include="Scripts\myScripts\paymentHistory.js" />
     <Content Include="Scripts\myScripts\scholarshipListv3.js" />
     <Content Include="Scripts\myScripts\studentListv2.js" />
@@ -226,17 +226,12 @@
     <Content Include="Views\Discount\Create.cshtml" />
     <Content Include="Views\Discount\Edit.cshtml" />
     <Content Include="Views\Assessment\Index.cshtml" />
-    <Content Include="Views\Assessment\Details.cshtml" />
     <Content Include="Views\Payment\Index.cshtml" />
     <Content Include="Views\Payment\Create.cshtml" />
     <Content Include="Views\Payment\Details.cshtml" />
-    <Content Include="Views\Shared\_StudentLayout.cshtml" />
-    <Content Include="Views\Assessment\Refunds.cshtml" />
-    <Content Include="Views\Report\Index.cshtml" />
     <Content Include="Views\Report\StudentLedger.cshtml" />
     <Content Include="Views\Report\AssessmentReport.cshtml" />
     <Content Include="Views\Payment\History.cshtml" />
-    <None Include="Views\StudentPortal\Index.cshtml" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

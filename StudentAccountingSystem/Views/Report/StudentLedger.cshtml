@@ -137,7 +137,7 @@
                 html += "<td>" + a.schoolYear + "</td>";
                 html += "<td>" + a.semester + "</td>";
                 html += "<td>Year " + a.yearLevel + "</td>";
-                html += "<td><b>Charge:</b> " + a.period + " Assessment";
+                html += "<td><b>Charge:</b> " + a.period + " Assessment <small class='text-muted'>[Assessmet ID: " + a.assessmentID + "]</small>";
                 if (parseFloat(a.discountAmount) > 0)
                     html += " <small class='text-success'>(Discount: ₱" + parseFloat(a.discountAmount).toFixed(2) + ")</small>";
                 html += " <small class='text-muted'>🔽 click for breakdown</small></td>";
@@ -172,7 +172,10 @@
                 html += "<h6 class='font-weight-bold'>Period Quota</h6>";
                 html += "<table class='table table-sm table-bordered mb-0'>";
                 html += "<tr><td>Period</td><td><b>" + a.period + "</b></td></tr>";
-                html += "<tr><td>% Required</td><td><b>" + parseFloat(a.percentRequired).toFixed(0) + "% of Net Assessment</b></td></tr>";
+                var cumulative = { 'Prelim': 53, 'Midterm': 64, 'Semi-Final': 75, 'Final': 100 };
+                var pct = parseFloat(a.percentRequired).toFixed(0);
+                var cum = cumulative[a.period] || pct;
+                html += "<tr><td>% Required</td><td><b>" + pct + "% of period (" + cum + "% cumulative)</b></td></tr>";
                 html += "<tr><td>Net Assessment</td><td>₱" + parseFloat(a.netAssessment).toFixed(2) + "</td></tr>";
                 html += "<tr class='table-danger'><td><b>Amount Due</b></td><td><b>₱" + parseFloat(a.amountDue).toFixed(2) + "</b></td></tr>";
                 html += "<tr class='table-success'><td><b>Total Paid</b></td><td><b>₱" + parseFloat(a.totalPaid).toFixed(2) + "</b></td></tr>";
@@ -206,7 +209,7 @@
                     html += "<td>" + p.schoolYear + "</td>";
                     html += "<td>" + p.semester + "</td>";
                     html += "<td>Year " + p.yearLevel + "</td>";
-                    html += "<td>" + desc + " <small class='text-muted'>(OR#: " + p.orNumber + " — " + p.paymentMode + ")</small></td>";
+                    html += "<td>" + desc + " <small class='text-muted'>[Payment ID: " + p.orNumber + "]</small></td>";
                     html += "<td class='text-right'>—</td>";
                     html += "<td class='text-right text-success'>₱" + parseFloat(p.amountPaid).toFixed(2) + "</td>";
                     html += "<td class='text-right font-weight-bold'>₱" + runningBalance.toFixed(2) + "</td>";

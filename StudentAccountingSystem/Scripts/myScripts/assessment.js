@@ -22,20 +22,20 @@ var allStudents = [];
 var selectedStudentID = 0;
 
 function loadStudents() {
-    $("#studentTbody").html('<tr><td colspan="8">Loading...</td></td>');
+    $("#studentTbody").html('<tr><td colspan="8">Loading...<\/td><\/tr>');
 
     $.post("/Assessment/GetStudentAssessmentStatus", {}, function (res) {
-        console.log("Response from server:", res); // DEBUG: Check what server returns
+        console.log("Response from server:", res);
 
         if (res && res.length > 0) {
             allStudents = res;
             renderStudents(allStudents);
         } else {
-            $("#studentTbody").html('<tr><td colspan="8">No students found.</td></td>');
+            $("#studentTbody").html('<tr><td colspan="8">No students found.<\/td><\/tr>');
         }
     }).fail(function (xhr, status, error) {
         console.log("AJAX Error:", error);
-        $("#studentTbody").html('<tr><td colspan="8">Error loading students. Check console.</td></td>');
+        $("#studentTbody").html('<tr><td colspan="8">Error loading students. Check console.<\/td><\/tr>');
     });
 }
 
@@ -44,7 +44,6 @@ function filterStudents() {
     var filter = $("#filterStatus").val();
 
     var filtered = allStudents.filter(function (s) {
-        // Handle possible undefined values
         var studentID = s.StudentID || s.studentID || "";
         var studentName = s.StudentName || s.studentName || "";
 
@@ -71,14 +70,13 @@ function renderStudents(students) {
     tbody.empty();
 
     if (students.length === 0) {
-        tbody.append('<tr><td colspan="8">No students match.</td></tr>');
+        tbody.append('<tr><td colspan="8">No students match.<\/td><\/tr>');
         return;
     }
 
     for (var i = 0; i < students.length; i++) {
         var s = students[i];
 
-        // Get values with fallbacks for both capitalized and lowercase property names
         var studentID = s.StudentID || s.studentID || "?";
         var studentName = s.StudentName || s.studentName || "Unknown";
         var courseCode = s.CourseCode || s.courseCode || "?";
@@ -88,12 +86,16 @@ function renderStudents(students) {
         var canGenerate = s.CanGenerate || s.canGenerate || false;
         var nextCanGenerate = s.NextCanGenerate || s.nextCanGenerate || false;
         var isGraduating = s.IsGraduating || s.isGraduating || false;
+        var isRefunded = s.IsRefunded || s.isRefunded || false;
         var nextSem = s.NextSem || s.nextSem || "";
         var nextYear = s.NextYear || s.nextYear || "";
         var nextSY = s.NextSY || s.nextSY || "";
 
         var currentBtn = "";
-        if (canGenerate) {
+
+        if (isRefunded) {
+            currentBtn = '<button class="btn-regenerate" onclick="regenerateSemester(' + studentID + ', \'' + schoolYear + '\', \'' + semester + '\', ' + yearLevel + ')">🔄 Regenerate</button>';
+        } else if (canGenerate) {
             currentBtn = '<button class="btn-gen" onclick="confirmGenerate(' + studentID + ', false)">Generate</button>';
         } else {
             currentBtn = '<span class="status-paid">Generated</span>';
@@ -109,17 +111,42 @@ function renderStudents(students) {
         }
 
         var row = '<tr class="student-row" onclick="loadStudentDetail(' + studentID + ', \'' + studentName.replace(/'/g, "\\'") + '\')">' +
-            '<td>' + studentID + '</td>' +
-            '<td>' + studentName + '</td>' +
-            '<td>' + courseCode + '</td>' +
-            '<td>' + yearLevel + '</td>' +
-            '<td>' + semester + '</td>' +
-            '<td>' + schoolYear + '</td>' +
-            '<td>' + currentBtn + '</td>' +
-            '<td>' + nextBtn + '</td>' +
-            '</tr>';
+            '<td>' + studentID + '<\/td>' +
+            '<td>' + studentName + '<\/td>' +
+            '<td>' + courseCode + '<\/td>' +
+            '<td>' + yearLevel + '<\/td>' +
+            '<td>' + semester + '<\/td>' +
+            '<td>' + schoolYear + '<\/td>' +
+            '<td>' + currentBtn + '<\/td>' +
+            '<td>' + nextBtn + '<\/td>' +
+            '<\/tr>';
 
         tbody.append(row);
+    }
+}
+
+// ONLY ONE regenerateSemester function - remove the duplicate
+function regenerateSemester(studentID, schoolYear, semester, yearLevel) {
+    if (confirm("Regenerate assessments for:\n" +
+        "Student ID: " + studentID + "\n" +
+        "Semester: " + semester + " - " + schoolYear + "\n" +
+        "Year Level: " + yearLevel + "\n\n" +
+        "This will create NEW assessments. The refunded ones will remain as records.\n\n" +
+        "Continue?")) {
+
+        $.post("/Assessment/RegenerateAfterRefund", {
+            studentID: studentID,
+            schoolYear: schoolYear,
+            semester: semester,
+            yearLevel: yearLevel
+        }, function (res) {
+            if (res.mess === 1) {
+                alert("Success: " + res.message);
+                loadStudents();
+            } else {
+                alert("Error: " + res.message);
+            }
+        });
     }
 }
 
@@ -139,7 +166,6 @@ function confirmGenerate(studentID, isNext) {
         return;
     }
 
-    // Get values with fallbacks
     var studentName = student.StudentName || student.studentName || "Student";
     var sem = isNext ? (student.NextSem || student.nextSem) : (student.Semester || student.semester);
     var sy = isNext ? (student.NextSY || student.nextSY) : (student.SchoolYear || student.schoolYear);
@@ -172,7 +198,7 @@ function loadStudentDetail(studentID, studentName) {
     selectedStudentID = studentID;
     $("#detailTitle").text("Assessments - " + studentName + " (ID: " + studentID + ")");
     $("#detailPanel").show();
-    $("#assessmentTbody").html('<tr><td colspan="10">Loading assessments...</td></tr>');
+    $("#assessmentTbody").html('<td><td colspan="10">Loading assessments...<\/td><\/tr>');
 
     $.post("/Assessment/GetStudentAssessments", { studentID: studentID }, function (res) {
         console.log("Assessments response:", res);
@@ -181,7 +207,7 @@ function loadStudentDetail(studentID, studentName) {
         tbody.empty();
 
         if (!res || res.length === 0) {
-            tbody.append('<tr><td colspan="10">No assessments generated yet. Generate them first.</td></tr>');
+            tbody.append('<tr><td colspan="10">No assessments generated yet. Generate them first.<\/td><\/tr>');
             return;
         }
 
@@ -213,17 +239,17 @@ function loadStudentDetail(studentID, studentName) {
             }
 
             var row = '<tr>' +
-                '<td>' + assessmentID + '</td>' +      // NEW: Assessment ID column
-                '<td>' + yearLevel + '</td>' +
-                '<td>' + semester + '</td>' +
-                '<td>' + period + '</td>' +
-                '<td>' + schoolYear + '</td>' +
-                '<td>₱' + formatNumber(amountDue) + '</td>' +
-                '<td>₱' + formatNumber(totalPaid) + '</td>' +
-                '<td>₱' + formatNumber(balance) + '</td>' +
-                '<td>' + statusHtml + '</td>' +
-                '<td>' + actionHtml + '</td>' +
-                '</tr>';
+                '<td>' + assessmentID + '<\/td>' +
+                '<td>' + yearLevel + '<\/td>' +
+                '<td>' + semester + '<\/td>' +
+                '<td>' + period + '<\/td>' +
+                '<td>' + schoolYear + '<\/td>' +
+                '<td>₱' + formatNumber(amountDue) + '<\/td>' +
+                '<td>₱' + formatNumber(totalPaid) + '<\/td>' +
+                '<td>₱' + formatNumber(balance) + '<\/td>' +
+                '<td>' + statusHtml + '<\/td>' +
+                '<td>' + actionHtml + '<\/td>' +
+                '<\/tr>';
 
             tbody.append(row);
         }
@@ -236,7 +262,6 @@ function unlockPeriod(assessmentID) {
             if (res.mess === 1) {
                 alert("Unlocked successfully.");
                 if (selectedStudentID) {
-                    // Need to reload student detail - get student name from somewhere
                     loadStudentDetail(selectedStudentID, "");
                 }
             } else {

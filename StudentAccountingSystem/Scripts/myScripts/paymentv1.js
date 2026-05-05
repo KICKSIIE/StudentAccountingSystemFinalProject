@@ -110,83 +110,7 @@ function selectStudent(studentID, studentName) {
     loadAssessments(studentID);
 }
 
-function loadAssessments(studentID) {
-    $("#assessmentTbody").html('<tr><td colspan="11">Loading assessments......</td></tr>');
 
-    $.post("/Payment/GetStudentAssessmentsForPayment", { studentID: studentID }, function (res) {
-        console.log("Assessments response:", res);
-
-        var tbody = $("#assessmentTbody");
-        tbody.empty();
-
-        if (!res || res.length === 0) {
-            tbody.append('<tr><td colspan="11">No assessments found. Generate them in Assessment Management first.</td></tr>');
-            return;
-        }
-
-        for (var i = 0; i < res.length; i++) {
-            var a = res[i];
-
-            var assessmentID = a.AssessmentID;           // INTEGER ID
-            var period = a.Period;
-            var yearLevel = a.YearLevel;
-            var semester = a.Semester;
-            var schoolYear = a.SchoolYear;
-            var amountDue = a.AmountDue || 0;
-            var totalPaid = a.TotalPaid || 0;
-            var balance = a.Balance || (amountDue - totalPaid);
-            if (balance < 0) balance = 0;
-            var status = a.Status || "Unknown";
-            var paymentIDs = a.PaymentIDs || "";         // Payment IDs (e.g., "101, 102" or "101 (OR#1001)")
-
-            var statusClass = "";
-            if (status === "Paid") statusClass = "status-paid";
-            else if (status === "Unpaid") statusClass = "status-unpaid";
-            else if (status === "Locked") statusClass = "status-locked";
-            else if (status === "Partial") statusClass = "status-partial";
-
-            var statusHtml = '<span class="' + statusClass + '">' + status + '</span>';
-
-            // Payment ID display
-            var paymentIdDisplay = "";
-            if (paymentIDs !== "") {
-                paymentIdDisplay = '<span>' + paymentIDs + '</span>';
-            } else {
-                paymentIdDisplay = '<span >—</span>';
-            }
-
-            var actionBtn = "";
-            if (balance <= 0) {
-                actionBtn = '<span class="status-paid">Fully Paid</span>';
-            } else if (status === "Unpaid" || status === "Partial") {
-                actionBtn = '<button class="btn-pay" onclick="openPayModal(' + assessmentID + ', \'' + period + '\', ' + balance + ')">Pay</button>';
-            } else if (status === "Locked") {
-                actionBtn = '<span style="color:gray;">Locked</span>';
-            } else if (status === "Paid") {
-                actionBtn = '<span class="status-paid">Fully Paid</span>';
-            }
-
-            var row = '<tr>' +
-                '<td>' + assessmentID + '</td>' +                    // Assessment ID (INTEGER)
-                '<td>' + yearLevel + '</td>' +                       // Year Level
-                '<td>' + semester + '</td>' +                        // Semester
-                '<td>' + period + '</td>' +                          // Period
-                '<td>' + schoolYear + '</td>' +                      // School Year
-                '<td>₱' + formatNumber(amountDue) + '</td>' +        // Amount Due
-                '<td>₱' + formatNumber(totalPaid) + '</td>' +        // Total Paid
-                '<td>₱' + formatNumber(balance) + '</td>' +          // Balance
-                '<td>' + statusHtml + '</td>' +                      // Status
-                '<td>' + paymentIdDisplay + '</td>' +                // Payment ID(s)
-                '<td>' + actionBtn + '</td>' +                       // Action
-                '</tr>';
-
-            tbody.append(row);
-        }
-    }).fail(function (xhr, status, error) {
-        console.log("Error loading assessments:", error);
-        $("#assessmentTbody").html('<tr><td colspan="11">Error loading assessments.</td></tr>');
-    });
-}
 function openPayModal(assessmentID, period, balance) {
     currentAssessmentID = assessmentID;
     currentBalance = balance;
@@ -204,7 +128,6 @@ function openPayModal(assessmentID, period, balance) {
     // Optional: Highlight the input so cashier can change if needed
     $("#payAmount").select();
 }
-
 
 $("#btnConfirmPay").click(function () {
     var amount = parseFloat($("#payAmount").val());
@@ -269,7 +192,20 @@ function loadAssessments(studentID) {
 
     $.post("/Payment/GetStudentAssessmentsForPayment", { studentID: studentID }, function (res) {
         console.log("Assessments response:", res);
-
+        // Sort by AssessmentID — natural insertion order
+        console.log("Before sort:", res.map(function (a) { return a.AssessmentID + '=' + a.Status; }));
+        res.sort(function (a, b) {
+            if (a.YearLevel !== b.YearLevel) return a.YearLevel - b.YearLevel;
+            var semA = a.Semester === '1st' ? 1 : 2;
+            var semB = b.Semester === '1st' ? 1 : 2;
+            if (semA !== semB) return semA - semB;
+            var isRefA = a.Status === 'Refunded' ? 0 : 1;
+            var isRefB = b.Status === 'Refunded' ? 0 : 1;
+            if (isRefA !== isRefB) return isRefA - isRefB;
+            var periodOrder = { 'Prelim': 1, 'Midterm': 2, 'Semi-Final': 3, 'Final': 4 };
+            return periodOrder[a.Period] - periodOrder[b.Period];
+        });
+        console.log("After sort:", res.map(function (a) { return a.AssessmentID + '=' + a.Status; }));
         var tbody = $("#assessmentTbody");
         tbody.empty();
 
